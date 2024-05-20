@@ -26,7 +26,10 @@ class Shortner(APIView):
                 url = Url.objects.create(
                     long_url=request.data["url"], short_url=generator()
                 )
-                return Response({"response": url.short_url}, status.HTTP_200_OK)
+                return Response(
+                    {"response": request.get_host() + "/" + url.short_url},
+                    status.HTTP_200_OK,
+                )
             else:
                 return Response("please enter a valid url", status.HTTP_400_BAD_REQUEST)
         except Exception as e:
