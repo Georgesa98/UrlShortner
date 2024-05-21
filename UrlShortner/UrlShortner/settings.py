@@ -76,12 +76,8 @@ WSGI_APPLICATION = "UrlShortner.wsgi.application"
 
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.mysql",
-        "NAME": "UrlShortner",
-        "USER": "root",
-        "PASSWORD": "zaq321xsw",
-        "HOST": "localhost",
-        "PORT": "3306",
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": BASE_DIR / "db.sqlite3",
     }
 }
 
