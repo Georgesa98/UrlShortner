@@ -1,1 +1,17 @@
-/venv
+# Virtual Environment
+.venv
+
+# Python
+
+__pycache__
+*.pyc
+
+# Test
+db.sqlite3
+
+# Sensitive Data
+
+.env
+
+# VSCode
+.vscode

@@ -1,5 +1,5 @@
 from rest_framework.views import APIView, Response, status
-from Api.models import Url
+from api.shortener.models import Url
 from django.shortcuts import redirect
 import secrets
 import urllib.parse
@@ -19,7 +19,7 @@ def urlChecker(url):
         return False
 
 
-class Shortner(APIView):
+class Shortener(APIView):
     def post(self, request):
         try:
             if urlChecker(request.data["url"]):

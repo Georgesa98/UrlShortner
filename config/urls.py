@@ -1,5 +1,5 @@
 """
-URL configuration for UrlShortner project.
+URL configuration for UrlShortener project.
 
 The `urlpatterns` list routes URLs to views. For more information please see:
     https://docs.djangoproject.com/en/5.0/topics/http/urls/
@@ -17,10 +17,10 @@ Including another URLconf
 
 from django.contrib import admin
 from django.urls import path
-from Api.views import Shortner, Redirect
+from api.shortener.views import Shortener, Redirect
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("shorten/", Shortner.as_view()),
+    path("shorten/", Shortener.as_view()),
     path("<str:token>", Redirect.as_view()),
 ]
