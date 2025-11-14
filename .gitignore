@@ -2,7 +2,6 @@
 .venv
 
 # Python
-
 __pycache__
 *.pyc
 
@@ -10,7 +9,6 @@ __pycache__
 db.sqlite3
 
 # Sensitive Data
-
 .env
 
 # VSCode
