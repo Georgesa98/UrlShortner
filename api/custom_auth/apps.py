@@ -1,6 +1,6 @@
 from django.apps import AppConfig
 
 
-class ShortenerConfig(AppConfig):
+class CustomAuthConfig(AppConfig):
     default_auto_field = "django.db.models.BigAutoField"
-    name = "api.shortener"
+    name = "api.custom_auth"

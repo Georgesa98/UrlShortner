@@ -59,7 +59,8 @@ INSTALLED_APPS = [
     "rest_framework_simplejwt",
     "djoser",
     "api",
-    "api.shortener",
+    "api.custom_auth",
+    "api.url",
 ]
 
 MIDDLEWARE = [
@@ -109,11 +110,11 @@ DATABASES = {
 }
 
 if not DEBUG:
-    DJOSER = {"TOKEN_MODEL": None}
+    DJOSER = {"TOKEN_MODEL": None, "SEND_ACTIVATION_EMAIL": False}
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
-        "rest_framework_simplejwt.authentication.JWTAuthentication",
+        "api.custom_auth.authentication.CookieJWTAuthentication",
     ),
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
 }
