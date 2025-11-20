@@ -61,6 +61,7 @@ INSTALLED_APPS = [
     "api",
     "api.custom_auth",
     "api.url",
+    "api.analytics",
 ]
 
 MIDDLEWARE = [

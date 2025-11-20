@@ -1,14 +1,15 @@
 from rest_framework.views import Response, status
 from rest_framework.generics import GenericAPIView
-from api.url.models import Url
+from api.url.models import Url, UrlStatus
 from django.shortcuts import redirect
-from datetime import datetime
+from datetime import datetime, timezone
 from api.url.serializers.ShortenerSerializer import (
     ShortenerSerializer,
 )
 from api.custom_auth.authentication import CookieJWTAuthentication
 from rest_framework.permissions import IsAuthenticated
 from .permissions import IsUrlOwner
+from api.analytics.service import AnalyticsService
 
 # Create your views here.
 
@@ -85,11 +86,16 @@ class SpecificUrl(GenericAPIView):
 class Redirect(GenericAPIView):
 
     def get(self, request, short_url):
+
         try:
-            url_instance = Url.objects.get(short_url=short_url, is_active=True)
-            url_instance.access_count += 1
-            url_instance.last_accessed = datetime.now()
-            url_instance.save()
+            url_instance = Url.objects.get(short_url=short_url)
+            url_status = UrlStatus.objects.get(url=url_instance)
+            if not url_status.state == url_status.State.ACTIVE:
+                return Response(
+                    {"error": "URL is inactive or expired"},
+                    status=status.HTTP_410_GONE,
+                )
+            AnalyticsService.record_visit(request, url_instance)
             return redirect(url_instance.long_url)
         except Exception as e:
             return Response(str(e), status.HTTP_404_NOT_FOUND)
