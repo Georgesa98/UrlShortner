@@ -1,4 +1,4 @@
-from api.url.models import Url
+from api.url.models import Url, UrlStatus
 from api.url.utils import generator
 from datetime import datetime, timezone
 
@@ -18,6 +18,7 @@ class UrlService:
                 else None
             ),
         )
+        UrlStatus.objects.create(url=url_instance)
         return url_instance
 
     @classmethod

@@ -10,4 +10,7 @@ class Visit(models.Model):
     timestamp = models.DateTimeField(auto_now_add=True)
     hashed_ip = models.CharField(max_length=64)
     referrer = models.TextField(blank=True, null=True)
-    user_agent = models.TextField(blank=True, null=True)
+    geolocation = models.CharField(max_length=128, blank=True, null=True)
+    browser = models.CharField(max_length=64, blank=True, null=True)
+    operating_system = models.CharField(max_length=64, blank=True, null=True)
+    device = models.CharField(max_length=64, blank=True, null=True)

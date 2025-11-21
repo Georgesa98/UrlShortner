@@ -4,11 +4,13 @@ from rest_framework.serializers import (
     ValidationError,
 )
 from api.url.models import Url
+from api.url.serializers.UrlStatusSerializer import UrlStatusSerializer
 from api.url.utils import urlChecker
 
 
 class ShortenerSerializer(ModelSerializer):
     expiry_date = DateTimeField(required=False, allow_null=True)
+    url_status = UrlStatusSerializer(read_only=True)
 
     class Meta:
         model = Url
@@ -20,9 +22,8 @@ class ShortenerSerializer(ModelSerializer):
             "created_at",
             "updated_at",
             "visits",
+            "url_status",
             "last_accessed",
-            "is_active",
-            "is_expired",
             "days_until_expiry",
         ]
         read_only_fields = [
@@ -30,8 +31,8 @@ class ShortenerSerializer(ModelSerializer):
             "created_at",
             "updated_at",
             "visits",
+            "url_status",
             "last_accessed",
-            "is_expired",
             "days_until_expiry",
         ]
 

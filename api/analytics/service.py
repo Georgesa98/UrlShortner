@@ -1,5 +1,11 @@
 from api.analytics.models import Visit
-from api.analytics.utils import get_ip_address, hash_ip, ip_address_match
+from api.analytics.utils import (
+    convert_ip_to_location,
+    get_ip_address,
+    hash_ip,
+    ip_address_match,
+    parse_user_agent,
+)
 from datetime import datetime, timezone
 
 
@@ -7,6 +13,8 @@ class AnalyticsService:
     @classmethod
     def record_visit(self, request, url_instance):
         ip = get_ip_address(request)
+        country = convert_ip_to_location(ip)
+        user_agent = parse_user_agent(request.META.get("HTTP_USER_AGENT", ""))
         url_instance.visits += 1
         if not ip_address_match(ip):
             hashed_ip = hash_ip(ip)
@@ -16,7 +24,10 @@ class AnalyticsService:
             Visit.objects.create(
                 url=url_instance,
                 hashed_ip=hashed_ip,
-                user_agent=request.META.get("HTTP_USER_AGENT", ""),
+                geolocation=country,
+                operating_system=user_agent["os"],
+                browser=user_agent["browser"],
+                device=user_agent["device"],
                 referrer=request.META.get("HTTP_REFERRER", ""),
             )
 
