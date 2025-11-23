@@ -13,3 +13,9 @@ db.sqlite3
 
 # VSCode
 .vscode
+
+# Ai Agent Docs
+.prompts
+
+# Logs
+logs/*.log

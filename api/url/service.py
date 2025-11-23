@@ -1,6 +1,108 @@
+import redis
+from django.conf import settings
 from api.url.models import Url, UrlStatus
 from api.url.utils import generator
 from datetime import datetime, timezone
+
+
+class BurstProtectionService:
+    def __init__(self):
+        self.redis_client = redis.Redis(
+            host=settings.REDIS_HOST,
+            port=settings.REDIS_PORT,
+            db=settings.REDIS_DB,
+            password=settings.REDIS_PASSWORD,
+            decode_responses=True,
+        )
+
+        self.default_thresholds = {
+            "short_term_window": 10,
+            "short_term_limit": 10,
+            "medium_term_window": 60,
+            "medium_term_limit": 50,
+            "long_term_window": 3600,
+            "long_term_limit": 1000,
+        }
+
+    def _track_click(self, short_url: str, ip: str):
+        timestamp = datetime.now(timezone.utc).timestamp()
+
+        url_key = f"burst_protection:url:{short_url}"
+        ip_key = f"burst_protection:ip:{ip}"
+
+        self.redis_client.zadd(url_key, {f"request_{timestamp}": timestamp})
+        self.redis_client.zadd(ip_key, {f"request_{timestamp}": timestamp})
+
+        cutoff_time = timestamp - self.default_thresholds["long_term_window"]
+
+        self.redis_client.zremrangebyscore(url_key, "-inf", cutoff_time)
+        self.redis_client.zremrangebyscore(ip_key, "-inf", cutoff_time)
+
+    def _detect_burst(self, ip: str, short_url: str):
+        timestamp = datetime.now(timezone.utc).timestamp()
+        url_key = f"burst_protection:url:{short_url}"
+        ip_key = f"burst_protection:ip:{ip}"
+        windows = [
+            ("short_term_window", "short_term_limit"),
+            ("medium_term_window", "medium_term_limit"),
+            ("long_term_window", "long_term_limit"),
+        ]
+
+        for window_key, limit_key in windows:
+            window = self.default_thresholds[window_key]
+            limit = self.default_thresholds[limit_key]
+
+            if self._check_window_burst(ip_key, timestamp - window, limit):
+                return True
+            if self._check_window_burst(url_key, timestamp - window, limit):
+                return True
+        return False
+
+    def _check_window_burst(self, key: str, start_time: float, threshold: int):
+        count = self.redis_client.zcount(
+            key,
+            start_time,
+            datetime.now(timezone.utc).timestamp(),
+        )
+        return count >= threshold
+
+    def _flag_url(self, short_url):
+        url_instance = Url.objects.get(short_url=short_url)
+        url_status_instance = UrlStatus.objects.get(url=url_instance)
+        if url_status_instance.state != UrlStatus.State.FLAGGED:
+            url_status_instance.state = UrlStatus.State.FLAGGED
+            url_status_instance.reason = "Too many requests on the url"
+            url_status_instance.save()
+
+    def check_burst(self, ip: str, short_url: str):
+        from redis.lock import Lock
+
+        lock_key = f"burst_protection:lock:{short_url}:{ip}"
+        lock = Lock(self.redis_client, lock_key, timeout=3, blocking_timeout=1)
+        try:
+            acquired = lock.acquire(blocking=True)
+            if not acquired:
+                return False
+            try:
+                if self._detect_burst(ip, short_url):
+                    self._flag_url(short_url)
+                    return False
+                self._track_click(short_url, ip)
+                return True
+            finally:
+                lock.release()
+        except Exception as e:
+            return False
+
+
+_burst_protection_instance = None
+
+
+def get_burst_protection_service():
+    global _burst_protection_instance
+    if _burst_protection_instance is None:
+        _burst_protection_instance = BurstProtectionService()
+    return _burst_protection_instance
 
 
 class UrlService:

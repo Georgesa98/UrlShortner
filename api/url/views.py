@@ -1,5 +1,6 @@
 from rest_framework.views import Response, status
 from rest_framework.generics import GenericAPIView
+from api.analytics.utils import get_ip_address
 from api.url.models import Url, UrlStatus
 from django.shortcuts import redirect
 from datetime import datetime, timezone
@@ -8,6 +9,8 @@ from api.url.serializers.ShortenerSerializer import (
 )
 from api.custom_auth.authentication import CookieJWTAuthentication
 from rest_framework.permissions import IsAuthenticated
+
+from api.url.service import BurstProtectionService, get_burst_protection_service
 from .permissions import IsUrlOwner
 from api.analytics.service import AnalyticsService
 
@@ -84,10 +87,20 @@ class SpecificUrl(GenericAPIView):
 
 
 class Redirect(GenericAPIView):
+    def __init__(self, **kwargs):
+        self.protection_service = get_burst_protection_service()
+        super().__init__(**kwargs)
 
     def get(self, request, short_url):
-
+        analytic_service = AnalyticsService()
         try:
+            ip = get_ip_address(request)
+            is_safe = self.protection_service.check_burst(ip, short_url)
+            if not is_safe:
+                return Response(
+                    {"error": "too many requests on this url"},
+                    status.HTTP_429_TOO_MANY_REQUESTS,
+                )
             url_instance = Url.objects.get(short_url=short_url)
             url_status = UrlStatus.objects.get(url=url_instance)
             if not url_status.state == url_status.State.ACTIVE:
@@ -95,7 +108,8 @@ class Redirect(GenericAPIView):
                     {"error": "URL is inactive or expired"},
                     status=status.HTTP_410_GONE,
                 )
-            AnalyticsService.record_visit(request, url_instance)
+
+            analytic_service.record_visit(request, url_instance)
             return redirect(url_instance.long_url)
         except Exception as e:
             return Response(str(e), status.HTTP_404_NOT_FOUND)

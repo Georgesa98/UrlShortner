@@ -94,11 +94,179 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "config.wsgi.application"
 
+# Redis settings for caching and rate limiting
+
+REDIS_HOST = env("REDIS_HOST", default="localhost")
+REDIS_PORT = env("REDIS_PORT", default=6379)
+REDIS_DB = env("REDIS_DB", default=0)
+REDIS_PASSWORD = env("REDIS_PASSWORD", default=None)
+
 CELERY_BROKER_URL = "redis://localhost:6379/0"
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
 CELERY_TIMEZONE = "Europe/London"
+
+# Logging configurations
+
+LOG_DIR = BASE_DIR / "logs"
+
+LOG_DIR.mkdir(exist_ok=True)
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "verbose": {
+            "format": "[{levelname}] {asctime} [{name}] {module}.{funcName}:{lineno} - {message}",
+            "style": "{",
+            "datefmt": "%Y-%m-%d %H:%M:%S",
+        },
+        "simple": {
+            "format": "[{levelname}] {asctime} - {message}",
+            "style": "{",
+            "datefmt": "%Y-%m-%d %H:%M:%S",
+        },
+        "detailed": {
+            "format": "[{levelname}] {asctime} [{name}] PID:{process:d} Thread:{thread:d} - {message}",
+            "style": "{",
+            "datefmt": "%Y-%m-%d %H:%M:%S",
+        },
+    },
+    "filters": {
+        "require_debug_true": {
+            "()": "django.utils.log.RequireDebugTrue",
+        },
+        "require_debug_false": {
+            "()": "django.utils.log.RequireDebugFalse",
+        },
+    },
+    "handlers": {
+        # Console handler - for development
+        "console": {
+            "level": "DEBUG",
+            "class": "logging.StreamHandler",
+            "formatter": "simple",
+            "filters": ["require_debug_true"],
+        },
+        # Console handler - for production
+        "console_production": {
+            "level": "INFO",
+            "class": "logging.StreamHandler",
+            "formatter": "verbose",
+            "filters": ["require_debug_false"],
+        },
+        # General application log
+        "app_file": {
+            "level": "INFO",
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": LOG_DIR / "app.log",
+            "maxBytes": 1024 * 1024 * 20,  # 20MB
+            "backupCount": 10,
+            "formatter": "verbose",
+            "encoding": "utf-8",
+        },
+        # Error log - captures ERROR and CRITICAL only
+        "error_file": {
+            "level": "ERROR",
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": LOG_DIR / "errors.log",
+            "maxBytes": 1024 * 1024 * 20,  # 20MB
+            "backupCount": 10,
+            "formatter": "detailed",
+            "encoding": "utf-8",
+        },
+        # Debug log - everything, only in development
+        "debug_file": {
+            "level": "DEBUG",
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": LOG_DIR / "debug.log",
+            "maxBytes": 1024 * 1024 * 50,  # 50MB
+            "backupCount": 5,
+            "formatter": "detailed",
+            "filters": ["require_debug_true"],
+            "encoding": "utf-8",
+        },
+        # Security-related log
+        "security_file": {
+            "level": "WARNING",
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": LOG_DIR / "security.log",
+            "maxBytes": 1024 * 1024 * 10,  # 10MB
+            "backupCount": 10,
+            "formatter": "detailed",
+            "encoding": "utf-8",
+        },
+        # Database queries log (useful for optimization)
+        "db_file": {
+            "level": "DEBUG",
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": LOG_DIR / "database.log",
+            "maxBytes": 1024 * 1024 * 30,  # 30MB
+            "backupCount": 5,
+            "formatter": "verbose",
+            "filters": ["require_debug_true"],
+            "encoding": "utf-8",
+        },
+        # Mail admins on critical errors (production only)
+        "mail_admins": {
+            "level": "ERROR",
+            "class": "django.utils.log.AdminEmailHandler",
+            "filters": ["require_debug_false"],
+            "formatter": "detailed",
+        },
+    },
+    "loggers": {
+        # Django's core loggers
+        "django": {
+            "handlers": ["console", "console_production", "app_file"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        # Django request/response cycle
+        "django.request": {
+            "handlers": ["error_file", "mail_admins", "console", "console_production"],
+            "level": "ERROR",
+            "propagate": False,
+        },
+        # Django security
+        "django.security": {
+            "handlers": ["security_file", "console", "console_production"],
+            "level": "WARNING",
+            "propagate": False,
+        },
+        # Database queries
+        "django.db.backends": {
+            "handlers": ["db_file"],
+            "level": "DEBUG",
+            "propagate": False,
+        },
+        # Django server
+        "django.server": {
+            "handlers": ["console", "console_production", "app_file"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        # All your app code (services, views, models, etc.)
+        # This catches everything in your project automatically
+        "": {  # Empty string = root logger for your app
+            "handlers": [
+                "console",
+                "console_production",
+                "app_file",
+                "error_file",
+                "debug_file",
+            ],
+            "level": "DEBUG" if DEBUG else "INFO",
+        },
+    },
+    # Root logger - fallback for anything not caught above
+    "root": {
+        "handlers": ["console", "console_production", "app_file", "error_file"],
+        "level": "INFO",
+    },
+}
+
 
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
