@@ -14,3 +14,4 @@ class Visit(models.Model):
     browser = models.CharField(max_length=64, blank=True, null=True)
     operating_system = models.CharField(max_length=64, blank=True, null=True)
     device = models.CharField(max_length=64, blank=True, null=True)
+    new_visitor = models.BooleanField(default=True)

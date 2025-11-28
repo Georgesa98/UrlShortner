@@ -16,8 +16,7 @@ def get_ip_address(request):
     return request.META.get("REMOTE_ADDR")
 
 
-def ip_address_match(ip: str) -> bool:
-    hashed_ip = hash_ip(ip)
+def ip_address_match(hashed_ip: str) -> bool:
     return Visit.objects.filter(hashed_ip=hashed_ip).exists()
 
 

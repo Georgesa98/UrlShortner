@@ -8,7 +8,7 @@ from api.url.serializers.UrlStatusSerializer import UrlStatusSerializer
 from api.url.utils import urlChecker
 
 
-class ShortenerSerializer(ModelSerializer):
+class UrlSerializer(ModelSerializer):
     expiry_date = DateTimeField(required=False, allow_null=True)
     url_status = UrlStatusSerializer(read_only=True)
 
@@ -44,13 +44,3 @@ class ShortenerSerializer(ModelSerializer):
             else:
                 raise ValidationError("please enter a valid url")
         return raw_data
-
-    def create(self, validated_data):
-        from api.url.service import UrlService
-
-        return UrlService.create_url(validated_data)
-
-    def update(self, instance, validated_data):
-        from api.url.service import UrlService
-
-        return UrlService.update_url(instance, validated_data)

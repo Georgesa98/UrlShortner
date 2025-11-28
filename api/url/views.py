@@ -3,14 +3,16 @@ from rest_framework.generics import GenericAPIView
 from api.analytics.utils import get_ip_address
 from api.url.models import Url, UrlStatus
 from django.shortcuts import redirect
-from datetime import datetime, timezone
-from api.url.serializers.ShortenerSerializer import (
-    ShortenerSerializer,
+from api.url.serializers.UrlSerializer import (
+    UrlSerializer,
 )
 from api.custom_auth.authentication import CookieJWTAuthentication
 from rest_framework.permissions import IsAuthenticated
 
-from api.url.service import BurstProtectionService, get_burst_protection_service
+from api.url.service import (
+    UrlService,
+    get_burst_protection_service,
+)
 from .permissions import IsUrlOwner
 from api.analytics.service import AnalyticsService
 
@@ -24,10 +26,21 @@ class Shortener(GenericAPIView):
     def post(self, request):
         request.data["user"] = request.user.id
         try:
-            serializer = ShortenerSerializer(data=request.data)
+            serializer = UrlSerializer(data=request.data)
             if serializer.is_valid(raise_exception=True):
-                serializer.save()
+                UrlService.create_url(serializer.data)
                 return Response(serializer.data, status.HTTP_201_CREATED)
+        except Exception as e:
+            return Response(str(e), status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class BatchShorten(GenericAPIView):
+    def post(self, request):
+        try:
+            serializer = UrlSerializer(request.data, many=True)
+            if serializer.is_valid(raise_exception=True):
+                data = UrlService.batch_shorten(serializer.data)
+                return Response(data, status.HTTP_201_CREATED)
         except Exception as e:
             return Response(str(e), status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -50,7 +63,7 @@ class SpecificUrl(GenericAPIView):
                     {"error": "URL not found"}, status=status.HTTP_404_NOT_FOUND
                 )
             self.check_object_permissions(request, url_instance)
-            serializer = ShortenerSerializer(url_instance)
+            serializer = UrlSerializer(url_instance)
             return Response(serializer.data, status.HTTP_200_OK)
         except Exception as e:
             return Response(str(e), status.HTTP_404_NOT_FOUND)
@@ -63,11 +76,9 @@ class SpecificUrl(GenericAPIView):
                     {"error": "URL not found"}, status=status.HTTP_404_NOT_FOUND
                 )
             self.check_object_permissions(request, url_instance)
-            serializer = ShortenerSerializer(
-                url_instance, data=request.data, partial=True
-            )
+            serializer = UrlSerializer(url_instance, data=request.data, partial=True)
             if serializer.is_valid(raise_exception=True):
-                serializer.save()
+                UrlService.update_url(url_instance, serializer.data)
                 return Response(serializer.data, status.HTTP_200_OK)
         except Exception as e:
             return Response(str(e), status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -82,6 +93,34 @@ class SpecificUrl(GenericAPIView):
             self.check_object_permissions(request, url_instance)
             url_instance.delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
+        except Exception as e:
+            return Response(str(e), status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class ListUrlsView(GenericAPIView):
+    def get(self, request):
+        limit = int(request.GET.get("limit", 10))
+        page = int(request.GET.get("page", 1))
+        url_status = request.GET.get("url_status")
+        user_id = request.user.id
+        try:
+            result = UrlService.fetch_urls_with_filter_and_pagination(
+                limit, page, url_status, user_id
+            )
+            serializer = UrlSerializer(result.object_list, many=True)
+            return Response(
+                {
+                    "urls": serializer.data,
+                    "pagination": {
+                        "total": result.paginator.count,
+                        "page": result.number,
+                        "limit": limit,
+                        "total_pages": result.paginator.num_pages,
+                        "has_next": result.has_next(),
+                        "has_previous": result.has_previous(),
+                    },
+                }
+            )
         except Exception as e:
             return Response(str(e), status.HTTP_500_INTERNAL_SERVER_ERROR)
 

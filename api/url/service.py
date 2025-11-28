@@ -3,6 +3,7 @@ from django.conf import settings
 from api.url.models import Url, UrlStatus
 from api.url.utils import generator
 from datetime import datetime, timezone
+from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 
 
 class BurstProtectionService:
@@ -106,8 +107,9 @@ def get_burst_protection_service():
 
 
 class UrlService:
-    @classmethod
-    def create_url(self, validated_data: dict):
+
+    @staticmethod
+    def create_url(validated_data: dict):
 
         short_url = generator()
         url_instance = Url.objects.create(
@@ -119,12 +121,29 @@ class UrlService:
                 if "expiry_date" in validated_data
                 else None
             ),
-        )
-        UrlStatus.objects.create(url=url_instance)
+        ).save()
+        UrlStatus.objects.create(url=url_instance).save()
         return url_instance
 
-    @classmethod
-    def update_url(self, instance, validated_data):
+    def batch_shorten(validated_data: list, user_id: str):
+        urls = []
+        for url in validated_data:
+            short_url = generator()
+            try:
+                url_instance = Url.objects.create(
+                    user=user_id,
+                    long_url=url["long_url"],
+                    short_url=short_url,
+                    expiry_date=(url["expiry_date"] if "expiry_date" in url else None),
+                ).save()
+                UrlStatus.objects.create(url=url_instance).save()
+                urls.append(url_instance)
+            except Exception as e:
+                urls.append(str(e))
+        return urls
+
+    @staticmethod
+    def update_url(instance, validated_data):
         instance.long_url = validated_data.get(
             "long_url", validated_data.get("long_url", instance.long_url)
         )
@@ -136,3 +155,21 @@ class UrlService:
         instance.updated_at = datetime.now(timezone.utc)
         instance.save()
         return instance
+
+    @staticmethod
+    def fetch_urls_with_filter_and_pagination(
+        limit: int, page: int, status: UrlStatus.State, user_id: str
+    ):
+        queryset = Url.objects.select_related("url_status").filter(user=user_id)
+        if status:
+            queryset = queryset.filter(url_status__state=status)
+        queryset = queryset.order_by("-created_at")
+        paginator = Paginator(queryset, limit)
+        try:
+            paginated_urls = paginator.page(page)
+        except PageNotAnInteger:
+            paginated_urls = paginator.page(1)
+        except EmptyPage:
+            paginated_urls = paginated_urls(paginator.num_pages)
+
+        return paginated_urls
