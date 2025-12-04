@@ -33,7 +33,7 @@ class AnalyticsService:
             browser=user_agent["browser"],
             device=user_agent["device"],
             referrer=request.META.get("HTTP_REFERRER", ""),
-            new_visiter=is_new_visitor,
+            new_visitor=is_new_visitor,
         )
 
     @staticmethod

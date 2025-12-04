@@ -1,5 +1,5 @@
-import urllib
 import secrets
+from validators import url as validate_url, ValidationError
 
 
 def generator():
@@ -8,8 +8,7 @@ def generator():
 
 
 def urlChecker(url):
-    try:
-        urllib.parse.urlparse(url)
-        return True
-    except:
+    is_valid = validate_url(url)
+    if isinstance(is_valid, ValidationError):
         return False
+    return True

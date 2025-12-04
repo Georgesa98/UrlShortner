@@ -4,6 +4,7 @@ from api.url.models import Url, UrlStatus
 from api.url.utils import generator
 from datetime import datetime, timezone
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
+from django.contrib.auth.models import User
 
 
 class BurstProtectionService:
@@ -112,8 +113,9 @@ class UrlService:
     def create_url(validated_data: dict):
 
         short_url = generator()
+        user_instance = User.objects.get(pk=validated_data["user"])
         url_instance = Url.objects.create(
-            user=validated_data["user"],
+            user=user_instance,
             long_url=validated_data["long_url"],
             short_url=short_url,
             expiry_date=(
@@ -121,8 +123,10 @@ class UrlService:
                 if "expiry_date" in validated_data
                 else None
             ),
-        ).save()
-        UrlStatus.objects.create(url=url_instance).save()
+        )
+        url_instance.save()
+        url_status_instance = UrlStatus.objects.create(url=url_instance)
+        url_status_instance.save()
         return url_instance
 
     def batch_shorten(validated_data: list, user_id: str):
@@ -144,14 +148,10 @@ class UrlService:
 
     @staticmethod
     def update_url(instance, validated_data):
-        instance.long_url = validated_data.get(
-            "long_url", validated_data.get("long_url", instance.long_url)
-        )
+        for field in ["long_url", "expiry_date"]:
+            if field in validated_data:
+                setattr(instance, field, validated_data[field])
 
-        instance.expiry_date = validated_data.get(
-            "expiry_date", validated_data.get("expiry_date", instance.expiry_date)
-        )
-        instance.is_active = validated_data.get("is_active", instance.is_active)
         instance.updated_at = datetime.now(timezone.utc)
         instance.save()
         return instance

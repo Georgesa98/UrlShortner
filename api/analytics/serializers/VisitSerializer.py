@@ -4,6 +4,6 @@ from api.analytics.models import Visit
 
 
 class VisitSerializer(ModelSerializer):
-    class META:
+    class Meta:
         model = Visit
         fields = "__all__"

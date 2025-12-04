@@ -1,23 +1,41 @@
 from django.shortcuts import render
 from rest_framework.views import APIView, Response, status
-from api.analytics.serializers import UrlSummarySerializer
+from api.analytics.serializers.UrlSummarySerializer import UrlSummarySerializer
 from api.analytics.service import AnalyticsService
+from api.url.models import Url
+from api.url.permissions import IsUrlOwner
+from rest_framework.permissions import IsAuthenticated
+from rest_framework_simplejwt.authentication import JWTAuthentication
+
+from api.url.serializers.UrlSerializer import ResponseUrlSerializer
 
 # Create your views here.
 
 
 class TopVisitedUrlsView(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
     def get(self, request):
         try:
             top_urls = AnalyticsService.get_top_visited_urls(request.user.id, 10)
-            return Response({"top_urls": top_urls, "count": len(top_urls)})
+            serializer = ResponseUrlSerializer(top_urls, many=True)
+            return Response({"top_urls": serializer.data, "count": len(top_urls)})
         except Exception as e:
             return Response(str(e), status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class GetUrlSummary(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated, IsUrlOwner]
+
     def get(self, request, url_id):
-        range_days = request.GET.get("days", 7)
-        result = AnalyticsService.get_url_summary(url_id, range_days)
-        serializer = UrlSummarySerializer(result)
-        return Response(serializer.data)
+        range_days = int(request.GET.get("days", 7))
+        try:
+            url_instance = Url.objects.get(pk=url_id)
+            self.check_object_permissions(request, url_instance)
+            result = AnalyticsService.get_url_summary(url_id, range_days)
+            serializer = UrlSummarySerializer(result)
+            return Response(serializer.data, status.HTTP_200_OK)
+        except Url.DoesNotExist:
+            return Response("Url does not exist", status.HTTP_404_NOT_FOUND)

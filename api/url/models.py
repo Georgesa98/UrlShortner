@@ -21,9 +21,13 @@ class Url(models.Model):
     @property
     def days_until_expiry(self):
         if self.expiry_date:
-            if self.is_expired:
-                return None
-            return (self.expiry_date - datetime.now(timezone.utc)).days()
+            if isinstance(self.expiry_date, str):
+                expiry = datetime.fromisoformat(self.expiry_date)
+            else:
+                expiry = self.expiry_date
+
+            days = (expiry - datetime.now(timezone.utc)).days
+            return days if days >= 0 else None
         return None
 
 

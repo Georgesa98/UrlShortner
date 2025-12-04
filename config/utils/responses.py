@@ -1,4 +1,4 @@
-from rest_framework.views import Response, status
+from rest_framework.views import Response
 
 
 class SuccessResponse(Response):
