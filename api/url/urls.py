@@ -1,6 +1,12 @@
 from django.urls import path
 
-from api.url.views import BatchShorten, ListUrlsView, Redirect, Shortener, SpecificUrl
+from api.url.views import (
+    BatchShorten,
+    ListUrlsView,
+    Redirect,
+    Shortener,
+    SpecificUrl,
+)
 
 urlpatterns = [
     path("shorten/", Shortener.as_view()),

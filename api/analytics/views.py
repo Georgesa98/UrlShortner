@@ -2,6 +2,8 @@ from django.shortcuts import render
 from rest_framework.views import APIView, Response, status
 from api.analytics.serializers.UrlSummarySerializer import UrlSummarySerializer
 from api.analytics.service import AnalyticsService
+from api.custom_auth.authentication import CookieJWTAuthentication
+from api.throttling import IPRateThrottle, UserRateThrottle
 from api.url.models import Url
 from api.url.permissions import IsUrlOwner
 from rest_framework.permissions import IsAuthenticated
@@ -13,7 +15,8 @@ from api.url.serializers.UrlSerializer import ResponseUrlSerializer
 
 
 class TopVisitedUrlsView(APIView):
-    authentication_classes = [JWTAuthentication]
+    throttle_classes = [IPRateThrottle, UserRateThrottle]
+    authentication_classes = [CookieJWTAuthentication]
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
@@ -26,7 +29,8 @@ class TopVisitedUrlsView(APIView):
 
 
 class GetUrlSummary(APIView):
-    authentication_classes = [JWTAuthentication]
+    throttle_classes = [IPRateThrottle, UserRateThrottle]
+    authentication_classes = [CookieJWTAuthentication]
     permission_classes = [IsAuthenticated, IsUrlOwner]
 
     def get(self, request, url_id):

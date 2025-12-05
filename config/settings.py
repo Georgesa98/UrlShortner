@@ -72,6 +72,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "api.middleware.RateLimitHeaderMiddleware",
 ]
 
 ROOT_URLCONF = "config.urls"
@@ -271,6 +272,11 @@ LOGGING = {
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
+CACHE = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.redis.RedisCache",
+    }
+}
 
 DATABASES = {
     "default": {
@@ -283,10 +289,16 @@ DATABASES = {
     }
 }
 
+
 if not DEBUG:
     DJOSER = {"TOKEN_MODEL": None, "SEND_ACTIVATION_EMAIL": False}
 
 REST_FRAMEWORK = {
+    "DEFAULT_THROTTLE_CLASSES": [
+        "api.throttling.IPRateThrottle",
+        "api.throttling.UserRateThrottle",
+    ],
+    "DEFAULT_THROTTLE_RATES": {"ip": "100/hour", "user": "1000/hour"},
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "api.custom_auth.authentication.CookieJWTAuthentication",
     ),

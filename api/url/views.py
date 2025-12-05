@@ -1,6 +1,7 @@
-from rest_framework.views import Response, status
+from rest_framework.views import Response, status, APIView
 from rest_framework.generics import GenericAPIView
 from api.analytics.utils import get_ip_address
+from api.throttling import IPRateThrottle, UserRateThrottle
 from api.url.models import Url, UrlStatus
 from django.shortcuts import redirect
 from api.url.serializers.UrlSerializer import (
@@ -22,6 +23,7 @@ from api.analytics.service import AnalyticsService
 
 
 class Shortener(GenericAPIView):
+    throttle_classes = [IPRateThrottle, UserRateThrottle]
     authentication_classes = [CookieJWTAuthentication]
     permission_classes = [IsAuthenticated]
 
@@ -38,6 +40,10 @@ class Shortener(GenericAPIView):
 
 
 class BatchShorten(GenericAPIView):
+    throttle_classes = [IPRateThrottle, UserRateThrottle]
+    authentication_classes = [CookieJWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
     def post(self, request):
         try:
             serializer = ShortenUrlSerializer(request.data, many=True)
@@ -49,6 +55,7 @@ class BatchShorten(GenericAPIView):
 
 
 class SpecificUrl(GenericAPIView):
+    throttle_classes = [IPRateThrottle, UserRateThrottle]
     authentication_classes = [CookieJWTAuthentication]
     permission_classes = [IsAuthenticated, IsUrlOwner]
 
@@ -112,6 +119,10 @@ class SpecificUrl(GenericAPIView):
 
 
 class ListUrlsView(GenericAPIView):
+    throttle_classes = [IPRateThrottle, UserRateThrottle]
+    authentication_classes = [CookieJWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
     def get(self, request):
         limit = int(request.GET.get("limit", 10))
         page = int(request.GET.get("page", 1))

@@ -1,0 +1,92 @@
+from redis import Redis
+from config import settings
+import time
+from rest_framework.throttling import SimpleRateThrottle
+
+
+class RedisRateLimiter:
+    def __init__(self):
+        self.redis_client = Redis(
+            host=settings.REDIS_HOST,
+            port=settings.REDIS_PORT,
+            db=settings.REDIS_DB,
+            password=settings.REDIS_PASSWORD,
+        )
+
+    def is_allowed(self, key: str, limit: int, window: int) -> tuple[bool, dict]:
+        now = time.time()
+        window_key = f"rate_limit:{key}"
+
+        pipe = self.redis_client.pipeline()
+        pipe.zremrangebyscore(window_key, "-inf", now - window)
+        pipe.zcard(window_key)
+        results = pipe.execute()
+
+        current_count = results[1]
+
+        is_allowed = current_count < limit
+
+        if is_allowed:
+            pipe = self.redis_client.pipeline()
+            pipe.zadd(window_key, {f"{now}": now})
+            pipe.expire(window_key, window)
+            pipe.execute()
+
+        remaining = max(0, limit - current_count - (1 if is_allowed else 0))
+        reset_time = int(now + window)
+        metadata = {
+            "remaining": remaining,
+            "reset": reset_time,
+            "limit": limit,
+        }
+
+        return is_allowed, metadata
+
+
+class BaseRedisThrottle(SimpleRateThrottle):
+    redis_limiter = RedisRateLimiter()
+
+    def allow_request(self, request, view):
+        if self.rate is None:
+            return True
+
+        key = self.get_cache_key(request, view)
+
+        if key is None:
+            return True
+
+        self.key = key
+        self.num_requests, self.duration = self.parse_rate(self.rate)
+        is_allowed, metadata = self.redis_limiter.is_allowed(
+            key, self.num_requests, self.duration
+        )
+
+        self.metadata = metadata
+
+        request.throttle_metadata = metadata
+
+        return is_allowed
+
+    def wait(self):
+        if hasattr(self, "metadata"):
+            return max(0, self.metadata["reset"] - time.time())
+        return None
+
+
+class IPRateThrottle(BaseRedisThrottle):
+    scope = "ip"
+
+    def get_cache_key(self, request, view):
+        if request.user.is_authenticated:
+            return None
+        ip = self.get_ident(request)
+        return f"throttle_ip:{ip}"
+
+
+class UserRateThrottle(BaseRedisThrottle):
+    scope = "user"
+
+    def get_cache_key(self, request, view):
+        if request.user.is_authenticated:
+            return f"throttle_user:{request.user.pk}"
+        return None
