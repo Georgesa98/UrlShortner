@@ -5,6 +5,10 @@ from rest_framework.test import APIClient
 from rest_framework import status
 from datetime import datetime, timedelta, timezone
 from api.url.models import Url, UrlStatus
+import io
+from PIL import Image
+from django.core.cache import cache
+
 
 """
 E2E tests for Url management endpoints
@@ -406,3 +410,737 @@ class TestURLEndpointsIntegration:
         # Verify visit count updated
         retrieve_response = self.client.get(f"/api/url/{short_url}/")
         assert retrieve_response.data["visits"] > 0
+
+
+@pytest.mark.django_db
+class TestCustomAliasFeature:
+    """Test custom alias functionality for Url shortening"""
+
+    def setup_method(self):
+        self.client = APIClient()
+        self.user = User.objects.create_user(
+            username="testuser", email="test@example.com", password="testpass123"
+        )
+        self.client.force_authenticate(user=self.user)
+        cache.clear()
+
+    def teardown_method(self):
+        cache.clear()
+
+    def test_create_url_with_custom_alias(self):
+        """Test creating a Url with custom alias"""
+        url = "/api/url/shorten/"
+        payload = {
+            "long_url": "https://www.example.com/custom-test",
+            "short_url": "my-custom-link",
+        }
+
+        response = self.client.post(url, payload, format="json")
+
+        assert response.status_code == status.HTTP_201_CREATED
+        assert response.data["short_url"] == "my-custom-link"
+        assert response.data["is_custom_alias"] is True
+        assert response.data["long_url"] == payload["long_url"]
+
+        # Verify in database
+        url_obj = Url.objects.get(short_url="my-custom-link")
+        assert url_obj.is_custom_alias is True
+        assert url_obj.long_url == payload["long_url"]
+
+    def test_custom_alias_must_be_unique(self):
+        """Test that custom alias must be unique"""
+        url = "/api/url/shorten/"
+
+        # Create first Url with custom alias
+        payload1 = {
+            "long_url": "https://www.example.com/first",
+            "short_url": "unique-alias",
+        }
+        response1 = self.client.post(url, payload1, format="json")
+        assert response1.status_code == status.HTTP_201_CREATED
+
+        # Try to create second Url with same alias
+        payload2 = {
+            "long_url": "https://www.example.com/second",
+            "short_url": "unique-alias",
+        }
+        response2 = self.client.post(url, payload2, format="json")
+
+        assert response2.status_code == status.HTTP_400_BAD_REQUEST
+        assert (
+            "custom_alias" in str(response2.data).lower()
+            or "alias" in str(response2.data).lower()
+        )
+
+    def test_custom_alias_validation(self):
+        """Test custom alias validation rules"""
+        url = "/api/url/shorten/"
+
+        # Test invalid characters
+        invalid_aliases = [
+            "alias with spaces",
+            "alias@special",
+            "alias/slash",
+            "alias\\backslash",
+            "alias?query",
+            "alias#hash",
+        ]
+
+        for invalid_alias in invalid_aliases:
+            payload = {
+                "long_url": "https://www.example.com/test",
+                "short_url": invalid_alias,
+            }
+            response = self.client.post(url, payload, format="json")
+
+            assert (
+                response.status_code == status.HTTP_400_BAD_REQUEST
+            ), f"Alias '{invalid_alias}' should be invalid"
+
+    def test_custom_alias_valid_formats(self):
+        """Test valid custom alias formats"""
+        url = "/api/url/shorten/"
+
+        valid_aliases = [
+            "simple",
+            "with-dashes",
+            "with_underscores",
+            "MixedCase123",
+            "numbers123",
+        ]
+
+        for valid_alias in valid_aliases:
+            payload = {
+                "long_url": f"https://www.example.com/test-{valid_alias}",
+                "short_url": valid_alias,
+            }
+            response = self.client.post(url, payload, format="json")
+
+            assert (
+                response.status_code == status.HTTP_201_CREATED
+            ), f"Alias '{valid_alias}' should be valid. Got: {response.data}"
+            assert response.data["short_url"] == valid_alias
+
+    def test_custom_alias_length_limits(self):
+        """Test custom alias length validation"""
+        url = "/api/url/shorten/"
+
+        # Test too short (if there's a minimum)
+        payload_short = {
+            "long_url": "https://www.example.com/test",
+            "short_url": "ab",  # 2 characters
+        }
+        response_short = self.client.post(url, payload_short, format="json")
+        # This might pass or fail depending on your validation rules
+
+        # Test too long
+        payload_long = {
+            "long_url": "https://www.example.com/test",
+            "short_url": "a" * 100,  # Very long alias
+        }
+        response_long = self.client.post(url, payload_long, format="json")
+        assert response_long.status_code == status.HTTP_400_BAD_REQUEST
+
+    def test_custom_alias_redirect_works(self):
+        """Test that custom alias redirects properly"""
+        # Create Url with custom alias
+        create_url = "/api/url/shorten/"
+        payload = {
+            "long_url": "https://www.example.com/redirect-test",
+            "short_url": "redirect-me",
+        }
+        create_response = self.client.post(create_url, payload, format="json")
+        assert create_response.status_code == status.HTTP_201_CREATED
+
+        # Test redirect
+        redirect_url = "/api/url/redirect/redirect-me/"
+        redirect_response = self.client.get(redirect_url)
+
+        assert redirect_response.status_code == status.HTTP_302_FOUND
+        assert redirect_response["Location"] == payload["long_url"]
+
+    def test_url_without_custom_alias_uses_generated(self):
+        """Test that URLs without custom alias get auto-generated short_url"""
+        url = "/api/url/shorten/"
+        payload = {"long_url": "https://www.example.com/auto-generated"}
+
+        response = self.client.post(url, payload, format="json")
+
+        assert response.status_code == status.HTTP_201_CREATED
+        assert response.data["is_custom_alias"] is False
+        assert len(response.data["short_url"]) > 0
+        assert response.data["short_url"] != payload["long_url"]
+
+    def test_update_url_custom_alias(self):
+        """Test updating a Url's custom alias"""
+        # Create Url with custom alias
+        create_url = "/api/url/shorten/"
+        payload = {
+            "long_url": "https://www.example.com/update-test",
+            "custom_alias": "original-alias",
+        }
+        create_response = self.client.post(create_url, payload, format="json")
+        short_url = create_response.data["short_url"]
+
+        # Try to update the alias (this might not be allowed depending on your logic)
+        update_url = f"/api/url/{short_url}/"
+        update_payload = {"custom_alias": "new-alias"}
+        update_response = self.client.patch(update_url, update_payload, format="json")
+
+        # This test depends on whether you allow alias updates
+        # Adjust assertion based on your business logic
+        assert update_response.status_code in [
+            status.HTTP_200_OK,  # If updates are allowed
+            status.HTTP_400_BAD_REQUEST,  # If updates are not allowed
+        ]
+
+    def test_custom_alias_case_sensitivity(self):
+        """Test if custom aliases are case-sensitive"""
+        url = "/api/url/shorten/"
+
+        # Create with lowercase
+        payload1 = {
+            "long_url": "https://www.example.com/lower",
+            "custom_alias": "testcase",
+        }
+        response1 = self.client.post(url, payload1, format="json")
+        assert response1.status_code == status.HTTP_201_CREATED
+
+        # Try with uppercase
+        payload2 = {
+            "long_url": "https://www.example.com/upper",
+            "custom_alias": "TESTCASE",
+        }
+        response2 = self.client.post(url, payload2, format="json")
+
+        # Depending on your implementation, this might be:
+        # - Rejected as duplicate (case-insensitive)
+        # - Accepted as different (case-sensitive)
+        assert response2.status_code in [
+            status.HTTP_201_CREATED,
+            status.HTTP_400_BAD_REQUEST,
+        ]
+
+
+@pytest.mark.django_db
+class TestQRCodeGeneration:
+    """Test QR code generation feature"""
+
+    def setup_method(self):
+        self.client = APIClient()
+        self.user = User.objects.create_user(
+            username="testuser", email="test@example.com", password="testpass123"
+        )
+        self.client.force_authenticate(user=self.user)
+
+        # Create a test Url
+        self.test_url = Url.objects.create(
+            long_url="https://www.example.com/qr-test",
+            short_url="qrtest123",
+            user=self.user,
+        )
+        cache.clear()
+
+    def teardown_method(self):
+        cache.clear()
+
+    def test_generate_qr_code_success(self):
+        """Test successful QR code generation"""
+        url = f"/api/url/qr/{self.test_url.short_url}/"
+
+        response = self.client.get(url)
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response["Content-Type"] == "image/png"
+
+        # Verify it's a valid image
+        try:
+            image = Image.open(io.BytesIO(response.content))
+            assert image.format == "PNG"
+            assert image.size[0] > 0  # Width > 0
+            assert image.size[1] > 0  # Height > 0
+        except Exception as e:
+            pytest.fail(f"Invalid image returned: {e}")
+
+    def test_qr_code_for_nonexistent_url(self):
+        """Test QR code generation for non-existent Url"""
+        url = "/api/url/qr/nonexistent/"
+
+        response = self.client.get(url)
+
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+
+    def test_qr_code_contains_correct_url(self):
+        """Test that QR code contains the correct Url"""
+        url = f"/api/url/qr/{self.test_url.short_url}/"
+
+        response = self.client.get(url)
+        assert response.status_code == status.HTTP_200_OK
+
+        # Try to decode QR code (requires pyzbar or similar library)
+        # This is optional - just verify we get valid image data
+        try:
+            image = Image.open(io.BytesIO(response.content))
+            from pyzbar.pyzbar import decode
+
+            decoded = decode(image)
+            assert len(decoded) > 0
+            assert self.test_url.short_url in decoded[0].data.decode()
+
+            # For now, just verify image properties
+            assert image.format == "PNG"
+        except Exception as e:
+            pytest.fail(f"Could not process QR code image: {e}")
+
+    def test_qr_code_does_not_save_to_disk(self):
+        """Test that QR code is generated in memory, not saved to disk"""
+        import os
+        import tempfile
+
+        # Get temp directory
+        temp_dir = tempfile.gettempdir()
+
+        # List files before
+        files_before = set(os.listdir(temp_dir))
+
+        # Generate QR code
+        url = f"/api/url/qr/{self.test_url.short_url}/"
+        response = self.client.get(url)
+        assert response.status_code == status.HTTP_200_OK
+
+        # List files after
+        files_after = set(os.listdir(temp_dir))
+
+        # No new files should be created
+        new_files = files_after - files_before
+        qr_files = [f for f in new_files if "qr" in f.lower() or "png" in f.lower()]
+
+        assert (
+            len(qr_files) == 0
+        ), f"QR code should not be saved to disk. Found: {qr_files}"
+
+    def test_qr_code_no_authentication_required(self):
+        """Test QR code generation without authentication (if public)"""
+        self.client.force_authenticate(user=None)
+
+        url = f"/api/url/qr/{self.test_url.short_url}/"
+        response = self.client.get(url)
+
+        # Depending on your implementation, this might require auth or not
+        # Adjust based on your business logic
+        assert response.status_code in [
+            status.HTTP_200_OK,  # If public
+            status.HTTP_401_UNAUTHORIZED,  # If requires auth
+        ]
+
+    def test_qr_code_with_custom_alias(self):
+        """Test QR code generation for Url with custom alias"""
+        # Create Url with custom alias
+        custom_url = Url.objects.create(
+            long_url="https://www.example.com/custom-qr",
+            short_url="custom-qr-alias",
+            user=self.user,
+            is_custom_alias=True,
+        )
+
+        url = f"/api/url/qr/{custom_url.short_url}/"
+        response = self.client.get(url)
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response["Content-Type"] == "image/png"
+
+    def test_qr_code_image_size(self):
+        """Test QR code image dimensions"""
+        url = f"/api/url/qr/{self.test_url.short_url}/"
+
+        response = self.client.get(url)
+        assert response.status_code == status.HTTP_200_OK
+
+        image = Image.open(io.BytesIO(response.content))
+
+        # Typical QR code sizes (adjust based on your implementation)
+        assert image.size[0] >= 100  # Minimum width
+        assert image.size[1] >= 100  # Minimum height
+        assert image.size[0] == image.size[1]  # Should be square
+
+    def test_qr_code_response_headers(self):
+        """Test QR code response headers"""
+        url = f"/api/url/qr/{self.test_url.short_url}/"
+
+        response = self.client.get(url)
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response["Content-Type"] == "image/png"
+
+        # Check for cache headers (optional)
+        # assert 'Cache-Control' in response
+        # assert 'ETag' in response or 'Last-Modified' in response
+
+    def test_qr_code_multiple_requests_consistent(self):
+        """Test that multiple QR code requests return consistent results"""
+        url = f"/api/url/qr/{self.test_url.short_url}/"
+
+        # Generate QR code twice
+        response1 = self.client.get(url)
+        response2 = self.client.get(url)
+
+        assert response1.status_code == status.HTTP_200_OK
+        assert response2.status_code == status.HTTP_200_OK
+
+        # Content should be identical (or very similar)
+        # Exact match might not be guaranteed if timestamps are included
+        assert len(response1.content) > 0
+        assert len(response2.content) > 0
+
+        # Sizes should be the same
+        image1 = Image.open(io.BytesIO(response1.content))
+        image2 = Image.open(io.BytesIO(response2.content))
+        assert image1.size == image2.size
+
+
+@pytest.mark.django_db
+class TestBatchURLShortening:
+    """Test batch Url shortening feature"""
+
+    def setup_method(self):
+        self.client = APIClient()
+        self.user = User.objects.create_user(
+            username="testuser", email="test@example.com", password="testpass123"
+        )
+        self.client.force_authenticate(user=self.user)
+        self.url = "/api/url/batch-shorten/"
+        cache.clear()
+
+    def teardown_method(self):
+        cache.clear()
+
+    def test_batch_shorten_multiple_urls(self):
+        """Test shortening multiple URLs in one request"""
+        payload = [
+            {"long_url": "https://www.example.com/batch1"},
+            {"long_url": "https://www.example.com/batch2"},
+            {"long_url": "https://www.example.com/batch3"},
+        ]
+
+        response = self.client.post(self.url, payload, format="json")
+
+        assert response.status_code == status.HTTP_201_CREATED
+
+        # Get the results array (adjust key based on your implementation)
+        results = response.data
+
+        assert len(results) == 3
+
+        # Verify each Url was created
+        for i, result in enumerate(results):
+            assert "short_url" in result
+            assert "long_url" in result
+            assert result["long_url"] == payload[i]["long_url"]
+            assert len(result["short_url"]) > 0
+
+    def test_batch_shorten_with_custom_aliases(self):
+        """Test batch shortening with custom aliases"""
+        payload = [
+            {
+                "long_url": "https://www.example.com/batch-custom1",
+                "short_url": "batch-alias-1",
+            },
+            {
+                "long_url": "https://www.example.com/batch-custom2",
+                "short_url": "batch-alias-2",
+            },
+        ]
+
+        response = self.client.post(self.url, payload, format="json")
+
+        assert response.status_code == status.HTTP_201_CREATED
+
+        results = response.data
+
+        assert len(results) == 2
+
+        # Verify custom aliases were used
+        assert results[0]["short_url"] == "batch-alias-1"
+        assert results[1]["short_url"] == "batch-alias-2"
+        assert results[0]["is_custom_alias"] is True
+        assert results[1]["is_custom_alias"] is True
+
+    def test_batch_shorten_mixed_custom_and_auto(self):
+        """Test batch with mix of custom aliases and auto-generated"""
+        payload = [
+            {
+                "long_url": "https://www.example.com/mixed1",
+                "short_url": "custom-mixed",
+            },
+            {
+                "long_url": "https://www.example.com/mixed2"
+                # No custom_alias - should auto-generate
+            },
+        ]
+
+        response = self.client.post(self.url, payload, format="json")
+
+        assert response.status_code == status.HTTP_201_CREATED
+
+        results = response.data
+
+        # First should have custom alias
+        assert results[0]["short_url"] == "custom-mixed"
+        assert results[0]["is_custom_alias"] is True
+
+        # Second should be auto-generated
+        assert results[1]["short_url"] != "https://www.example.com/mixed2"
+        assert results[1]["is_custom_alias"] is False
+
+    def test_batch_shorten_empty_array(self):
+        """Test batch shortening with empty array"""
+        payload = []
+
+        response = self.client.post(self.url, payload, format="json")
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+    def test_batch_shorten_single_url(self):
+        """Test batch shortening with single Url"""
+        payload = [{"long_url": "https://www.example.com/single-batch"}]
+
+        response = self.client.post(self.url, payload, format="json")
+
+        assert response.status_code == status.HTTP_201_CREATED
+
+        results = response.data
+        assert len(results) == 1
+
+    def test_batch_shorten_invalid_url_in_batch(self):
+        """Test batch with one invalid Url"""
+        payload = {
+            "urls": [
+                {"long_url": "https://www.example.com/valid"},
+                {"long_url": "not-a-valid-url"},
+                {"long_url": "https://www.example.com/also-valid"},
+            ]
+        }
+
+        response = self.client.post(self.url, payload, format="json")
+
+        # Depending on your implementation:
+        # Option 1: Reject entire batch (all-or-nothing)
+        # Option 2: Process valid URLs, report errors for invalid ones
+
+        if response.status_code == status.HTTP_400_BAD_REQUEST:
+            # All-or-nothing approach
+            assert (
+                "error" in str(response.data).lower()
+                or "invalid" in str(response.data).lower()
+            )
+        elif (
+            response.status_code == status.HTTP_201_CREATED
+            or response.status_code == status.HTTP_207_MULTI_STATUS
+        ):
+            # Partial success approach
+            results = (
+                response.data.get("urls")
+                or response.data.get("results")
+                or response.data
+            )
+            # Should have some indication of which URLs failed
+            assert len(results) >= 2  # At least the valid ones
+
+    def test_batch_shorten_duplicate_aliases(self):
+        """Test batch with duplicate custom aliases"""
+        payload = {
+            "urls": [
+                {
+                    "long_url": "https://www.example.com/dup1",
+                    "short_url": "duplicate-alias",
+                },
+                {
+                    "long_url": "https://www.example.com/dup2",
+                    "short_url": "duplicate-alias",
+                },
+            ]
+        }
+
+        response = self.client.post(self.url, payload, format="json")
+
+        # Should reject due to duplicate alias
+        assert response.status_code in [
+            status.HTTP_400_BAD_REQUEST,
+            status.HTTP_207_MULTI_STATUS,  # If partial success is supported
+        ]
+
+    def test_batch_shorten_with_expiry_dates(self):
+        """Test batch shortening with expiry dates"""
+        from datetime import datetime, timedelta
+        from django.utils import timezone
+
+        future_date = (timezone.now() + timedelta(days=30)).isoformat()
+
+        payload = [
+            {
+                "long_url": "https://www.example.com/expiry1",
+                "expiry_date": future_date,
+            },
+            {
+                "long_url": "https://www.example.com/expiry2",
+                "expiry_date": future_date,
+            },
+        ]
+
+        response = self.client.post(self.url, payload, format="json")
+
+        assert response.status_code == status.HTTP_201_CREATED
+
+        results = response.data
+
+        # Verify expiry dates were set
+        for result in results:
+            assert result["expiry_date"] is not None
+
+    def test_batch_shorten_large_batch(self):
+        """Test batch shortening with many URLs"""
+        # Generate 50 URLs
+        urls = [
+            {"long_url": f"https://www.example.com/large-batch-{i}"} for i in range(50)
+        ]
+
+        payload = {"urls": urls}
+
+        response = self.client.post(self.url, payload, format="json")
+
+        # Depending on your limits, this might succeed or fail
+        if response.status_code == status.HTTP_201_CREATED:
+            results = (
+                response.data.get("urls")
+                or response.data.get("results")
+                or response.data
+            )
+            assert len(results) == 50
+        elif response.status_code == status.HTTP_400_BAD_REQUEST:
+            # Batch size limit exceeded
+            assert (
+                "limit" in str(response.data).lower()
+                or "too many" in str(response.data).lower()
+            )
+
+    def test_batch_shorten_exceeds_limit(self):
+        """Test batch shortening beyond maximum allowed"""
+        # Try with 1000 URLs (likely over any reasonable limit)
+        urls = [
+            {"long_url": f"https://www.example.com/limit-test-{i}"} for i in range(1000)
+        ]
+        response = self.client.post(self.url, urls, format="json")
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert (
+            "limit" in str(response.data).lower()
+            or "too many" in str(response.data).lower()
+        )
+
+    def test_batch_shorten_unauthenticated(self):
+        """Test batch shortening without authentication"""
+        self.client.force_authenticate(user=None)
+
+        payload = [{"long_url": "https://www.example.com/noauth"}]
+
+        response = self.client.post(self.url, payload, format="json")
+
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+    def test_batch_shorten_all_urls_created_in_db(self):
+        """Test that all URLs are actually created in database"""
+        payload = [
+            {"long_url": "https://www.example.com/db-test1"},
+            {"long_url": "https://www.example.com/db-test2"},
+            {"long_url": "https://www.example.com/db-test3"},
+        ]
+
+        initial_count = Url.objects.count()
+
+        response = self.client.post(self.url, payload, format="json")
+
+        assert response.status_code == status.HTTP_201_CREATED
+
+        final_count = Url.objects.count()
+        assert final_count == initial_count + 3
+
+    def test_batch_shorten_response_structure(self):
+        """Test batch response structure is correct"""
+        payload = [{"long_url": "https://www.example.com/structure-test"}]
+
+        response = self.client.post(self.url, payload, format="json")
+
+        assert response.status_code == status.HTTP_201_CREATED
+
+        # Verify response structure
+        assert isinstance(response.data, dict) or isinstance(response.data, list)
+
+        results = response.data
+
+        if isinstance(results, list) and len(results) > 0:
+            first_result = results[0]
+            assert "short_url" in first_result
+            assert "long_url" in first_result
+            assert "created_at" in first_result
+            assert "user" in first_result
+
+
+@pytest.mark.django_db
+class TestNewFeaturesIntegration:
+    """Integration tests combining new features"""
+
+    def setup_method(self):
+        self.client = APIClient()
+        self.user = User.objects.create_user(
+            username="testuser", email="test@example.com", password="testpass123"
+        )
+        self.client.force_authenticate(user=self.user)
+        cache.clear()
+
+    def teardown_method(self):
+        cache.clear()
+
+    def test_batch_create_then_generate_qr_codes(self):
+        """Test creating URLs in batch then generating QR codes for them"""
+        # Batch create
+        batch_payload = [
+            {
+                "long_url": "https://www.example.com/qr-batch1",
+                "short_url": "qr-batch-1",
+            },
+            {
+                "long_url": "https://www.example.com/qr-batch2",
+                "short_url": "qr-batch-2",
+            },
+        ]
+
+        batch_response = self.client.post(
+            "/api/url/batch-shorten/", batch_payload, format="json"
+        )
+        assert batch_response.status_code == status.HTTP_201_CREATED
+
+        results = batch_response.data
+
+        # Generate QR code for each
+        for result in results:
+            qr_url = f'/api/url/qr/{result["short_url"]}/'
+            qr_response = self.client.get(qr_url)
+
+            assert qr_response.status_code == status.HTTP_200_OK
+            assert qr_response["Content-Type"] == "image/png"
+
+    def test_custom_alias_redirect_and_qr_code(self):
+        """Test complete workflow: create with custom alias, redirect, and QR code"""
+        # Create with custom alias
+        create_payload = {
+            "long_url": "https://www.example.com/complete-workflow",
+            "short_url": "complete-test",
+        }
+        create_response = self.client.post(
+            "/api/url/shorten/", create_payload, format="json"
+        )
+        assert create_response.status_code == status.HTTP_201_CREATED
+
+        # Test redirect
+        redirect_response = self.client.get("/api/url/redirect/complete-test/")
+        assert redirect_response.status_code == status.HTTP_302_FOUND

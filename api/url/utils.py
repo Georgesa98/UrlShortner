@@ -1,5 +1,7 @@
+from io import BytesIO
 import secrets
 from validators import url as validate_url, ValidationError
+import qrcode
 
 
 def generator():
@@ -7,7 +9,23 @@ def generator():
     return token.hex()
 
 
-def urlChecker(url):
+def generate_qrcode(url: str):
+    qr = qrcode.QRCode(
+        version=2,
+        error_correction=qrcode.constants.ERROR_CORRECT_L,
+        box_size=10,
+        border=0,
+    )
+    qr.add_data(url)
+    qr.make(fit=True)
+    img = qr.make_image()
+    buffer = BytesIO()
+    img.save(buffer, format="PNG")
+    buffer.seek(0)
+    return buffer.getbuffer()
+
+
+def urlChecker(url: str):
     is_valid = validate_url(url)
     if isinstance(is_valid, ValidationError):
         return False

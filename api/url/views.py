@@ -1,4 +1,5 @@
-from rest_framework.views import Response, status, APIView
+from django.http import HttpResponse
+from rest_framework.views import Response, status
 from rest_framework.generics import GenericAPIView
 from api.analytics.utils import get_ip_address
 from api.throttling import IPRateThrottle, UserRateThrottle
@@ -16,6 +17,7 @@ from api.url.service import (
     UrlService,
     get_burst_protection_service,
 )
+from api.url.utils import generate_qrcode
 from .permissions import IsUrlOwner
 from api.analytics.service import AnalyticsService
 
@@ -46,10 +48,21 @@ class BatchShorten(GenericAPIView):
 
     def post(self, request):
         try:
-            serializer = ShortenUrlSerializer(request.data, many=True)
+            if not request.data or not isinstance(request.data, list):
+                raise ValidationError(detail="Input data must be a non-empty list.")
+            if len(request.data) > 500:
+                raise ValidationError(
+                    detail="limit exceeded only 500 url allowed at a time"
+                )
+            user_id = request.user.id
+            serializer = ShortenUrlSerializer(data=request.data, many=True)
             if serializer.is_valid(raise_exception=True):
-                data = UrlService.batch_shorten(serializer.data)
-                return Response(data, status.HTTP_201_CREATED)
+                data = UrlService.batch_shorten(serializer.data, user_id)
+                response_serializer = ResponseUrlSerializer(data, many=True)
+                return Response(response_serializer.data, status.HTTP_201_CREATED)
+        except ValidationError as e:
+            return Response(str(e), status.HTTP_400_BAD_REQUEST)
+
         except Exception as e:
             return Response(str(e), status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -176,4 +189,22 @@ class Redirect(GenericAPIView):
             analytic_service.record_visit(request, url_instance)
             return redirect(url_instance.long_url)
         except Exception as e:
+            return Response(str(e), status.HTTP_404_NOT_FOUND)
+
+
+class GenerateQrcode(GenericAPIView):
+    throttle_classes = [IPRateThrottle, UserRateThrottle]
+    authentication_classes = [CookieJWTAuthentication]
+    permission_classes = [IsAuthenticated, IsUrlOwner]
+
+    def get(self, request, short_url):
+        try:
+            url_instance = Url.objects.get(short_url=short_url)
+            self.check_object_permissions(request, url_instance)
+            qr_image = generate_qrcode(url_instance.short_url)
+            response = HttpResponse(qr_image, "image/png", 200)
+            return response
+        except PermissionDenied as e:
+            return Response(str(e), status.HTTP_403_FORBIDDEN)
+        except Url.DoesNotExist as e:
             return Response(str(e), status.HTTP_404_NOT_FOUND)

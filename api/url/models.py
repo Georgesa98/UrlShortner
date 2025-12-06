@@ -14,6 +14,7 @@ class Url(models.Model):
     unique_visits = models.IntegerField(default=0)
     last_accessed = models.DateTimeField(null=True, blank=True)
     expiry_date = models.DateTimeField(null=True, blank=True)
+    is_custom_alias = models.BooleanField(default=False)
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True, blank=True
     )
