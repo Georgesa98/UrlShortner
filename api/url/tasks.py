@@ -1,3 +1,4 @@
+from api.url.services.ShortCodeService import ShortCodeService
 from config.celery import app
 from datetime import datetime, timezone
 from api.url.models import Url
@@ -29,3 +30,8 @@ def deactivate_expired_urls_task():
             "message": str(e),
             "timestamp": datetime.now(timezone.utc).isoformat(),
         }
+
+
+@app.task()
+def maintain_shortcode_pool():
+    ShortCodeService().refill_pool()

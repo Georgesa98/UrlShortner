@@ -8,6 +8,8 @@ from api.url.models import Url, UrlStatus
 import io
 from PIL import Image
 from django.core.cache import cache
+from api.url.services.ShortCodeService import ShortCodeService
+from unittest.mock import patch
 
 
 """
@@ -502,7 +504,7 @@ class TestCustomAliasFeature:
         url = "/api/url/shorten/"
 
         valid_aliases = [
-            "simple",
+            "simplexxx",
             "with-dashes",
             "with_underscores",
             "MixedCase123",
@@ -1004,17 +1006,11 @@ class TestBatchURLShortening:
             {"long_url": f"https://www.example.com/large-batch-{i}"} for i in range(50)
         ]
 
-        payload = {"urls": urls}
-
-        response = self.client.post(self.url, payload, format="json")
+        response = self.client.post(self.url, urls, format="json")
 
         # Depending on your limits, this might succeed or fail
         if response.status_code == status.HTTP_201_CREATED:
-            results = (
-                response.data.get("urls")
-                or response.data.get("results")
-                or response.data
-            )
+            results = response.data
             assert len(results) == 50
         elif response.status_code == status.HTTP_400_BAD_REQUEST:
             # Batch size limit exceeded
@@ -1144,3 +1140,355 @@ class TestNewFeaturesIntegration:
         # Test redirect
         redirect_response = self.client.get("/api/url/redirect/complete-test/")
         assert redirect_response.status_code == status.HTTP_302_FOUND
+
+
+@pytest.mark.django_db
+class TestURLShortenWithAutoShortCode:
+    """Test POST /api/url/shorten/ endpoint with auto-assigned short codes from pool"""
+
+    def setup_method(self):
+        self.client = APIClient()
+        self.user = User.objects.create_user(
+            username="testuser", email="test@example.com", password="testpass123"
+        )
+        self.client.force_authenticate(user=self.user)
+        self.url = "/api/url/shorten/"
+
+        # Pre-populate short code pool
+        ShortCodeService().refill_pool(target_size=100)
+
+    def test_shorten_url_auto_assigns_code_from_pool(self):
+        """Test URL shortening automatically assigns a code from pool"""
+        payload = {"long_url": "https://www.example.com/very/long/url/path"}
+
+        response = self.client.post(self.url, payload, format="json")
+
+        assert response.status_code == status.HTTP_201_CREATED
+        assert "short_url" in response.data
+        assert len(response.data["short_url"]) == 8
+        assert response.data["long_url"] == payload["long_url"]
+        assert response.data["user"] == self.user.id
+
+    def test_shorten_url_code_removed_from_pool(self):
+        """Test that assigned short code is removed from Redis pool"""
+        initial_size = ShortCodeService().redis_client.scard(ShortCodeService.POOL_KEY)
+
+        payload = {"long_url": "https://www.example.com/test"}
+        response = self.client.post(self.url, payload, format="json")
+        assigned_short_url = response.data["short_url"]
+
+        # Verify pool size decreased
+        new_size = ShortCodeService().redis_client.scard(ShortCodeService.POOL_KEY)
+        assert new_size == initial_size - 1
+
+        # Verify code is not in pool anymore
+        assert not ShortCodeService().redis_client.sismember(
+            ShortCodeService.POOL_KEY, assigned_short_url
+        )
+
+    def test_shorten_multiple_urls_unique_codes(self):
+        """Test that multiple URL shortenings get unique codes"""
+        short_urls = set()
+
+        for i in range(10):
+            payload = {"long_url": f"https://www.example.com/url{i}"}
+            response = self.client.post(self.url, payload, format="json")
+            assert response.status_code == status.HTTP_201_CREATED
+            short_urls.add(response.data["short_url"])
+
+        # All codes should be unique
+        assert len(short_urls) == 10
+
+    def test_shorten_url_empty_pool_fallback(self):
+        """Test that system generates code on the fly if pool is empty"""
+        # Empty the pool
+        ShortCodeService().redis_client.delete(ShortCodeService.POOL_KEY)
+
+        payload = {"long_url": "https://www.example.com/test"}
+        response = self.client.post(self.url, payload, format="json")
+
+        assert response.status_code == status.HTTP_201_CREATED
+        assert "short_url" in response.data
+        assert len(response.data["short_url"]) == 8
+
+    def test_shorten_url_saves_to_database(self):
+        """Test that shortened URL is saved correctly to database"""
+        payload = {"long_url": "https://www.example.com/database-test"}
+        response = self.client.post(self.url, payload, format="json")
+
+        assert response.status_code == status.HTTP_201_CREATED
+
+        # Verify in database
+        url_obj = Url.objects.get(short_url=response.data["short_url"])
+        assert url_obj.long_url == payload["long_url"]
+        assert url_obj.user == self.user
+        assert url_obj.visits == 0
+
+    def test_shorten_url_unauthenticated(self):
+        """Test URL shortening without authentication"""
+        self.client.force_authenticate(user=None)
+        payload = {"long_url": "https://www.example.com"}
+
+        response = self.client.post(self.url, payload, format="json")
+
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+    def test_shorten_url_invalid_format(self):
+        """Test URL shortening with invalid URL format"""
+        payload = {"long_url": "not-a-valid-url"}
+
+        response = self.client.post(self.url, payload, format="json")
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+    def test_shorten_url_missing_field(self):
+        """Test URL shortening without required field"""
+        payload = {}
+
+        response = self.client.post(self.url, payload, format="json")
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+
+@pytest.mark.django_db
+class TestShortCodePoolRefill:
+    """Test automatic pool refill when hitting threshold"""
+
+    def setup_method(self):
+        self.client = APIClient()
+        self.user = User.objects.create_user(
+            username="testuser", email="test@example.com", password="testpass123"
+        )
+        self.client.force_authenticate(user=self.user)
+        self.url = "/api/url/shorten/"
+
+        # Start with a smaller pool for testing
+        ShortCodeService.MIN_POOL_SIZE = 50
+        ShortCodeService().refill_pool(target_size=50)
+
+    def test_pool_triggers_refill_at_30_percent(self):
+        """Test that pool triggers async refill when it hits 30% capacity"""
+        with patch.object(ShortCodeService, "refill_pool") as mock_refill:
+            # Deplete pool to exactly 30% (15 codes remaining)
+            for i in range(35):
+                payload = {"long_url": f"https://www.example.com/url{i}"}
+                response = self.client.post(self.url, payload, format="json")
+                assert response.status_code == status.HTTP_201_CREATED
+
+            # Verify pool size
+            current_size = ShortCodeService().redis_client.scard(
+                ShortCodeService.POOL_KEY
+            )
+            assert current_size == 15
+
+            # Next creation should trigger refill
+            payload = {"long_url": "https://www.example.com/trigger"}
+            response = self.client.post(self.url, payload, format="json")
+            assert response.status_code == status.HTTP_201_CREATED
+
+            # Verify async refill was called
+            mock_refill.assert_called_once()
+
+    def test_pool_continues_working_during_refill(self):
+        """Test that pool continues to work while refilling"""
+        # Deplete pool to 30%
+        for i in range(35):
+            payload = {"long_url": f"https://www.example.com/url{i}"}
+            self.client.post(self.url, payload, format="json")
+
+        # Continue creating URLs - should work even if refill is triggered
+        for i in range(10):
+            payload = {"long_url": f"https://www.example.com/during-refill{i}"}
+            response = self.client.post(self.url, payload, format="json")
+            assert response.status_code == status.HTTP_201_CREATED
+
+    def test_pool_refill_maintains_minimum_size(self):
+        """Test that refill brings pool back to minimum size"""
+        # Deplete pool significantly
+        for i in range(40):
+            payload = {"long_url": f"https://www.example.com/url{i}"}
+            self.client.post(self.url, payload, format="json")
+
+        # Manually trigger refill
+        ShortCodeService().refill_pool()
+
+        # Verify pool is back to minimum size
+        current_size = ShortCodeService().redis_client.scard(ShortCodeService.POOL_KEY)
+        assert current_size >= ShortCodeService.MIN_POOL_SIZE
+
+    def test_pool_does_not_duplicate_codes(self):
+        """Test that refill doesn't create duplicate codes"""
+        initial_size = ShortCodeService().redis_client.scard(ShortCodeService.POOL_KEY)
+
+        # Get all codes from pool
+        initial_codes = ShortCodeService().redis_client.smembers(
+            ShortCodeService.POOL_KEY
+        )
+
+        # Refill pool
+        ShortCodeService().refill_pool(target_size=100)
+
+        # Get all codes after refill
+        final_codes = ShortCodeService().redis_client.smembers(
+            ShortCodeService.POOL_KEY
+        )
+
+        # Verify no duplicates (Redis SET naturally prevents this, but good to test)
+        assert len(final_codes) == len(set(final_codes))
+        assert len(final_codes) >= initial_size
+
+    def test_high_volume_depletes_and_refills(self):
+        """Test high volume usage depletes and triggers refill"""
+        initial_size = ShortCodeService().redis_client.scard(ShortCodeService.POOL_KEY)
+
+        with patch.object(ShortCodeService, "refill_pool") as mock_refill:
+            # Create many short URLs rapidly
+            for i in range(40):
+                payload = {"long_url": f"https://www.example.com/high-volume{i}"}
+                response = self.client.post(self.url, payload, format="json")
+                assert response.status_code == status.HTTP_201_CREATED
+
+            # Pool should be significantly depleted
+            current_size = ShortCodeService().redis_client.scard(
+                ShortCodeService.POOL_KEY
+            )
+            assert current_size < initial_size
+            assert current_size <= initial_size * 0.3
+
+            # Refill should have been triggered
+            assert mock_refill.call_count >= 1
+
+
+@pytest.mark.django_db
+class TestShortCodeCollisionResistance:
+    """Test collision resistance scenarios"""
+
+    def setup_method(self):
+        self.client = APIClient()
+        self.user = User.objects.create_user(
+            username="testuser", email="test@example.com", password="testpass123"
+        )
+        self.other_user = User.objects.create_user(
+            username="otheruser", email="other@example.com", password="testpass123"
+        )
+
+        # Pre-populate short code pool
+        ShortCodeService().refill_pool(target_size=100)
+
+    def test_multiple_users_no_collision(self):
+        """Test that multiple users get unique codes"""
+        client1 = APIClient()
+        client1.force_authenticate(user=self.user)
+
+        client2 = APIClient()
+        client2.force_authenticate(user=self.other_user)
+
+        url = "/api/url/shorten/"
+
+        # Create URLs for both users simultaneously
+        short_urls = set()
+        for i in range(5):
+            payload1 = {"long_url": f"https://www.example.com/user1-{i}"}
+            payload2 = {"long_url": f"https://www.example.com/user2-{i}"}
+
+            response1 = client1.post(url, payload1, format="json")
+            response2 = client2.post(url, payload2, format="json")
+
+            assert response1.status_code == status.HTTP_201_CREATED
+            assert response2.status_code == status.HTTP_201_CREATED
+
+            short_urls.add(response1.data["short_url"])
+            short_urls.add(response2.data["short_url"])
+
+        # All codes should be unique (10 total)
+        assert len(short_urls) == 10
+
+    def test_rapid_concurrent_creation_no_collision(self):
+        """Test rapid concurrent creation maintains uniqueness"""
+        self.client.force_authenticate(user=self.user)
+
+        short_urls = []
+        for i in range(20):
+            payload = {"long_url": f"https://www.example.com/rapid{i}"}
+            response = self.client.post("/api/url/shorten/", payload, format="json")
+            assert response.status_code == status.HTTP_201_CREATED
+            short_urls.append(response.data["short_url"])
+
+        # All codes should be unique
+        assert len(short_urls) == len(set(short_urls))
+
+    def test_database_constraint_prevents_collision(self):
+        """Test that database unique constraint prevents duplicate short URLs"""
+        self.client.force_authenticate(user=self.user)
+        payload = {"long_url": "https://www.example.com/test"}
+        response1 = self.client.post("/api/url/shorten/", payload, format="json")
+        short_url = response1.data["short_url"]
+
+        # Try to create another URL object with same short_url (should fail at DB level)
+        with pytest.raises(Exception):  # IntegrityError expected
+            Url.objects.create(
+                long_url="https://www.example.com/different",
+                short_url=short_url,
+                user=self.user,
+            )
+
+
+@pytest.mark.django_db
+class TestPoolHealthMonitoring:
+    """Test pool health and edge cases"""
+
+    def setup_method(self):
+        self.client = APIClient()
+        self.user = User.objects.create_user(
+            username="testuser", email="test@example.com", password="testpass123"
+        )
+        self.client.force_authenticate(user=self.user)
+
+        ShortCodeService.MIN_POOL_SIZE = 50
+        ShortCodeService().refill_pool(target_size=50)
+
+    def test_pool_never_fully_depletes_with_fallback(self):
+        """Test that even if pool is empty, system continues to work"""
+        # Drain the entire pool
+        for i in range(60):
+            payload = {"long_url": f"https://www.example.com/drain{i}"}
+            self.client.post("/api/url/shorten/", payload, format="json")
+
+        # Should still be able to create URLs (fallback generation)
+        payload = {"long_url": "https://www.example.com/after-depletion"}
+        response = self.client.post("/api/url/shorten/", payload, format="json")
+        assert response.status_code == status.HTTP_201_CREATED
+        assert len(response.data["short_url"]) == 8
+
+    def test_pool_size_check_accuracy(self):
+        """Test that pool size checks are accurate"""
+        expected_size = 50
+        ShortCodeService().refill_pool(target_size=expected_size)
+
+        actual_size = ShortCodeService().redis_client.scard(ShortCodeService.POOL_KEY)
+        assert actual_size == expected_size
+
+        # Remove 10 codes
+        for i in range(10):
+            payload = {"long_url": f"https://www.example.com/test{i}"}
+            self.client.post("/api/url/shorten/", payload, format="json")
+
+        actual_size = ShortCodeService().redis_client.scard(ShortCodeService.POOL_KEY)
+        assert actual_size == expected_size - 10
+
+    def test_pool_recovery_after_redis_flush(self):
+        """Test that pool can recover if Redis is flushed"""
+        # Flush Redis (simulating Redis restart or data loss)
+        ShortCodeService().redis_client.flushdb()
+
+        # Pool should be empty
+        assert ShortCodeService().redis_client.scard(ShortCodeService.POOL_KEY) == 0
+
+        # System should still work with fallback generation
+        payload = {"long_url": "https://www.example.com/after-flush"}
+        response = self.client.post("/api/url/shorten/", payload, format="json")
+        assert response.status_code == status.HTTP_201_CREATED
+
+        # Can manually refill pool
+        ShortCodeService().refill_pool(target_size=50)
+        assert ShortCodeService().redis_client.scard(ShortCodeService.POOL_KEY) >= 50

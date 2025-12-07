@@ -4,11 +4,6 @@ from validators import url as validate_url, ValidationError
 import qrcode
 
 
-def generator():
-    token = secrets.token_bytes(4)
-    return token.hex()
-
-
 def generate_qrcode(url: str):
     qr = qrcode.QRCode(
         version=2,

@@ -13,9 +13,11 @@ from api.custom_auth.authentication import CookieJWTAuthentication
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.serializers import ValidationError
 from rest_framework.exceptions import PermissionDenied
-from api.url.service import (
-    UrlService,
+from api.url.services.BurstProtectionService import (
     get_burst_protection_service,
+)
+from api.url.services.UrlService import (
+    UrlService,
 )
 from api.url.utils import generate_qrcode
 from .permissions import IsUrlOwner

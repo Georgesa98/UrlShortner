@@ -3,7 +3,10 @@ from unittest.mock import Mock, patch, MagicMock
 from datetime import datetime, timezone
 import redis
 from datetime import datetime, timezone
-from api.url.service import BurstProtectionService, get_burst_protection_service
+from api.url.services.BurstProtectionService import (
+    BurstProtectionService,
+    get_burst_protection_service,
+)
 from api.url.models import Url, UrlStatus
 
 

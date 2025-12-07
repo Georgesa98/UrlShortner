@@ -14,7 +14,11 @@ CELERY_BEAT_SCHEDUAL = {
         "task": "api.url.tasks.deactivate_expired_urls_task",
         "schedule": crontab(hour=0, minute=0),
         "kwargs": {"delete": False},
-    }
+    },
+    "maintain-shortcode-pool": {
+        "task": "api.url.tasks.maintain_shortcode_pool",
+        "schedule": crontab(minute="*/10"),
+    },
 }
 
 if __name__ == "__main__":
