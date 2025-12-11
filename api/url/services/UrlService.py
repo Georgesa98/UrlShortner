@@ -2,7 +2,9 @@ from api.url.models import Url, UrlStatus
 from api.url.services.ShortCodeService import ShortCodeService
 from datetime import datetime, timezone
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 
 
 class UrlService:

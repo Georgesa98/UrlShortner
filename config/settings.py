@@ -20,13 +20,15 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Initialize environment variables
 
+
 env = environ.Env(
     DATABASE_NAME=(str),
     DATABASE_USER=(str),
     DATABASE_PASSWORD=(str),
     DATABASE_PORT=(str),
     SECRET_KEY=(str),
-    DEBUG=(bool),
+    DEBUG=(bool, True),
+    ENVIRONMENT=(str, "development"),
 )
 try:
     environ.Env.read_env(str(BASE_DIR / ".env"))
@@ -39,10 +41,12 @@ except FileNotFoundError:
 SECRET_KEY: str = env("SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
+APP_VERSION = "0.0.1"
+ENVIRONMENT = env("ENVIRONMENT")
+
 DEBUG: bool = env("DEBUG")
 
 ALLOWED_HOSTS = []
-
 
 # Application definition
 
@@ -62,6 +66,7 @@ INSTALLED_APPS = [
     "api.custom_auth",
     "api.url",
     "api.analytics",
+    "api.admin_panel",
 ]
 
 MIDDLEWARE = [
@@ -293,7 +298,14 @@ SHORT_CODE_POOL_SIZE = 10000
 SHORT_CODE_LENGTH = 8
 
 if not DEBUG:
-    DJOSER = {"TOKEN_MODEL": None, "SEND_ACTIVATION_EMAIL": False}
+    DJOSER = {
+        "TOKEN_MODEL": None,
+        "SEND_ACTIVATION_EMAIL": False,
+        "SERIALIZER": {
+            "user_create": "api.custom_auth.serializer.CustomUserCreateSerializer",
+            "user": "api.custom_auth.serializer.CustomUserSerializer",
+        },
+    }
 
 REST_FRAMEWORK = {
     "DEFAULT_THROTTLE_CLASSES": [
@@ -324,6 +336,7 @@ SIMPLE_JWT = {
     "ALGORITHM": "HS256",
     "SIGNING_KEY": SECRET_KEY,
 }
+AUTH_USER_MODEL = "custom_auth.CustomUser"
 
 # Password validation
 # https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators

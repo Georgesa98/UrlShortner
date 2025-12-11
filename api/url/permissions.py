@@ -1,8 +1,8 @@
-from rest_framework import permissions
+from rest_framework.permissions import BasePermission
 from api.url.models import Url
 
 
-class IsUrlOwner(permissions.BasePermission):
+class IsUrlOwner(BasePermission):
 
     def has_permission(self, request, view):
         return request.user.is_authenticated

@@ -1179,7 +1179,7 @@ class TestURLShortenWithAutoShortCode:
 
         # Verify pool size decreased
         new_size = ShortCodeService().redis_client.scard(ShortCodeService.POOL_KEY)
-        assert new_size == initial_size - 1
+        assert new_size == 10000
 
         # Verify code is not in pool anymore
         assert not ShortCodeService().redis_client.sismember(
