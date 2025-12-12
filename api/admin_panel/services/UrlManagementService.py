@@ -4,16 +4,31 @@ from django.contrib.auth import get_user_model
 from typing import Dict, List, Any
 from django.db import transaction
 from django.db.models import Q
-from api.url.utils import urlChecker
+from django.core.paginator import Paginator
 
 User = get_user_model()
 
 
 class UrlManagementService:
     @staticmethod
-    def get_user_urls(user_id: str):
-        owner = User.objects.get(id=user_id)
-        return Url.objects.prefetch_related("url_status").filter(user=owner)
+    def get_user_urls_with_pagination(user_id: int, limit: int = 10, page: int = 1):
+        owner = User.objects.get(pk=user_id)
+        urls = Url.objects.prefetch_related("url_status").filter(user=owner)
+
+        paginator = Paginator(urls, limit)
+        page_obj = paginator.get_page(page)
+
+        return {
+            "urls": page_obj.object_list,
+            "pagination": {
+                "total": paginator.count,
+                "page": page_obj.number,
+                "limit": paginator.per_page,
+                "total_pages": paginator.num_pages,
+                "has_next": page_obj.has_next(),
+                "has_previous": page_obj.has_previous(),
+            },
+        }
 
     @staticmethod
     def bulk_url_deletion(url_ids: list):
@@ -58,13 +73,27 @@ class UrlManagementService:
         }
 
     @staticmethod
-    def search_urls(query: str):
+    def search_urls_with_pagination(query: str, limit: int = 10, page: int = 1):
         urls = Url.objects.filter(
             Q(long_url__icontains=query)
             | Q(short_url__icontains=query)
             | Q(name__icontains=query)
         )
-        return urls
+
+        paginator = Paginator(urls, limit)
+        page_obj = paginator.get_page(page)
+
+        return {
+            "urls": page_obj.object_list,
+            "pagination": {
+                "total": paginator.count,
+                "page": page_obj.number,
+                "limit": paginator.per_page,
+                "total_pages": paginator.num_pages,
+                "has_next": page_obj.has_next(),
+                "has_previous": page_obj.has_previous(),
+            },
+        }
 
     @staticmethod
     def updated_url_destination(short_url: str, new_destination: str):

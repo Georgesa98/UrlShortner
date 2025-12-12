@@ -11,7 +11,7 @@ class IsAdmin(BasePermission):
         return user.role == CustomUser.Role.ADMIN
 
 
-class IsStaff(BasePermission):
+class IsAdminOrStaff(BasePermission):
     def has_permission(self, request, view):
         user = User.objects.get(pk=request.user.id)
-        return user.role == CustomUser.Role.STAFF
+        return user.role == CustomUser.Role.STAFF or user.role == CustomUser.Role.ADMIN

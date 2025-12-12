@@ -55,6 +55,7 @@ class ResponseUrlSerializer(ModelSerializer):
         fields = [
             "id",
             "long_url",
+            "name",
             "user",
             "expiry_date",
             "short_url",
