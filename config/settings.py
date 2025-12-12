@@ -67,6 +67,8 @@ INSTALLED_APPS = [
     "api.url",
     "api.analytics",
     "api.admin_panel",
+    "api.admin_panel.system",
+    "api.admin_panel.insight",
 ]
 
 MIDDLEWARE = [

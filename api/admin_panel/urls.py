@@ -1,3 +1,6 @@
-from django.urls import path
+from django.urls import path, include
 
-urlpatterns = []
+urlpatterns = [
+    path("system/", include("api.admin_panel.system.urls")),
+    path("insight/", include("api.admin_panel.insight.urls")),
+]

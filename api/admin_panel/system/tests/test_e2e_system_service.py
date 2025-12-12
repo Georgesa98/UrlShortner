@@ -5,7 +5,7 @@ from rest_framework import status
 from unittest.mock import patch, MagicMock, PropertyMock
 from datetime import datetime, timezone
 import psutil
-from api.admin_panel.services.SystemService import HealthStatus
+from api.admin_panel.system.SystemService import HealthStatus
 
 User = get_user_model()
 
@@ -16,7 +16,7 @@ class TestHealthEndpointAuthentication:
 
     def setup_method(self):
         self.client = APIClient()
-        self.url = "/api/system/health/"
+        self.url = "/api/admin/system/health/"
 
         self.regular_user = User.objects.create_user(
             username="regularuser",
@@ -76,7 +76,7 @@ class TestHealthEndpointResponse:
 
     def setup_method(self):
         self.client = APIClient()
-        self.url = "/api/system/health/"
+        self.url = "/api/admin/system/health/"
         self.admin_user = User.objects.create_user(
             username="adminuser",
             email="admin@test.com",
@@ -195,7 +195,7 @@ class TestHealthEndpointDegradedScenarios:
 
     def setup_method(self):
         self.client = APIClient()
-        self.url = "/api/system/health/"
+        self.url = "/api/admin/system/health/"
         self.admin_user = User.objects.create_user(
             username="adminuser",
             email="admin@test.com",
@@ -272,7 +272,7 @@ class TestHealthEndpointDegradedScenarios:
         assert memory_component["status"] == HealthStatus.UNHEALTHY
         assert memory_component["percent_used"] == 93.0
 
-    @patch("api.admin_panel.services.SystemService.SystemService._check_database")
+    @patch("api.admin_panel.system.SystemService.SystemService._check_database")
     def test_slow_database_response(self, mock_check_db):
         """Test health endpoint when database responds slowly"""
         mock_check_db.return_value = {
@@ -296,7 +296,7 @@ class TestHealthEndpointFailureScenarios:
 
     def setup_method(self):
         self.client = APIClient()
-        self.url = "/api/system/health/"
+        self.url = "/api/admin/system/health/"
         self.admin_user = User.objects.create_user(
             username="adminuser",
             email="admin@test.com",
@@ -305,7 +305,7 @@ class TestHealthEndpointFailureScenarios:
         )
         self.client.force_authenticate(user=self.admin_user)
 
-    @patch("api.admin_panel.services.SystemService.SystemService._check_database")
+    @patch("api.admin_panel.system.SystemService.SystemService._check_database")
     def test_database_connection_failure(self, mock_check_db):
         """Test health endpoint when database connection fails"""
         mock_check_db.return_value = {
@@ -323,7 +323,7 @@ class TestHealthEndpointFailureScenarios:
         assert "error_type" in db_component
         assert db_component["error"] == "Database connection failed"
 
-    @patch("api.admin_panel.services.SystemService.SystemService._check_database")
+    @patch("api.admin_panel.system.SystemService.SystemService._check_database")
     def test_overall_status_reflects_component_failures(self, mock_check_db):
         """Test overall status is unhealthy when any component is unhealthy"""
         mock_check_db.return_value = {
@@ -349,7 +349,7 @@ class TestHealthEndpointRateLimiting:
 
     def setup_method(self):
         self.client = APIClient()
-        self.url = "/api/system/health/"
+        self.url = "/api/admin/system/health/"
         self.admin_user = User.objects.create_user(
             username="adminuser",
             email="admin@test.com",
@@ -380,7 +380,7 @@ class TestHealthEndpointTimestamp:
 
     def setup_method(self):
         self.client = APIClient()
-        self.url = "/api/system/health/"
+        self.url = "/api/admin/system/health/"
         self.admin_user = User.objects.create_user(
             username="adminuser",
             email="admin@test.com",
