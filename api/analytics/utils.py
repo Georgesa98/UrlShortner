@@ -2,6 +2,7 @@ import hashlib
 from api.analytics.models import Visit
 from config.settings import SECRET_KEY
 import geocoder
+import ipaddress
 
 
 def hash_ip(ip: str) -> str:
@@ -35,3 +36,20 @@ def parse_user_agent(user_agent: str) -> dict[str, dict]:
         return {"os": "Unknown", "browser": "Unknown", "device": "Unknown"}
     ua = parse(user_agent)
     return {"os": ua.os.family, "browser": ua.browser.family, "device": ua.device.brand}
+
+
+def anonymize_ip(ip_address: str) -> str:
+    try:
+        ip_obj = ipaddress.ip_address(ip_address)
+
+        if isinstance(ip_obj, ipaddress.IPv4Address):
+            ip_parts = str(ip_obj).split(".")
+            ip_parts[-1] = "0"
+            return ".".join(ip_parts)
+        elif isinstance(ip_obj, ipaddress.IPv6Address):
+            network = ipaddress.IPv6Network(f"{ip_obj}/64", strict=False)
+            return str(network.network_address)
+        else:
+            return ip_address
+    except ValueError:
+        return ip_address

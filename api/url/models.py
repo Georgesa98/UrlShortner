@@ -34,11 +34,11 @@ class Url(models.Model):
 
 class UrlStatus(models.Model):
     class State(models.TextChoices):
-        ACTIVE = "active"
-        EXPIRED = "expired"
-        FLAGGED = "flagged"
-        DISABLED = "disabled"
-        SUSPENDED = "suspended"
+        ACTIVE = "ACTIVE", "active"
+        EXPIRED = "EXPIRED", "expired"
+        FLAGGED = "FLAGGED", "flagged"
+        DISABLED = "DISABLED", "disabled"
+        SUSPENDED = "SUSPENDED", "suspended"
 
     url = models.OneToOneField(Url, on_delete=models.CASCADE, related_name="url_status")
     state = models.CharField(max_length=16, choices=State.choices, default=State.ACTIVE)
