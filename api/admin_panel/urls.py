@@ -44,4 +44,5 @@ urlpatterns = [
     # Existing module endpoints
     path("system/", include("api.admin_panel.system.urls")),
     path("insight/", include("api.admin_panel.insight.urls")),
+    path("audit/", include("api.admin_panel.audit.urls")),
 ]

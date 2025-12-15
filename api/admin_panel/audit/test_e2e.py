@@ -323,3 +323,127 @@ class TestAuditMiddleware:
         final_count = AuditLog.objects.count()
         # No new audit entry should have been created for GET request
         assert final_count == initial_count
+
+
+@pytest.mark.django_db
+class TestAuditLogsEndpoint:
+    """Test cases for the audit logs endpoint"""
+
+    def setup_method(self):
+        self.client = APIClient()
+        # Create an admin user
+        self.admin_user = User.objects.create_superuser(
+            username="adminuser", email="admin@example.com", password="adminpass123"
+        )
+        self.client.force_authenticate(user=self.admin_user)
+
+        # Create a regular user
+        self.regular_user = User.objects.create_user(
+            username="regularuser",
+            email="regular@example.com",
+            password="regularpass123",
+        )
+
+        # Create some audit logs for testing
+        AuditLog.objects.create(
+            action="CREATE",
+            user=self.regular_user,
+            ip_address="192.168.1.1",
+            content_type="url",
+            content_id="1",
+            changes={"field": "value"},
+            successful=True,
+        )
+        AuditLog.objects.create(
+            action="UPDATE",
+            user=self.admin_user,
+            ip_address="10.0.0.1",
+            content_type="user",
+            content_id="2",
+            changes={"old_value": "old", "new_value": "new"},
+            successful=True,
+        )
+
+    def test_get_audit_logs_as_admin(self):
+        """Test that admin users can retrieve audit logs"""
+        response = self.client.get("/api/admin/audit/logs/")
+
+        assert response.status_code == status.HTTP_200_OK
+        assert "data" in response.data
+        assert "pagination" in response.data
+        assert len(response.data["data"]) > 0
+
+    def test_get_audit_logs_requires_admin(self):
+        """Test that regular users cannot access audit logs"""
+        # Switch to regular user
+        self.client.force_authenticate(user=self.regular_user)
+
+        response = self.client.get("/api/admin/audit/logs/")
+
+        # Should return 403 Forbidden or 401 Unauthorized
+        assert response.status_code in [
+            status.HTTP_403_FORBIDDEN,
+            status.HTTP_401_UNAUTHORIZED,
+        ]
+
+    def test_get_audit_logs_with_user_filter(self):
+        """Test filtering audit logs by user ID"""
+        response = self.client.get(
+            f"/api/admin/audit/logs/?user_id={self.regular_user.id}"
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        assert "data" in response.data
+        # All returned logs should be for the specified user
+        for log in response.data["data"]:
+            assert log["user_id"] == self.regular_user.id
+
+    def test_get_audit_logs_with_action_filter(self):
+        """Test filtering audit logs by action type"""
+        response = self.client.get("/api/admin/audit/logs/?action=CREATE")
+
+        assert response.status_code == status.HTTP_200_OK
+        assert "data" in response.data
+        # All returned logs should have the specified action
+        for log in response.data["data"]:
+            assert log["action"] == "CREATE"
+
+    def test_get_audit_logs_with_date_filter(self):
+        """Test filtering audit logs by date range"""
+        # Get current date for the test
+        today = datetime.now().strftime("%Y-%m-%d")
+
+        response = self.client.get(
+            f"/api/admin/audit/logs/?date_from={today}&date_to={today}"
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        assert "data" in response.data
+
+    def test_get_audit_logs_with_pagination(self):
+        """Test pagination of audit logs"""
+        response = self.client.get("/api/admin/audit/logs/?page=1&page_size=1")
+
+        assert response.status_code == status.HTTP_200_OK
+        assert "data" in response.data
+        assert "pagination" in response.data
+        assert len(response.data["data"]) <= 1
+        assert response.data["pagination"]["current_page"] == 1
+
+    def test_get_audit_logs_with_invalid_date_format(self):
+        """Test error handling for invalid date format"""
+        response = self.client.get("/api/admin/audit/logs/?date_from=invalid-date")
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "error" in response.data
+
+    def test_get_audit_logs_sorted_by_timestamp(self):
+        """Test that audit logs are sorted by timestamp by default"""
+        response = self.client.get("/api/admin/audit/logs/?sort_by=-timestamp")
+
+        assert response.status_code == status.HTTP_200_OK
+        assert "data" in response.data
+        # Check that the results are sorted by timestamp in descending order
+        if len(response.data["data"]) > 1:
+            timestamps = [log["timestamp"] for log in response.data["data"]]
+            assert timestamps == sorted(timestamps, reverse=True)
