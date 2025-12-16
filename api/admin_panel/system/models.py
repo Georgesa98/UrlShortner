@@ -1,3 +1,8 @@
 from django.db import models
 
-# Create your models here.
+
+class SystemConfiguration(models.Model):
+    key = models.CharField(max_length=128, unique=True)
+    value = models.TextField()
+    description = models.TextField(blank=True)
+    updated_at = models.DateTimeField(auto_now=True)

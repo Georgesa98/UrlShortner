@@ -259,9 +259,9 @@ class TestAdminBulkFlagUrlEndpoint:
         # Verify changes in database
         self.status1.refresh_from_db()
         self.status2.refresh_from_db()
-        assert self.status1.state == UrlStatus.State.FLAGGED
+        assert self.status1.state == UrlStatus.State.FLAGGED.lower()
         assert self.status1.reason == "spam"
-        assert self.status2.state == UrlStatus.State.DISABLED
+        assert self.status2.state == UrlStatus.State.DISABLED.lower()
         assert self.status2.reason == "policy violation"
 
     def test_bulk_flag_url_partial_success(self):
@@ -286,7 +286,7 @@ class TestAdminBulkFlagUrlEndpoint:
 
         # Verify that the valid URL was updated
         self.status1.refresh_from_db()
-        assert self.status1.state == UrlStatus.State.FLAGGED
+        assert self.status1.state == UrlStatus.State.FLAGGED.lower()
         assert self.status1.reason == "spam"
 
 

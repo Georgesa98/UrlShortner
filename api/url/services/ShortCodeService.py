@@ -2,13 +2,14 @@ import string
 import random
 from redis import Redis
 from config import settings
+from config.settings_utils import get_short_code_pool_size, get_short_code_length
 
 
 class ShortCodeService:
     CHARS = string.ascii_letters + string.digits
     POOL_KEY = "shortcode:available_pool"
-    MIN_POOL_SIZE = settings.SHORT_CODE_POOL_SIZE
-    CODE_LENGTH = settings.SHORT_CODE_LENGTH
+    MIN_POOL_SIZE = get_short_code_pool_size()
+    CODE_LENGTH = get_short_code_length()
 
     def __init__(self):
         self.redis_client = Redis(

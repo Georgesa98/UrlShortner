@@ -6,24 +6,32 @@ from api.analytics.utils import (
     ip_address_match,
     parse_user_agent,
 )
+from config.settings_utils import get_analytics_track_ip
 from datetime import datetime, timezone, timedelta
 from django.db.models import Count, Q
 from api.url.models import Url, UrlStatus
 
 
 class AnalyticsService:
-
     @staticmethod
     def record_visit(request, url_instance):
-        ip = get_ip_address(request)
-        country = convert_ip_to_location(ip)
+        track_ip = get_analytics_track_ip()
+        if track_ip:
+            ip = get_ip_address(request)
+            country = convert_ip_to_location(ip)
+            hashed_ip = hash_ip(ip)
+            is_new_visitor = ip_address_match(hashed_ip)
+        else:
+            ip = None
+            country = None
+            hashed_ip = None
+            is_new_visitor = False
+
         user_agent = parse_user_agent(request.META.get("HTTP_USER_AGENT", ""))
         url_instance.visits += 1
-        hashed_ip = hash_ip(ip)
-        is_new_visitor = ip_address_match(hashed_ip)
-        if not is_new_visitor:
+        if track_ip and not is_new_visitor:
             url_instance.unique_visits += 1
-            url_instance.last_accessed = datetime.now(timezone.utc)
+        url_instance.last_accessed = datetime.now(timezone.utc)
         url_instance.save()
         Visit.objects.create(
             url=url_instance,

@@ -1,5 +1,6 @@
 from redis import Redis
 from config import settings
+from config.settings_utils import get_throttle_rates
 import time
 from rest_framework.throttling import SimpleRateThrottle
 
@@ -76,6 +77,9 @@ class BaseRedisThrottle(SimpleRateThrottle):
 class IPRateThrottle(BaseRedisThrottle):
     scope = "ip"
 
+    def get_rate(self):
+        return get_throttle_rates()["ip"]
+
     def get_cache_key(self, request, view):
         if request.user.is_authenticated:
             return None
@@ -85,6 +89,9 @@ class IPRateThrottle(BaseRedisThrottle):
 
 class UserRateThrottle(BaseRedisThrottle):
     scope = "user"
+
+    def get_rate(self):
+        return get_throttle_rates()["user"]
 
     def get_cache_key(self, request, view):
         if request.user.is_authenticated:

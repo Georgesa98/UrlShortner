@@ -1,9 +1,28 @@
+import json
 from django.utils.deprecation import MiddlewareMixin
 from api.admin_panel.audit.AuditService import AuditService
 from api.admin_panel.audit.models import AuditLog
 from api.analytics.utils import anonymize_ip, get_ip_address
 from django.urls import resolve
 from django.http import HttpRequest
+from django.http import JsonResponse
+
+
+class JsonValidationMiddleware:
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        if (
+            request.content_type == "application/json"
+            or request.content_type.startswith("application/json;")
+        ) and request.body:
+            try:
+                json.loads(request.body.decode("utf-8"))
+            except json.JSONDecodeError:
+                return JsonResponse({"error": "Invalid JSON format"}, status=400)
+        response = self.get_response(request)
+        return response
 
 
 class RateLimitHeaderMiddleware:

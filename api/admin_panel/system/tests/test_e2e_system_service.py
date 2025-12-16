@@ -413,3 +413,206 @@ class TestHealthEndpointTimestamp:
         )
 
         assert before <= timestamp <= after, "Timestamp is not current"
+
+
+@pytest.mark.django_db
+class TestSystemConfigurationViewSet:
+    """Test system configuration endpoints"""
+
+    def setup_method(self):
+        self.client = APIClient()
+
+        self.admin_user = User.objects.create_user(
+            username="adminuser",
+            email="admin@test.com",
+            password="adminpass123",
+            role=User.Role.ADMIN,
+        )
+        self.client.force_authenticate(user=self.admin_user)
+
+    def test_list_system_configuration_success(self):
+        """Test successful retrieval of all system configurations"""
+        url = "/api/admin/system/config/"
+        response = self.client.get(url)
+
+        assert response.status_code == status.HTTP_200_OK
+        # Response should be a list of configuration objects
+        assert isinstance(response.data, list)
+        # Each item should have required fields
+        for config in response.data:
+            assert "key" in config
+            assert "value" in config
+            assert "description" in config
+            assert "updated_at" in config
+
+    def test_list_system_configuration_error_handling(self):
+        """Test error handling when ConfigService fails"""
+        url = "/api/admin/system/config/"
+
+        # Mock the ConfigService to raise an exception
+        with patch(
+            "api.admin_panel.system.ConfigService.ConfigService.get_all_configs",
+            side_effect=Exception("Service unavailable"),
+        ):
+            response = self.client.get(url)
+
+            assert response.status_code == status.HTTP_400_BAD_REQUEST
+            assert "error" in response.data
+
+
+@pytest.mark.django_db
+class TestSpecificSystemConfigurationView:
+    """Test specific system configuration endpoints"""
+
+    def setup_method(self):
+        self.client = APIClient()
+
+        self.admin_user = User.objects.create_user(
+            username="adminuser",
+            email="admin@test.com",
+            password="adminpass123",
+            role=User.Role.ADMIN,
+        )
+        self.client.force_authenticate(user=self.admin_user)
+
+    def test_get_specific_system_configuration_success(self):
+        """Test successful retrieval of specific system configuration"""
+        # First, create a configuration to retrieve
+        config_url = "/api/admin/system/config/max_urls_per_user/"
+        response = self.client.post(config_url, {"value": "50"})
+        assert response.status_code == status.HTTP_200_OK
+
+        # Now retrieve it
+        response = self.client.get(config_url)
+        assert response.status_code == status.HTTP_200_OK
+        assert "key" in response.data
+        assert "value" in response.data
+        assert response.data["key"] == "max_urls_per_user"
+        assert response.data["value"] == "50"
+
+    def test_get_specific_system_configuration_not_found(self):
+        """Test retrieval of non-existent system configuration"""
+        url = "/api/admin/system/config/nonexistent_config_key/"
+        response = self.client.get(url)
+
+        # Expecting a 500 error as specified in the view implementation
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+        assert "error" in response.data
+
+    def test_post_specific_system_configuration_success(self):
+        """Test successful update of system configuration"""
+        url = "/api/admin/system/config/max_urls_per_user/"
+        response = self.client.post(url, {"value": "100"})
+
+        assert response.status_code == status.HTTP_200_OK
+        assert (
+            response.data["message"]
+            == "Configuration 'max_urls_per_user' updated successfully"
+        )
+
+    def test_post_specific_system_configuration_invalid_key(self):
+        """Test posting to system configuration with invalid key"""
+        url = "/api/admin/system/config/invalid_key/"
+        response = self.client.post(url, {"value": "100"})
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+    def test_post_specific_system_configuration_invalid_value_type(self):
+        """Test posting system configuration with invalid value type"""
+        url = "/api/admin/system/config/max_urls_per_user/"
+        response = self.client.post(url, {"value": "not_an_integer"})
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        # Check that error contains validation message
+        assert any(
+            "int" in str(error_msg).lower()
+            for error_msg in (
+                str(response.data) if isinstance(response.data, dict) else [""]
+            )
+            for error_msg in (
+                response.data.values() if isinstance(response.data, dict) else [""]
+            )
+        )
+
+    def test_post_specific_system_configuration_validation_error(self):
+        """Test posting system configuration with validation error"""
+        url = "/api/admin/system/config/short_code_length/"
+        response = self.client.post(url, {"value": "2"})  # Too low for min value of 4
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "value" in str(response.data) or "length" in str(response.data)
+
+
+@pytest.mark.django_db
+class TestBatchCreateSystemConfigurationView:
+    """Test batch system configuration endpoints"""
+
+    def setup_method(self):
+        self.client = APIClient()
+
+        self.admin_user = User.objects.create_user(
+            username="adminuser",
+            email="admin@test.com",
+            password="adminpass123",
+            role=User.Role.ADMIN,
+        )
+        self.client.force_authenticate(user=self.admin_user)
+
+    def test_batch_create_system_configuration_success(self):
+        """Test successful batch creation of system configurations"""
+        url = "/api/admin/system/config/batch/"
+        configs = {"configs": {"max_urls_per_user": "75", "short_code_length": "8"}}
+        response = self.client.post(url, configs, format="json")
+
+        assert response.status_code == status.HTTP_200_OK
+        assert "results" in response.data
+        assert "errors" in response.data
+        assert (
+            len(response.data["results"]) >= 0
+        )  # May be empty if configs didn't change
+        assert len(response.data["errors"]) == 0
+
+    def test_batch_create_system_configuration_with_errors(self):
+        """Test batch creation with some valid and some invalid configurations"""
+        url = "/api/admin/system/config/batch/"
+        configs = {
+            "configs": {
+                "max_urls_per_user": "100",  # Valid
+                "invalid_key": "200",  # Invalid key
+                "short_code_length": "2",  # Invalid value (too low)
+                "jwt_access_token_minutes": "30",  # Valid
+            }
+        }
+        response = self.client.post(url, configs, format="json")
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "results" in response.data
+        assert "errors" in response.data
+        # At least some errors should be present
+        assert len(response.data["errors"]) > 0
+
+    def test_batch_create_system_configuration_empty_payload(self):
+        """Test batch creation with empty payload"""
+        url = "/api/admin/system/config/batch/"
+        configs = {"configs": {}}
+        response = self.client.post(url, configs, format="json")
+
+        assert response.status_code == status.HTTP_200_OK
+        assert "results" in response.data
+        assert "errors" in response.data
+        assert len(response.data["results"]) == 0
+        assert len(response.data["errors"]) == 0
+
+    def test_batch_create_system_configuration_missing_configs_key(self):
+        """Test batch creation without configs key in payload"""
+        url = "/api/admin/system/config/batch/"
+        configs = {"something_else": {"max_urls_per_user": "50"}}
+        response = self.client.post(url, configs, format="json")
+
+        # Even though configs key is missing, ConfigService.get() will return empty dict
+        # So this should still succeed with empty results
+        assert response.status_code in [status.HTTP_200_OK, status.HTTP_400_BAD_REQUEST]
+        # If successful, response should have empty results/errors
+        if response.status_code == status.HTTP_200_OK:
+            assert "results" in response.data
+            assert "errors" in response.data

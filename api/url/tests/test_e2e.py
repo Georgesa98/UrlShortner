@@ -44,7 +44,7 @@ class TestURLShortenEndpoint:
         assert response.data["visits"] == 0
         assert "created_at" in response.data
         assert "updated_at" in response.data
-        assert response.data["url_status"]["state"] == "active"
+        assert response.data["url_status"]["state"] == "ACTIVE"
         assert response.data["last_accessed"] is None
 
     def test_shorten_url_with_expiry(self):

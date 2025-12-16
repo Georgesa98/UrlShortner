@@ -40,6 +40,19 @@ except FileNotFoundError:
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY: str = env("SECRET_KEY")
 
+
+ALLOWED_CONFIGS_SCHEMA = {
+    "rate_limit_ip": {"type": str, "default": "100/hour"},
+    "rate_limit_user": {"type": str, "default": "1000/hour"},
+    "short_code_length": {"type": int, "default": 8},
+    "short_code_pool_size": {"type": int, "default": 10000},
+    "jwt_access_token_minutes": {"type": int, "default": 5},
+    "analytics_track_ip": {"type": bool, "default": True},
+    "max_urls_per_user": {"type": int, "default": 100},
+    "url_mapping_cache_timeout": {"type": int, "default": 3600},
+}
+
+
 # SECURITY WARNING: don't run with debug turned on in production!
 APP_VERSION = "0.0.1"
 ENVIRONMENT = env("ENVIRONMENT")
@@ -79,6 +92,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "api.middleware.JsonValidationMiddleware",
     "api.middleware.RateLimitHeaderMiddleware",
     "api.middleware.AuditMiddleware",
 ]
@@ -297,8 +311,6 @@ DATABASES = {
     }
 }
 
-SHORT_CODE_POOL_SIZE = 10000
-SHORT_CODE_LENGTH = 8
 
 if not DEBUG:
     DJOSER = {
@@ -315,7 +327,6 @@ REST_FRAMEWORK = {
         "api.throttling.IPRateThrottle",
         "api.throttling.UserRateThrottle",
     ],
-    "DEFAULT_THROTTLE_RATES": {"ip": "100/hour", "user": "1000/hour"},
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "api.custom_auth.authentication.CookieJWTAuthentication",
     ),
