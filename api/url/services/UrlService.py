@@ -8,9 +8,19 @@ User = get_user_model()
 
 
 class UrlService:
-
     @staticmethod
     def create_url(validated_data: dict):
+        """Create a new URL instance with short code generation and status.
+
+        Args:
+            validated_data (dict): Validated data containing long_url, user, short_url (optional), expiry_date (optional).
+
+        Returns:
+            Url: The created URL instance with associated UrlStatus.
+
+        Raises:
+            User.DoesNotExist: If the specified user does not exist.
+        """
         expiry_date = validated_data.get("expiry_date", None)
         short_url = (
             validated_data["short_url"]
@@ -36,7 +46,17 @@ class UrlService:
         url_status_instance.save()
         return url_instance
 
+    @staticmethod
     def batch_shorten(validated_data: list, user_id: str):
+        """Create multiple URLs in batch with short code generation.
+
+        Args:
+            validated_data (list): List of validated URL data dicts, each containing long_url, short_url (optional), expiry_date (optional).
+            user_id (str): ID of the user creating the URLs.
+
+        Returns:
+            list: List of created Url instances or error strings for failed creations.
+        """
         urls = []
         user_instance = User.objects.get(pk=user_id)
         for url in validated_data:
@@ -67,6 +87,15 @@ class UrlService:
 
     @staticmethod
     def update_url(instance, validated_data):
+        """Update an existing URL instance with provided data.
+
+        Args:
+            instance (Url): The URL instance to update.
+            validated_data (dict): Validated data containing fields to update (long_url, expiry_date).
+
+        Returns:
+            Url: The updated URL instance.
+        """
         for field in ["long_url", "expiry_date"]:
             if field in validated_data:
                 setattr(instance, field, validated_data[field])
@@ -78,6 +107,17 @@ class UrlService:
     def fetch_urls_with_filter_and_pagination(
         limit: int, page: int, status: UrlStatus.State, user_id: str
     ):
+        """Fetch paginated URLs for a user with optional status filtering.
+
+        Args:
+            limit (int): Number of URLs per page.
+            page (int): Page number to retrieve.
+            status (UrlStatus.State): Optional status filter.
+            user_id (str): ID of the user.
+
+        Returns:
+            Page: Paginated page object containing Url instances.
+        """
         queryset = Url.objects.select_related("url_status").filter(user=user_id)
         if status:
             queryset = queryset.filter(url_status__state=status)

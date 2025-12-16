@@ -63,12 +63,14 @@ class TestPlatformStatsViewAuthentication:
         """Test admin users can access platform stats endpoint"""
         self.client.force_authenticate(user=self.admin_user)
 
-        with patch('api.admin_panel.insight.InsightService.InsightService.get_platform_stats') as mock_service:
+        with patch(
+            "api.admin_panel.insight.InsightService.InsightService.get_platform_stats"
+        ) as mock_service:
             mock_service.return_value = {
                 "total_clicks": 100,
                 "new_urls": 10,
                 "new_users": 5,
-                "new_visitors": 80
+                "new_visitors": 80,
             }
 
             response = self.client.get(self.url)
@@ -93,12 +95,14 @@ class TestPlatformStatsViewResponse:
 
     def test_response_structure(self):
         """Test platform stats endpoint returns correct response structure"""
-        with patch('api.admin_panel.insight.InsightService.InsightService.get_platform_stats') as mock_service:
+        with patch(
+            "api.admin_panel.insight.InsightService.InsightService.get_platform_stats"
+        ) as mock_service:
             expected_stats = {
                 "total_clicks": 150,
                 "new_urls": 12,
                 "new_users": 8,
-                "new_visitors": 100
+                "new_visitors": 100,
             }
             mock_service.return_value = expected_stats
 
@@ -113,12 +117,14 @@ class TestPlatformStatsViewResponse:
 
     def test_time_range_parameter_handling(self):
         """Test time_range parameter is handled correctly"""
-        with patch('api.admin_panel.insight.InsightService.InsightService.get_platform_stats') as mock_service:
+        with patch(
+            "api.admin_panel.insight.InsightService.InsightService.get_platform_stats"
+        ) as mock_service:
             mock_service.return_value = {
                 "total_clicks": 200,
                 "new_urls": 15,
                 "new_users": 10,
-                "new_visitors": 150
+                "new_visitors": 150,
             }
 
             response = self.client.get(self.url, {"time_range": "2023-01-01T00:00:00Z"})
@@ -182,15 +188,13 @@ class TestGrowthMetricsViewAuthentication:
         """Test admin users can access growth metrics endpoint"""
         self.client.force_authenticate(user=self.admin_user)
 
-        with patch('api.admin_panel.insight.InsightService.InsightService.get_growth_metrics') as mock_service:
+        with patch(
+            "api.admin_panel.insight.InsightService.InsightService.get_growth_metrics"
+        ) as mock_service:
             mock_service.return_value = {
                 "growth_interval": "weekly",
                 "data_points": 10,
-                "metrics": {
-                    "users_growth": [],
-                    "urls_growth": [],
-                    "clicks_volume": []
-                }
+                "metrics": {"users_growth": [], "urls_growth": [], "clicks_volume": []},
             }
 
             response = self.client.get(self.url)
@@ -223,26 +227,23 @@ class TestGrowthMetricsViewResponse:
                     {
                         "week_starting": "2023-01-01",
                         "new_users": 5,
-                        "cumulative_users": 100
+                        "cumulative_users": 100,
                     }
                 ],
                 "urls_growth": [
                     {
                         "week_starting": "2023-01-01",
                         "new_urls": 10,
-                        "cumulative_users": 50
+                        "cumulative_users": 50,
                     }
                 ],
-                "clicks_volume": [
-                    {
-                        "week_starting": "2023-01-01",
-                        "total_clicks": 500
-                    }
-                ]
-            }
+                "clicks_volume": [{"week_starting": "2023-01-01", "total_clicks": 500}],
+            },
         }
 
-        with patch('api.admin_panel.insight.InsightService.InsightService.get_growth_metrics') as mock_service:
+        with patch(
+            "api.admin_panel.insight.InsightService.InsightService.get_growth_metrics"
+        ) as mock_service:
             mock_service.return_value = expected_metrics
 
             response = self.client.get(self.url)
@@ -312,7 +313,9 @@ class TestTopPerformersViewAuthentication:
         """Test admin users can access top performers endpoint"""
         self.client.force_authenticate(user=self.admin_user)
 
-        with patch('api.admin_panel.insight.InsightService.InsightService.get_top_performers') as mock_service:
+        with patch(
+            "api.admin_panel.insight.InsightService.InsightService.get_top_performers"
+        ) as mock_service:
             mock_service.return_value = [
                 {
                     "rank": 1,
@@ -322,8 +325,8 @@ class TestTopPerformersViewAuthentication:
                     "metric_value": 100,
                     "details": {
                         "long_url": "https://www.example.com",
-                        "short_url": "https://short.ly/url-1"
-                    }
+                        "short_url": "https://short.ly/url-1",
+                    },
                 }
             ]
 
@@ -349,7 +352,9 @@ class TestTopPerformersViewResponse:
 
     def test_default_parameters(self):
         """Test that default parameters are used when none provided"""
-        with patch('api.admin_panel.insight.InsightService.InsightService.get_top_performers') as mock_service:
+        with patch(
+            "api.admin_panel.insight.InsightService.InsightService.get_top_performers"
+        ) as mock_service:
             mock_service.return_value = []
 
             response = self.client.get(self.url)
@@ -360,7 +365,9 @@ class TestTopPerformersViewResponse:
 
     def test_custom_metric_and_limit(self):
         """Test custom metric and limit parameters are handled correctly"""
-        with patch('api.admin_panel.insight.InsightService.InsightService.get_top_performers') as mock_service:
+        with patch(
+            "api.admin_panel.insight.InsightService.InsightService.get_top_performers"
+        ) as mock_service:
             mock_service.return_value = []
 
             response = self.client.get(self.url, {"metric": "urls_created", "limit": 5})
@@ -379,12 +386,14 @@ class TestTopPerformersViewResponse:
                 "metric_value": 250,
                 "details": {
                     "long_url": "https://www.example.com/long",
-                    "short_url": "https://short.ly/short"
-                }
+                    "short_url": "https://short.ly/short",
+                },
             }
         ]
 
-        with patch('api.admin_panel.insight.InsightService.InsightService.get_top_performers') as mock_service:
+        with patch(
+            "api.admin_panel.insight.InsightService.InsightService.get_top_performers"
+        ) as mock_service:
             mock_service.return_value = expected_performers
 
             response = self.client.get(self.url)
@@ -457,10 +466,12 @@ class TestPeakTimesViewAuthentication:
         """Test admin users can access peak times endpoint"""
         self.client.force_authenticate(user=self.admin_user)
 
-        with patch('api.admin_panel.insight.InsightService.InsightService.get_peak_times') as mock_service:
+        with patch(
+            "api.admin_panel.insight.InsightService.InsightService.get_peak_times"
+        ) as mock_service:
             mock_service.return_value = {
                 "day": {"peak_day": "Monday", "avg_clicks": 100},
-                "hour": {"peak_hour": "12:00PM UTC", "avg_clicks": 50}
+                "hour": {"peak_hour": "12:00PM UTC", "avg_clicks": 50},
             }
 
             response = self.client.get(self.url)
@@ -487,10 +498,12 @@ class TestPeakTimesViewResponse:
         """Test peak times endpoint returns correct response structure"""
         expected_peak_times = {
             "day": {"peak_day": "Tuesday", "avg_clicks": 120},
-            "hour": {"peak_hour": "2:00PM UTC", "avg_clicks": 75}
+            "hour": {"peak_hour": "2:00PM UTC", "avg_clicks": 75},
         }
 
-        with patch('api.admin_panel.insight.InsightService.InsightService.get_peak_times') as mock_service:
+        with patch(
+            "api.admin_panel.insight.InsightService.InsightService.get_peak_times"
+        ) as mock_service:
             mock_service.return_value = expected_peak_times
 
             response = self.client.get(self.url)
@@ -560,13 +573,15 @@ class TestGeoDistributionViewAuthentication:
         """Test admin users can access geo distribution endpoint"""
         self.client.force_authenticate(user=self.admin_user)
 
-        with patch('api.admin_panel.insight.InsightService.InsightService.get_geo_distribution') as mock_service:
+        with patch(
+            "api.admin_panel.insight.InsightService.InsightService.get_geo_distribution"
+        ) as mock_service:
             mock_service.return_value = [
                 {
                     "rank": 1,
                     "country": "United States",
                     "clicks": 1000,
-                    "percentage": 45.5
+                    "percentage": 45.5,
                 }
             ]
 
@@ -592,7 +607,9 @@ class TestGeoDistributionViewResponse:
 
     def test_empty_response_structure(self):
         """Test geo distribution endpoint handles empty response correctly"""
-        with patch('api.admin_panel.insight.InsightService.InsightService.get_geo_distribution') as mock_service:
+        with patch(
+            "api.admin_panel.insight.InsightService.InsightService.get_geo_distribution"
+        ) as mock_service:
             mock_service.return_value = []
 
             response = self.client.get(self.url)
@@ -603,21 +620,13 @@ class TestGeoDistributionViewResponse:
     def test_response_structure(self):
         """Test geo distribution endpoint returns correct response structure"""
         expected_geo_data = [
-            {
-                "rank": 1,
-                "country": "United States",
-                "clicks": 1200,
-                "percentage": 35.5
-            },
-            {
-                "rank": 2,
-                "country": "Canada",
-                "clicks": 800,
-                "percentage": 25.0
-            }
+            {"rank": 1, "country": "United States", "clicks": 1200, "percentage": 35.5},
+            {"rank": 2, "country": "Canada", "clicks": 800, "percentage": 25.0},
         ]
 
-        with patch('api.admin_panel.insight.InsightService.InsightService.get_geo_distribution') as mock_service:
+        with patch(
+            "api.admin_panel.insight.InsightService.InsightService.get_geo_distribution"
+        ) as mock_service:
             mock_service.return_value = expected_geo_data
 
             response = self.client.get(self.url)
@@ -638,7 +647,7 @@ class TestInsightViewsRateLimiting:
 
     def setup_method(self):
         self.client = APIClient()
-        
+
         # Create admin user for testing
         self.admin_user = User.objects.create_user(
             username="adminuser",
@@ -650,23 +659,56 @@ class TestInsightViewsRateLimiting:
 
         # Mock service methods to avoid DB calls
         self.patchers = [
-            patch('api.admin_panel.insight.InsightService.InsightService.get_platform_stats'),
-            patch('api.admin_panel.insight.InsightService.InsightService.get_growth_metrics'),
-            patch('api.admin_panel.insight.InsightService.InsightService.get_top_performers'),
-            patch('api.admin_panel.insight.InsightService.InsightService.get_peak_times'),
-            patch('api.admin_panel.insight.InsightService.InsightService.get_geo_distribution')
+            patch(
+                "api.admin_panel.insight.InsightService.InsightService.get_platform_stats"
+            ),
+            patch(
+                "api.admin_panel.insight.InsightService.InsightService.get_growth_metrics"
+            ),
+            patch(
+                "api.admin_panel.insight.InsightService.InsightService.get_top_performers"
+            ),
+            patch(
+                "api.admin_panel.insight.InsightService.InsightService.get_peak_times"
+            ),
+            patch(
+                "api.admin_panel.insight.InsightService.InsightService.get_geo_distribution"
+            ),
         ]
-        
+
         # Start all patchers
         self.mock_services = [patcher.start() for patcher in self.patchers]
-        
+
         # Set return values
-        self.mock_services[0].return_value = {"total_clicks": 100, "new_urls": 10, "new_users": 5, "new_visitors": 80}
-        self.mock_services[1].return_value = {"growth_interval": "weekly", "data_points": 10, "metrics": {"users_growth": [], "urls_growth": [], "clicks_volume": []}}
-        self.mock_services[2].return_value = [{"rank": 1, "identifier_type": "name", "identifier_value": "test", "metric": "clicks", "metric_value": 100, "details": {"long_url": "test", "short_url": "test"}}]
-        self.mock_services[3].return_value = {"day": {"peak_day": "Monday", "avg_clicks": 100}, "hour": {"peak_hour": "12:00PM UTC", "avg_clicks": 50}}
-        self.mock_services[4].return_value = [{"rank": 1, "country": "US", "clicks": 100, "percentage": 50.0}]
-    
+        self.mock_services[0].return_value = {
+            "total_clicks": 100,
+            "new_urls": 10,
+            "new_users": 5,
+            "new_visitors": 80,
+        }
+        self.mock_services[1].return_value = {
+            "growth_interval": "weekly",
+            "data_points": 10,
+            "metrics": {"users_growth": [], "urls_growth": [], "clicks_volume": []},
+        }
+        self.mock_services[2].return_value = [
+            {
+                "rank": 1,
+                "identifier_type": "name",
+                "identifier_value": "test",
+                "metric": "clicks",
+                "metric_value": 100,
+                "details": {"long_url": "test", "short_url": "test"},
+            }
+        ]
+        self.mock_services[3].return_value = {
+            "day": {"peak_day": "Monday", "avg_clicks": 100},
+            "hour": {"peak_hour": "12:00PM UTC", "avg_clicks": 50},
+        }
+        self.mock_services[4].return_value = [
+            {"rank": 1, "country": "US", "clicks": 100, "percentage": 50.0}
+        ]
+
     def teardown_method(self):
         # Stop all patchers
         for patcher in self.patchers:

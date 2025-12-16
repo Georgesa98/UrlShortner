@@ -13,8 +13,16 @@ from api.url.models import Url, UrlStatus
 
 
 class AnalyticsService:
+    """Service for recording and analyzing URL visit data."""
+
     @staticmethod
     def record_visit(request, url_instance):
+        """Record a visit to a URL with analytics data.
+
+        Args:
+            request: The HTTP request object.
+            url_instance (Url): The URL instance being visited.
+        """
         track_ip = get_analytics_track_ip()
         if track_ip:
             ip = get_ip_address(request)
@@ -46,12 +54,30 @@ class AnalyticsService:
 
     @staticmethod
     def get_top_visited_urls(user_id: int, num: int):
+        """Get the top visited URLs for a user.
+
+        Args:
+            user_id (int): The user ID.
+            num (int): Number of top URLs to return.
+
+        Returns:
+            QuerySet: Top visited URLs ordered by visit count.
+        """
         from api.url.models import Url
 
         return Url.objects.filter(user_id=user_id).order_by("-visits")[:num]
 
     @staticmethod
     def get_url_summary(url_id: str, range_days: int = 7):
+        """Get detailed analytics summary for a URL.
+
+        Args:
+            url_id (str): The URL ID.
+            range_days (int, optional): Number of days for analytics range. Defaults to 7.
+
+        Returns:
+            dict: Analytics data including basic info, daily visits, top metrics, and recent visitors.
+        """
         url_instance = Url.objects.select_related("url_status").get(id=url_id)
 
         end_date = datetime.now(timezone.utc)

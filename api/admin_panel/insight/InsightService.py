@@ -11,10 +11,20 @@ User = get_user_model()
 
 
 class InsightService:
+    """Service for platform insights and analytics."""
+
     @staticmethod
     def get_platform_stats(
         time_range: str = (datetime.now(timezone.utc) - timedelta(days=7)).isoformat,
     ):
+        """Get platform statistics for a given time range.
+
+        Args:
+            time_range (str): ISO formatted datetime string for the start of the range.
+
+        Returns:
+            dict: Statistics including total clicks, new URLs, new users, and unique visits.
+        """
         total_clicks = Visit.objects.filter(timestamp__gte=time_range).count()
         new_urls = Url.objects.filter(created_at__gte=time_range).count()
         new_users = User.objects.filter(date_joined__gte=time_range).count()
@@ -30,6 +40,11 @@ class InsightService:
 
     @staticmethod
     def get_growth_metrics():
+        """Get growth metrics over the past 10 weeks.
+
+        Returns:
+            dict: Growth data for users, URLs, and clicks with weekly breakdowns.
+        """
         data_points = 10
         current_date = datetime.now(timezone.utc)
         start_date = current_date - timedelta(weeks=data_points - 1)
@@ -91,6 +106,15 @@ class InsightService:
 
     @staticmethod
     def get_top_performers(metric: str, limit: int):
+        """Get top performers by specified metric.
+
+        Args:
+            metric (str): The metric to rank by ('clicks' or 'urls_created').
+            limit (int): Number of top performers to return.
+
+        Returns:
+            list: Ranked list of top performers with details.
+        """
         response = []
         if metric is "clicks":
             top_urls = Url.objects.all().order_by("-visits")[:limit]
@@ -141,6 +165,11 @@ class InsightService:
 
     @staticmethod
     def get_peak_times():
+        """Get peak usage times based on visit data.
+
+        Returns:
+            dict: Peak day and hour with average clicks.
+        """
         thirty_days_ago = datetime.now(timezone.utc) - timedelta(days=30)
         visits = Visit.objects.filter(timestamp__gte=thirty_days_ago)
         day_counts = defaultdict(int)
@@ -171,7 +200,11 @@ class InsightService:
 
     @staticmethod
     def get_geo_distribution():
+        """Get geographic distribution of visits.
 
+        Returns:
+            list: Ranked countries by visit count with percentages.
+        """
         seven_days_ago = datetime.now(timezone.utc) - timedelta(days=7)
         visits = Visit.objects.filter(
             timestamp__gte=seven_days_ago, geolocation__isnull=False

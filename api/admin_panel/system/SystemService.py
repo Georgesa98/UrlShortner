@@ -14,7 +14,10 @@ class HealthStatus(str, Enum):
 
 
 class SystemService:
+    """Service for system health monitoring and diagnostics."""
+
     def __init__(self):
+        """Initialize the SystemService with Redis client."""
         self.redis_client = self._get_redis_client()
 
     def _get_redis_client(self):
@@ -202,6 +205,11 @@ class SystemService:
             }
 
     def get_system_health(self):
+        """Get comprehensive system health report.
+
+        Returns:
+            dict: Health status for all system components including database, cache, Redis, Celery, disk, and memory.
+        """
         components = {
             "database": self._check_database(),
             "cache": self._check_cache(),

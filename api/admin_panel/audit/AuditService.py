@@ -8,12 +8,24 @@ User = get_user_model()
 
 
 class AuditService:
+    """Service for audit logging and retrieval."""
+
     @staticmethod
     def initiate_log(
         action: str,
         ip_address: str,
         user_id: str = None,
     ):
+        """Create initial audit log entry.
+
+        Args:
+            action (str): The action being performed.
+            ip_address (str): The IP address of the request.
+            user_id (str, optional): The user ID performing the action.
+
+        Returns:
+            AuditLog: The created audit log instance.
+        """
         hidden_ip = anonymize_ip(ip_address)
         user_instance = None
         if user_id:
@@ -36,6 +48,15 @@ class AuditService:
         successful: bool,
         changes: dict = None,
     ):
+        """Update audit log with completion details.
+
+        Args:
+            audit_id (str): The audit log ID to update.
+            content_type (str): Type of content affected.
+            content_id (str): ID of the affected content.
+            successful (bool): Whether the action was successful.
+            changes (dict, optional): Details of changes made.
+        """
         audit_instance = AuditLog.objects.get(id=audit_id)
         audit_instance.content_id = content_id
         audit_instance.content_type = content_type
@@ -53,6 +74,20 @@ class AuditService:
         page_size=10,
         sort_by="-timestamp",
     ):
+        """Fetch paginated audit logs with filtering.
+
+        Args:
+            user_id (str, optional): Filter by user ID.
+            action (str, optional): Filter by action.
+            date_from (datetime, optional): Filter from date.
+            date_to (datetime, optional): Filter to date.
+            page (int, optional): Page number. Defaults to 1.
+            page_size (int, optional): Items per page. Defaults to 10.
+            sort_by (str, optional): Sort field. Defaults to "-timestamp".
+
+        Returns:
+            dict: Paginated audit logs with metadata.
+        """
         queryset = AuditLog.objects.all()
 
         if user_id:

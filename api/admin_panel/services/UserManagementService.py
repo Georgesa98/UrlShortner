@@ -8,6 +8,8 @@ User = get_user_model()
 
 
 class UserManagementService:
+    """Service for administrative user management operations."""
+
     @staticmethod
     def get_users_with_pagination(
         roles: list = [User.Role.USER, User.Role.STAFF, User.Role.ADMIN],
@@ -16,6 +18,18 @@ class UserManagementService:
         limit: int = 10,
         page: int = 1,
     ):
+        """Get paginated users with filtering.
+
+        Args:
+            roles (list, optional): List of user roles to filter. Defaults to all roles.
+            is_active (List[bool], optional): Active status filter. Defaults to both.
+            order_by (str, optional): Ordering field. Defaults to "-date_joined".
+            limit (int, optional): Users per page. Defaults to 10.
+            page (int, optional): Page number. Defaults to 1.
+
+        Returns:
+            dict: Users list and pagination info.
+        """
         users = User.objects.filter(role__in=roles, is_active__in=is_active).order_by(
             order_by
         )
@@ -53,6 +67,14 @@ class UserManagementService:
 
     @staticmethod
     def toggle_ban_user(user_id: str):
+        """Toggle active status of a user (ban/unban).
+
+        Args:
+            user_id (str): The user ID.
+
+        Returns:
+            User: The updated user instance.
+        """
         user_instance = User.objects.get(id=user_id)
         user_instance.is_active = not user_instance.is_active
         user_instance.save()
@@ -60,18 +82,44 @@ class UserManagementService:
 
     @staticmethod
     def bulk_user_deletion(user_ids: list):
+        """Delete multiple users by their IDs.
+
+        Args:
+            user_ids (list): List of user IDs to delete.
+
+        Returns:
+            int: Number of users deleted.
+        """
         users_to_delete = User.objects.filter(id__in=user_ids)
         count, _ = users_to_delete.delete()
         return count
 
     @staticmethod
     def get_user_details(user_id: str):
+        """Get detailed information about a user including their URLs.
+
+        Args:
+            user_id (str): The user ID.
+
+        Returns:
+            dict: User details with associated URLs.
+        """
         user_instance = User.objects.get(id=user_id)
         url_instances = Url.objects.filter(user=user_instance)
         return {"user": user_instance, "urls": url_instances}
 
     @staticmethod
     def search_users_with_pagination(query: str, limit: int = 10, page: int = 1):
+        """Search users by query with pagination.
+
+        Args:
+            query (str): Search query for username, first_name, or last_name.
+            limit (int, optional): Results per page. Defaults to 10.
+            page (int, optional): Page number. Defaults to 1.
+
+        Returns:
+            dict: Search results with users and pagination info.
+        """
         users = User.objects.filter(
             Q(username__icontains=query)
             | Q(first_name__icontains=query)
