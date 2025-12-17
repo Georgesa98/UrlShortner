@@ -2,6 +2,7 @@ from rest_framework.generics import GenericAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import ValidationError
 from api.custom_auth.permissions import IsAdmin
+from api.url.permissions import IsUrlOwner
 from api.throttling import IPRateThrottle, UserRateThrottle
 from config.utils.responses import SuccessResponse, ErrorResponse
 from .RedirectionService import RedirectionService
@@ -120,7 +121,7 @@ class RedirectionRuleDetailView(GenericAPIView):
 
 class TestRedirectionView(GenericAPIView):
     serializer_class = TestRedirectionSerializer
-    permission_classes = [IsAuthenticated, IsAdmin]
+    permission_classes = [IsAuthenticated, IsUrlOwner]
     throttle_classes = [IPRateThrottle, UserRateThrottle]
 
     def post(self, request):
@@ -131,9 +132,21 @@ class TestRedirectionView(GenericAPIView):
 
             url_id = validated_data.pop("url_id")
 
+            try:
+                url = Url.objects.get(id=url_id)
+            except Url.DoesNotExist:
+                return ErrorResponse(message="URL not found", status=404)
+
+            try:
+                self.check_object_permissions(request, url)
+            except Exception:
+                return ErrorResponse(
+                    message="You don't have permission to test rules for this URL",
+                    status=403,
+                )
+
             service = RedirectionService()
             matched_rule = service.test_evaluate_rules(url_id, validated_data)
-            url = Url.objects.get(id=url_id)
 
             if matched_rule:
                 response_data = {

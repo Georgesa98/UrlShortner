@@ -819,15 +819,29 @@ class TestRuleEvaluationEndpoint:
         """Test evaluation with non-existent URL ID"""
         payload = {"url_id": 999999}
         response = self.client.post(self.evaluate_url, payload, format="json")
-        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert response.status_code == status.HTTP_404_NOT_FOUND
         assert response.data["success"] == False
 
-    def test_evaluate_non_admin_access_denied(self):
-        """Test that non-admin users cannot access evaluation endpoint"""
+    def test_evaluate_owner_access_allowed(self):
+        """Test that URL owners can access evaluation endpoint for their URLs"""
         regular_client = APIClient()
         regular_client.force_authenticate(user=self.regular_user)
         payload = {"url_id": self.url.id}
         response = regular_client.post(self.evaluate_url, payload, format="json")
+        assert response.status_code == status.HTTP_200_OK
+
+    def test_evaluate_non_owner_access_denied(self):
+        """Test that non-owners cannot access evaluation endpoint for others' URLs"""
+        other_user = User.objects.create_user(
+            username="otheruser",
+            email="other@example.com",
+            password="otherpass123",
+            role=User.Role.USER,
+        )
+        other_client = APIClient()
+        other_client.force_authenticate(user=other_user)
+        payload = {"url_id": self.url.id}  # self.url belongs to self.regular_user
+        response = other_client.post(self.evaluate_url, payload, format="json")
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
     def test_evaluate_payload_validation_error(self):
