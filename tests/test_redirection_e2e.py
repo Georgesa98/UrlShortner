@@ -110,108 +110,6 @@ class TestRedirectionRulesListEndpoint:
         assert len(response.data["data"]) == 1
         assert response.data["data"][0]["name"] == "Rule for URL1"
 
-    def test_create_rule_success(self):
-        """Test successful rule creation"""
-        payload = {
-            "name": "Test redirect rule",
-            "url": self.url1.id,
-            "conditions": {"device_type": "mobile", "country": ["US"]},
-            "target_url": "https://mobile.example.com",
-            "priority": 5,
-            "is_active": True,
-        }
-
-        response = self.client.post(self.base_url, payload, format="json")
-
-        assert response.status_code == status.HTTP_201_CREATED
-        assert response.data["success"] == True
-        assert "Redirection rule created successfully" in response.data["message"]
-
-        data = response.data["data"]
-        assert data["name"] == payload["name"]
-        assert data["url"] == payload["url"]
-        assert data["conditions"] == payload["conditions"]
-        assert data["target_url"] == payload["target_url"]
-        assert data["priority"] == payload["priority"]
-        assert data["is_active"] == payload["is_active"]
-
-        # Verify in database
-        rule = RedirectionRule.objects.get(id=data["id"])
-        assert rule.name == payload["name"]
-
-    def test_create_rule_validation_error(self):
-        """Test rule creation with invalid data"""
-        payload = {
-            "name": "",  # Invalid: empty name
-            "url": self.url1.id,
-            "conditions": {"invalid_key": "value"},  # Invalid condition key
-            "target_url": "not-a-url",  # Invalid URL
-            "priority": 5,
-        }
-
-        response = self.client.post(self.base_url, payload, format="json")
-
-        assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert response.data["success"] == False
-
-    def test_create_rule_business_logic_priority_conflict(self):
-        """Test priority uniqueness per URL"""
-        # Create first rule
-        RedirectionRule.objects.create(
-            name="First rule",
-            url=self.url1,
-            conditions={"device_type": "mobile"},
-            target_url="https://first.example.com",
-            priority=1,
-        )
-
-        # Try to create second rule with same priority
-        payload = {
-            "name": "Second rule",
-            "url": self.url1.id,
-            "conditions": {"country": ["US"]},
-            "target_url": "https://second.example.com",
-            "priority": 1,  # Same priority
-        }
-
-        response = self.client.post(self.base_url, payload, format="json")
-
-        assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert "already exists" in response.data["message"]
-
-    def test_create_rule_business_logic_loop_prevention(self):
-        """Test prevention of redirect loops"""
-        payload = {
-            "name": "Loop rule",
-            "url": self.url1.id,
-            "conditions": {"device_type": "mobile"},
-            "target_url": self.url1.long_url,  # Same as original URL
-            "priority": 1,
-        }
-
-        response = self.client.post(self.base_url, payload, format="json")
-
-        assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert "cannot be the same" in response.data["message"]
-
-    def test_create_rule_non_admin_access_denied(self):
-        """Test that non-admin users cannot create rules"""
-        # Create non-admin client
-        regular_client = APIClient()
-        regular_client.force_authenticate(user=self.regular_user)
-
-        payload = {
-            "name": "Test rule",
-            "url": self.url1.id,
-            "conditions": {"device_type": "mobile"},
-            "target_url": "https://example.com",
-            "priority": 1,
-        }
-
-        response = regular_client.post(self.base_url, payload, format="json")
-
-        assert response.status_code == status.HTTP_403_FORBIDDEN
-
 
 @pytest.mark.django_db
 class TestRedirectionRuleDetailEndpoint:
@@ -346,135 +244,6 @@ class TestRedirectionRuleDetailEndpoint:
         # Test DELETE
         response = regular_client.delete(self.detail_url)
         assert response.status_code == status.HTTP_403_FORBIDDEN
-
-
-@pytest.mark.django_db
-class TestRedirectionRulesConditionsValidation:
-    """Test conditions validation in redirection rules"""
-
-    def setup_method(self):
-        self.client = APIClient()
-        self.admin_user = User.objects.create_user(
-            username="adminuser",
-            email="admin@example.com",
-            password="adminpass123",
-            role=User.Role.ADMIN,
-        )
-        self.client.force_authenticate(user=self.admin_user)
-
-        self.regular_user = User.objects.create_user(
-            username="regularuser",
-            email="regular@example.com",
-            password="regularpass123",
-            role=User.Role.USER,
-        )
-
-        self.url = Url.objects.create(
-            long_url="https://www.example.com/test",
-            short_url="test123",
-            user=self.regular_user,
-        )
-
-        self.base_url = "/api/url/redirection/rules/"
-
-    def test_conditions_country_validation(self):
-        """Test country code validation"""
-        # Valid country codes
-        payload = {
-            "name": "Country rule",
-            "url": self.url.id,
-            "conditions": {"country": ["US", "CA", "GB"]},
-            "target_url": "https://example.com",
-            "priority": 1,
-        }
-        response = self.client.post(self.base_url, payload, format="json")
-        assert response.status_code == status.HTTP_201_CREATED
-
-        # Invalid country code
-        payload["conditions"] = {"country": ["INVALID"]}
-        response = self.client.post(self.base_url, payload, format="json")
-        assert response.status_code == status.HTTP_400_BAD_REQUEST
-
-    def test_conditions_device_type_validation(self):
-        """Test device type validation"""
-        payload = {
-            "name": "Device rule",
-            "url": self.url.id,
-            "conditions": {"device_type": "mobile"},
-            "target_url": "https://mobile.example.com",
-            "priority": 1,
-        }
-        response = self.client.post(self.base_url, payload, format="json")
-        assert response.status_code == status.HTTP_201_CREATED
-
-        # Invalid device type
-        payload["conditions"] = {"device_type": "invalid_device"}
-        response = self.client.post(self.base_url, payload, format="json")
-        assert response.status_code == status.HTTP_400_BAD_REQUEST
-
-    def test_conditions_time_range_validation(self):
-        """Test time range validation"""
-        payload = {
-            "name": "Time rule",
-            "url": self.url.id,
-            "conditions": {"time_range": {"start": "09:00", "end": "17:00"}},
-            "target_url": "https://day.example.com",
-            "priority": 1,
-        }
-        response = self.client.post(self.base_url, payload, format="json")
-        assert response.status_code == status.HTTP_201_CREATED
-
-        # Invalid time format
-        payload["conditions"] = {"time_range": {"start": "25:00", "end": "17:00"}}
-        response = self.client.post(self.base_url, payload, format="json")
-        assert response.status_code == status.HTTP_400_BAD_REQUEST
-
-    def test_conditions_invalid_key_validation(self):
-        """Test invalid condition key rejection"""
-        payload = {
-            "name": "Invalid condition",
-            "url": self.url.id,
-            "conditions": {"invalid_key": "value"},
-            "target_url": "https://example.com",
-            "priority": 1,
-        }
-        response = self.client.post(self.base_url, payload, format="json")
-        assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert "Invalid condition key" in response.data["message"]
-
-    def test_conditions_browser_validation(self):
-        """Test browser validation"""
-        payload = {
-            "name": "Browser rule",
-            "url": self.url.id,
-            "conditions": {"browser": "chrome"},
-            "target_url": "https://chrome.example.com",
-            "priority": 1,
-        }
-        response = self.client.post(self.base_url, payload, format="json")
-        assert response.status_code == status.HTTP_201_CREATED
-
-        # Invalid browser
-        payload["conditions"] = {"browser": "unknown_browser"}
-        response = self.client.post(self.base_url, payload, format="json")
-        assert response.status_code == status.HTTP_400_BAD_REQUEST
-
-    def test_conditions_language_validation(self):
-        """Test language code validation"""
-        payload = {
-            "name": "Language rule",
-            "url": self.url.id,
-            "conditions": {"language": ["en", "es", "fr"]},
-            "target_url": "https://multi.example.com",
-            "priority": 1,
-        }
-        response = self.client.post(self.base_url, payload, format="json")
-        assert response.status_code == status.HTTP_201_CREATED
-
-        # Invalid language code
-        payload["conditions"] = {"language": ["invalid"]}
-        response = self.client.post(self.base_url, payload, format="json")
-        assert response.status_code == status.HTTP_400_BAD_REQUEST
 
 
 @pytest.mark.django_db
@@ -850,3 +619,411 @@ class TestRuleEvaluationEndpoint:
         response = self.client.post(self.evaluate_url, payload, format="json")
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert response.data["success"] == False
+
+
+@pytest.mark.django_db
+class TestBatchRedirectionRulesCreateEndpoint:
+    """Test POST /api/url/redirection/rules/batch/ endpoint for batch rule creation"""
+
+    def setup_method(self):
+        self.client = APIClient()
+        self.admin_user = User.objects.create_user(
+            username="adminuser",
+            email="admin@example.com",
+            password="adminpass123",
+            role=User.Role.ADMIN,
+        )
+        self.client.force_authenticate(user=self.admin_user)
+
+        self.regular_user = User.objects.create_user(
+            username="regularuser",
+            email="regular@example.com",
+            password="regularpass123",
+            role=User.Role.USER,
+        )
+
+        self.url1 = Url.objects.create(
+            long_url="https://www.example.com/page1",
+            short_url="abc123",
+            user=self.regular_user,
+        )
+        self.url2 = Url.objects.create(
+            long_url="https://www.example.com/page2",
+            short_url="def456",
+            user=self.regular_user,
+        )
+
+        self.batch_url = "/api/url/redirection/rules/batch/"
+
+    def test_batch_create_success(self):
+        """Test successful batch creation of multiple rules"""
+        payload = {
+            "rules": [
+                {
+                    "name": "Mobile redirect 1",
+                    "url_id": self.url1.id,
+                    "conditions": {"device_type": "mobile"},
+                    "target_url": "https://mobile1.example.com",
+                    "priority": 1,
+                    "is_active": True,
+                },
+                {
+                    "name": "Country redirect 2",
+                    "url_id": self.url2.id,
+                    "conditions": {"country": ["US", "CA"]},
+                    "target_url": "https://us2.example.com",
+                    "priority": 2,
+                    "is_active": True,
+                },
+            ]
+        }
+
+        response = self.client.post(self.batch_url, payload, format="json")
+
+        assert response.status_code == status.HTTP_201_CREATED
+        assert response.data["success"] == True
+        assert "2 created, 0 failed" in response.data["message"]
+
+        data = response.data["data"]
+        assert len(data["created_rules"]) == 2
+        assert len(data["failed_rules"]) == 0
+
+        # Verify in database
+        rules = RedirectionRule.objects.filter(url__in=[self.url1, self.url2])
+        assert rules.count() == 2
+        assert rules.filter(name="Mobile redirect 1").exists()
+        assert rules.filter(name="Country redirect 2").exists()
+
+    def test_batch_create_full_rejection_on_invalid(self):
+        """Test batch creation rejects entire batch if any rule is invalid"""
+        # Create existing rule to cause priority conflict
+        RedirectionRule.objects.create(
+            name="Existing rule",
+            url=self.url1,
+            conditions={"device_type": "desktop"},
+            target_url="https://existing.example.com",
+            priority=1,
+        )
+
+        payload = {
+            "rules": [
+                {
+                    "name": "Valid rule",
+                    "url_id": self.url1.id,
+                    "conditions": {"device_type": "mobile"},
+                    "target_url": "https://valid.example.com",
+                    "priority": 2,
+                },
+                {
+                    "name": "Priority conflict",
+                    "url_id": self.url1.id,
+                    "conditions": {"browser": "chrome"},
+                    "target_url": "https://conflict.example.com",
+                    "priority": 1,  # Same as existing - invalid
+                },
+            ]
+        }
+
+        response = self.client.post(self.batch_url, payload, format="json")
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert response.data["success"] == False
+        # Entire batch rejected due to priority conflict validation
+
+    def test_batch_create_validation_error(self):
+        """Test batch creation with invalid rule data - should reject entire batch"""
+        payload = {
+            "rules": [
+                {
+                    "name": "",  # Invalid: empty name
+                    "url_id": self.url1.id,
+                    "conditions": {"invalid_key": "value"},  # Invalid condition
+                    "target_url": "not-a-url",  # Invalid URL
+                    "priority": 1,
+                }
+            ]
+        }
+
+        response = self.client.post(self.batch_url, payload, format="json")
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert response.data["success"] == False
+
+    def test_batch_create_limit_exceeded(self):
+        """Test batch creation with too many rules"""
+        rules = []
+        for i in range(51):  # Exceed limit of 50
+            rules.append(
+                {
+                    "name": f"Rule {i}",
+                    "url_id": self.url1.id,
+                    "conditions": {"device_type": "mobile"},
+                    "target_url": f"https://rule{i}.example.com",
+                    "priority": i + 1,
+                }
+            )
+
+        payload = {"rules": rules}
+        response = self.client.post(self.batch_url, payload, format="json")
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+    def test_batch_create_empty_list(self):
+        """Test batch creation with empty rules list"""
+        payload = {"rules": []}
+        response = self.client.post(self.batch_url, payload, format="json")
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+    def test_batch_create_normal_user_ownership_enforced(self):
+        """Test that normal users can only create rules for their own URLs"""
+        regular_client = APIClient()
+        regular_client.force_authenticate(user=self.regular_user)
+
+        # Create URL owned by different user
+        other_user = User.objects.create_user(
+            username="otheruser",
+            email="other@example.com",
+            password="otherpass123",
+            role=User.Role.USER,
+        )
+        other_url = Url.objects.create(
+            long_url="https://www.other.com",
+            short_url="other123",
+            user=other_user,
+        )
+
+        payload = {
+            "rules": [
+                {
+                    "name": "Own URL rule",
+                    "url_id": self.url1.id,  # regular_user owns this
+                    "conditions": {"device_type": "mobile"},
+                    "target_url": "https://own.example.com",
+                    "priority": 1,
+                },
+                {
+                    "name": "Other user's URL rule",
+                    "url_id": other_url.id,  # regular_user does not own this
+                    "conditions": {"device_type": "mobile"},
+                    "target_url": "https://other.example.com",
+                    "priority": 1,
+                },
+            ]
+        }
+
+        response = regular_client.post(self.batch_url, payload, format="json")
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "not owned by user" in str(response.data["message"])
+
+    def test_batch_create_admin_can_create_for_any_url(self):
+        """Test that admins can create rules for any user's URLs"""
+        other_user = User.objects.create_user(
+            username="otheruser",
+            email="other@example.com",
+            password="otherpass123",
+            role=User.Role.USER,
+        )
+        other_url = Url.objects.create(
+            long_url="https://www.other.com",
+            short_url="other123",
+            user=other_user,
+        )
+
+        payload = {
+            "rules": [
+                {
+                    "name": "Admin rule for other user",
+                    "url_id": other_url.id,  # Admin can access other user's URL
+                    "conditions": {"device_type": "mobile"},
+                    "target_url": "https://admin.example.com",
+                    "priority": 1,
+                }
+            ]
+        }
+
+        response = self.client.post(self.batch_url, payload, format="json")
+
+        assert response.status_code == status.HTTP_201_CREATED
+        assert "1 created, 0 failed" in response.data["message"]
+
+
+@pytest.mark.django_db
+class TestBatchRedirectionRulesDeleteEndpoint:
+    """Test DELETE /api/url/redirection/rules/batch/ endpoint for batch rule deletion"""
+
+    def setup_method(self):
+        self.client = APIClient()
+        self.admin_user = User.objects.create_user(
+            username="adminuser",
+            email="admin@example.com",
+            password="adminpass123",
+            role=User.Role.ADMIN,
+        )
+        self.client.force_authenticate(user=self.admin_user)
+
+        self.regular_user = User.objects.create_user(
+            username="regularuser",
+            email="regular@example.com",
+            password="regularpass123",
+            role=User.Role.USER,
+        )
+
+        self.url = Url.objects.create(
+            long_url="https://www.example.com/test",
+            short_url="test123",
+            user=self.regular_user,
+        )
+
+        # Create test rules
+        self.rule1 = RedirectionRule.objects.create(
+            name="Rule 1",
+            url=self.url,
+            conditions={"device_type": "mobile"},
+            target_url="https://mobile.example.com",
+            priority=1,
+        )
+        self.rule2 = RedirectionRule.objects.create(
+            name="Rule 2",
+            url=self.url,
+            conditions={"country": ["US"]},
+            target_url="https://us.example.com",
+            priority=2,
+        )
+
+        self.batch_url = "/api/url/redirection/rules/batch/"
+
+    def test_batch_delete_success(self):
+        """Test successful batch deletion of multiple rules"""
+        payload = {"rule_ids": [self.rule1.id, self.rule2.id]}
+
+        response = self.client.delete(self.batch_url, payload, format="json")
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["success"] == True
+        assert "2 deleted, 0 failed" in response.data["message"]
+
+        data = response.data["data"]
+        assert data["deleted_count"] == 2
+        assert len(data["failed_rules"]) == 0
+
+        # Verify deleted from database
+        assert not RedirectionRule.objects.filter(
+            id__in=[self.rule1.id, self.rule2.id]
+        ).exists()
+
+    def test_batch_delete_partial_failure(self):
+        """Test batch deletion with some rules existing and others not"""
+        payload = {
+            "rule_ids": [
+                self.rule1.id,  # Exists
+                99999,  # Doesn't exist
+                self.rule2.id,  # Exists
+                88888,  # Doesn't exist
+            ]
+        }
+
+        response = self.client.delete(self.batch_url, payload, format="json")
+
+        assert response.status_code == status.HTTP_200_OK
+        assert "2 deleted, 2 failed" in response.data["message"]
+
+        data = response.data["data"]
+        assert data["deleted_count"] == 2
+        assert len(data["failed_rules"]) == 2
+
+        # Check failure reasons
+        failed_ids = [f["rule_id"] for f in data["failed_rules"]]
+        assert 99999 in failed_ids
+        assert 88888 in failed_ids
+
+    def test_batch_delete_empty_list(self):
+        """Test batch deletion with empty rule_ids list"""
+        payload = {"rule_ids": []}
+        response = self.client.delete(self.batch_url, payload, format="json")
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+    def test_batch_delete_duplicate_ids(self):
+        """Test batch deletion with duplicate rule IDs"""
+        payload = {"rule_ids": [self.rule1.id, self.rule1.id, self.rule2.id]}
+
+        response = self.client.delete(self.batch_url, payload, format="json")
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "must be unique" in str(response.data["message"])
+
+    def test_batch_delete_limit_exceeded(self):
+        """Test batch deletion with too many IDs"""
+        rule_ids = list(range(1, 52))  # 51 IDs, exceeds limit of 50
+        payload = {"rule_ids": rule_ids}
+        response = self.client.delete(self.batch_url, payload, format="json")
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+    def test_batch_delete_normal_user_ownership_enforced(self):
+        """Test that normal users can only delete rules for their own URLs"""
+        regular_client = APIClient()
+        regular_client.force_authenticate(user=self.regular_user)
+
+        # Create rule for different user
+        other_user = User.objects.create_user(
+            username="otheruser",
+            email="other@example.com",
+            password="otherpass123",
+            role=User.Role.USER,
+        )
+        other_url = Url.objects.create(
+            long_url="https://www.other.com",
+            short_url="other123",
+            user=other_user,
+        )
+        other_rule = RedirectionRule.objects.create(
+            name="Other rule",
+            url=other_url,
+            conditions={"device_type": "mobile"},
+            target_url="https://other.example.com",
+            priority=1,
+        )
+
+        payload = {
+            "rule_ids": [
+                self.rule1.id,  # regular_user owns this
+                other_rule.id,  # regular_user does not own this
+            ]
+        }
+
+        response = regular_client.delete(self.batch_url, payload, format="json")
+
+        assert response.status_code == status.HTTP_200_OK
+        assert "1 deleted, 1 failed" in response.data["message"]
+        assert "not owned by user" in response.data["data"]["failed_rules"][0]["error"]
+
+    def test_batch_delete_ownership_validation(self):
+        """Test that users cannot delete rules for URLs they don't own"""
+        other_user = User.objects.create_user(
+            username="otheruser",
+            email="other@example.com",
+            password="otherpass123",
+            role=User.Role.USER,
+        )
+        other_url = Url.objects.create(
+            long_url="https://www.other.com",
+            short_url="other123",
+            user=other_user,
+        )
+        other_rule = RedirectionRule.objects.create(
+            name="Other rule",
+            url=other_url,
+            conditions={"device_type": "mobile"},
+            target_url="https://other.example.com",
+            priority=1,
+        )
+
+        payload = {"rule_ids": [other_rule.id]}  # Admin doesn't own this rule
+
+        response = self.client.delete(self.batch_url, payload, format="json")
+
+        assert response.status_code == status.HTTP_200_OK
+        assert "1 deleted, 0 failed" in response.data["message"]

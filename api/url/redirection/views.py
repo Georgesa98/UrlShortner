@@ -1,3 +1,4 @@
+from rest_framework import serializers
 from rest_framework.generics import GenericAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import ValidationError
@@ -6,7 +7,12 @@ from api.url.permissions import IsUrlOwner
 from api.throttling import IPRateThrottle, UserRateThrottle
 from config.utils.responses import SuccessResponse, ErrorResponse
 from .RedirectionService import RedirectionService
-from .serializers import RedirectionRuleSerializer, TestRedirectionSerializer
+from .serializers import (
+    RedirectionRuleSerializer,
+    TestRedirectionSerializer,
+    BatchCreateRedirectionRuleSerializer,
+    BatchDeleteRedirectionRuleSerializer,
+)
 from api.url.models import Url
 
 
@@ -33,23 +39,62 @@ class RedirectionRulesListView(GenericAPIView):
                 status=200,
             )
         except Exception as e:
-            return ErrorResponse(message=str(e), status=500)
+            return ErrorResponse(message=str(e), status=400)
+
+
+class BatchRedirectionRulesView(GenericAPIView):
+    permission_classes = [IsAuthenticated]
+    throttle_classes = [IPRateThrottle, UserRateThrottle]
 
     def post(self, request):
+        """Bulk create redirection rules."""
         try:
-            serializer = self.get_serializer(data=request.data)
+            if not request.data.get("rules"):
+                return ErrorResponse(message="Rules list is required", status=400)
+            if len(request.data["rules"]) > 50:
+                return ErrorResponse(
+                    message="Cannot create more than 50 rules at once", status=400
+                )
+            serializer = BatchCreateRedirectionRuleSerializer(
+                data=request.data["rules"], many=True
+            )
             serializer.is_valid(raise_exception=True)
-            rule = RedirectionService.create_rule(serializer.validated_data)
-            serializer = self.get_serializer(rule)
+            validated_rules = serializer.validated_data
+
+            result = RedirectionService.batch_create_rules(
+                validated_rules, request.user
+            )
+
             return SuccessResponse(
-                data=serializer.data,
-                message="Redirection rule created successfully",
+                data={"created_rules": result, "failed_rules": []},
+                message=f"{len(result)} created, 0 failed",
                 status=201,
             )
+        except serializers.ValidationError as e:
+            return ErrorResponse(message=str(e), status=400)
         except ValueError as e:
             return ErrorResponse(message=str(e), status=400)
         except Exception as e:
+            return ErrorResponse(message=str(e), status=500)
+
+    def delete(self, request):
+        """Bulk delete redirection rules."""
+        try:
+            serializer = BatchDeleteRedirectionRuleSerializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            rule_ids = serializer.validated_data["rule_ids"]
+
+            result = RedirectionService.batch_delete_rules(rule_ids, request.user)
+
+            return SuccessResponse(
+                data=result,
+                message=f"Bulk deletion completed: {result['deleted_count']} deleted, {len(result['failed_rules'])} failed",
+                status=200,
+            )
+        except serializers.ValidationError as e:
             return ErrorResponse(message=str(e), status=400)
+        except Exception as e:
+            return ErrorResponse(message=str(e), status=500)
 
 
 class RedirectionRuleDetailView(GenericAPIView):

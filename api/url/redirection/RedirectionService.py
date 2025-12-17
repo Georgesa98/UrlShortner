@@ -1,4 +1,8 @@
 from .models import RedirectionRule
+from api.url.models import Url
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 
 
 class RedirectionService:
@@ -71,6 +75,89 @@ class RedirectionService:
         """Delete a redirection rule with cleanup logic."""
 
         rule.delete()
+
+    @staticmethod
+    def batch_create_rules(validated_rules_data, user):
+        """Bulk create redirection rules - assumes data is pre-validated.
+
+        Args:
+            validated_rules_data (list): List of validated rule data dicts
+            user: User instance for ownership validation
+
+        Returns:
+            list: Created rule instances
+        """
+        created_rules = []
+
+        for rule_data in validated_rules_data:
+            url = rule_data["url"]
+            if url.user != user and user.role != User.Role.ADMIN:
+                raise ValueError(f"URL {url.id} not owned by user")
+
+            priority = rule_data.get("priority", 0)
+            if RedirectionRule.objects.filter(url=url, priority=priority).exists():
+                raise ValueError(f"Priority {priority} already exists for this URL")
+
+            rule = RedirectionRule.objects.create(
+                url=url,
+                name=rule_data.get("name", ""),
+                conditions=rule_data.get("conditions", {}),
+                target_url=rule_data["target_url"],
+                priority=priority,
+                is_active=rule_data.get("is_active", True),
+            )
+
+            created_rules.append(
+                {
+                    "id": rule.id,
+                    "name": rule.name,
+                    "url_id": rule.url.id,
+                    "conditions": rule.conditions,
+                    "target_url": rule.target_url,
+                    "priority": rule.priority,
+                    "is_active": rule.is_active,
+                    "created_at": rule.created_at.isoformat(),
+                }
+            )
+
+        return created_rules
+
+    @staticmethod
+    def batch_delete_rules(rule_ids, user):
+        """Bulk delete redirection rules with validation.
+
+        Args:
+            rule_ids (list): List of rule IDs to delete
+            user: User instance for ownership validation
+
+        Returns:
+            dict: {
+                'deleted_count': int,
+                'failed_rules': list of {'rule_id': int, 'error': str}
+            }
+        """
+        deleted_count = 0
+        failed_rules = []
+
+        for rule_id in rule_ids:
+            try:
+                rule = RedirectionRule.objects.select_related("url").get(id=rule_id)
+
+                if rule.url.user != user and user.role != User.Role.ADMIN:
+                    failed_rules.append(
+                        {"rule_id": rule_id, "error": "Rule not owned by user"}
+                    )
+                    continue
+
+                rule.delete()
+                deleted_count += 1
+
+            except RedirectionRule.DoesNotExist:
+                failed_rules.append({"rule_id": rule_id, "error": "Rule not found"})
+            except Exception as e:
+                failed_rules.append({"rule_id": rule_id, "error": str(e)})
+
+        return {"deleted_count": deleted_count, "failed_rules": failed_rules}
 
     @staticmethod
     def reorder_priorities(url, start_priority=0):

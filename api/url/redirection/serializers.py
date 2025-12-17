@@ -2,6 +2,7 @@ import re
 from rest_framework import serializers
 from iso3166 import countries
 from .models import RedirectionRule
+from api.url.models import Url
 
 
 class RedirectionRuleSerializer(serializers.ModelSerializer):
@@ -170,6 +171,39 @@ class RedirectionRuleSerializer(serializers.ModelSerializer):
                     raise serializers.ValidationError(
                         {"referrer": f"'{ref}' is not a valid domain or URL pattern."}
                     )
+
+
+class BatchCreateRedirectionRuleSerializer(RedirectionRuleSerializer):
+    url_id = serializers.IntegerField(write_only=True)
+
+    class Meta(RedirectionRuleSerializer.Meta):
+        fields = RedirectionRuleSerializer.Meta.fields + ["url_id"]
+        list_serializer_class = serializers.ListSerializer
+
+    def to_internal_value(self, data):
+        """Set url field from url_id."""
+        url_id = data.get("url_id")
+        if url_id is not None:
+            data["url"] = url_id
+        return super().to_internal_value(data)
+
+
+class BatchDeleteRedirectionRuleSerializer(serializers.Serializer):
+    rule_ids = serializers.ListField(
+        child=serializers.IntegerField(min_value=1),
+        max_length=50,
+        help_text="List of rule IDs to delete (max 50)",
+    )
+
+    def validate_rule_ids(self, value):
+        """Validate rule IDs list."""
+        if not value:
+            raise serializers.ValidationError("At least one rule ID must be provided")
+
+        if len(set(value)) != len(value):
+            raise serializers.ValidationError("Rule IDs must be unique")
+
+        return value
 
 
 class TestRedirectionSerializer(serializers.Serializer):
