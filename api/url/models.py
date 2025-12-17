@@ -8,16 +8,25 @@ class Url(models.Model):
     name = models.CharField(max_length=512, unique=True, null=True, blank=True)
     long_url = models.CharField(max_length=2000)
     short_url = models.CharField(max_length=64, unique=True)
-    created_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
     updated_at = models.DateTimeField(auto_now=True)
     visits = models.IntegerField(default=0)
     unique_visits = models.IntegerField(default=0)
-    last_accessed = models.DateTimeField(null=True, blank=True)
-    expiry_date = models.DateTimeField(null=True, blank=True)
+    last_accessed = models.DateTimeField(null=True, blank=True, db_index=True)
+    expiry_date = models.DateTimeField(null=True, blank=True, db_index=True)
     is_custom_alias = models.BooleanField(default=False)
     user = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True, blank=True
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        db_index=True,
     )
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["user", "created_at"]),
+        ]
 
     @property
     def days_until_expiry(self):
@@ -41,5 +50,7 @@ class UrlStatus(models.Model):
         SUSPENDED = "SUSPENDED", "suspended"
 
     url = models.OneToOneField(Url, on_delete=models.CASCADE, related_name="url_status")
-    state = models.CharField(max_length=16, choices=State.choices, default=State.ACTIVE)
+    state = models.CharField(
+        max_length=16, choices=State.choices, default=State.ACTIVE, db_index=True
+    )
     reason = models.CharField(max_length=256, null=True, blank=True)
