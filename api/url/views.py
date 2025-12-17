@@ -23,6 +23,7 @@ from api.url.services.UrlService import (
 from api.url.utils import generate_qrcode
 from .permissions import IsUrlOwner
 from api.analytics.service import AnalyticsService
+from .redirection.RedirectionService import RedirectionService
 
 # Create your views here.
 
@@ -198,6 +199,7 @@ class ListUrlsView(GenericAPIView):
 class Redirect(GenericAPIView):
     def __init__(self, **kwargs):
         self.protection_service = get_burst_protection_service()
+        self.service = RedirectionService()
         super().__init__(**kwargs)
 
     def get(self, request, short_url):
@@ -217,8 +219,15 @@ class Redirect(GenericAPIView):
                     message="URL is inactive or expired", status=status.HTTP_410_GONE
                 )
 
-            analytic_service.record_visit(request, url_instance)
-            return redirect(url_instance.long_url)
+            matched_rule = self.service.evaluate_redirection_rules(
+                request, url_instance
+            )
+            if matched_rule:
+                analytic_service.record_visit(request, url_instance)
+                return redirect(matched_rule.target_url)
+            else:
+                analytic_service.record_visit(request, url_instance)
+                return redirect(url_instance.long_url)
         except Exception as e:
             return ErrorResponse(message=str(e), status=status.HTTP_404_NOT_FOUND)
 

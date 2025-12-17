@@ -78,6 +78,7 @@ INSTALLED_APPS = [
     "api",
     "api.custom_auth",
     "api.url",
+    "api.url.redirection",
     "api.analytics",
     "api.admin_panel",
     "api.admin_panel.system",

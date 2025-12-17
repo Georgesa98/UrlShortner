@@ -9,23 +9,42 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ('url', '0001_initial'),
+        ("url", "0001_initial"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='Visit',
+            name="Visit",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('timestamp', models.DateTimeField(auto_now_add=True)),
-                ('hashed_ip', models.CharField(max_length=64)),
-                ('referrer', models.TextField(blank=True, null=True)),
-                ('geolocation', models.CharField(blank=True, max_length=128, null=True)),
-                ('browser', models.CharField(blank=True, max_length=64, null=True)),
-                ('operating_system', models.CharField(blank=True, max_length=64, null=True)),
-                ('device', models.CharField(blank=True, max_length=64, null=True)),
-                ('new_visitor', models.BooleanField(default=True)),
-                ('url', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='url.url')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("timestamp", models.DateTimeField(auto_now_add=True)),
+                ("hashed_ip", models.CharField(max_length=64)),
+                ("referrer", models.TextField(blank=True, null=True)),
+                (
+                    "geolocation",
+                    models.CharField(blank=True, max_length=128, null=True),
+                ),
+                ("browser", models.CharField(blank=True, max_length=64, null=True)),
+                (
+                    "operating_system",
+                    models.CharField(blank=True, max_length=64, null=True),
+                ),
+                ("device", models.CharField(blank=True, max_length=64, null=True)),
+                ("new_visitor", models.BooleanField(default=True)),
+                (
+                    "url",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE, to="url.url"
+                    ),
+                ),
             ],
         ),
     ]

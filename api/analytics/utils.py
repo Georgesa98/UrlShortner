@@ -29,13 +29,31 @@ def convert_ip_to_location(ip: str) -> str:
         return "Unknown"
 
 
-def parse_user_agent(user_agent: str) -> dict[str, dict]:
+def parse_user_agent(user_agent: str) -> dict[str, str]:
     from user_agents import parse
 
     if not user_agent:
-        return {"os": "Unknown", "browser": "Unknown", "device": "Unknown"}
-    ua = parse(user_agent)
-    return {"os": ua.os.family, "browser": ua.browser.family, "device": ua.device.brand}
+        return {
+            "os": "unknown",
+            "browser": "unknown",
+            "device": "unknown",
+            "is_mobile": False,
+        }
+    try:
+        ua = parse(user_agent)
+        return {
+            "os": ua.os.family.lower(),
+            "browser": ua.browser.family.lower(),
+            "device": ua.device.family.lower(),
+            "is_mobile": ua.is_mobile,
+        }
+    except Exception:
+        return {
+            "os": "unknown",
+            "browser": "unknown",
+            "device": "unknown",
+            "is_mobile": False,
+        }
 
 
 def anonymize_ip(ip_address: str) -> str:

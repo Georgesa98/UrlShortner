@@ -6,13 +6,23 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('url', '0001_initial'),
+        ("url", "0001_initial"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='urlstatus',
-            name='state',
-            field=models.CharField(choices=[('ACTIVE', 'active'), ('EXPIRED', 'expired'), ('FLAGGED', 'flagged'), ('DISABLED', 'disabled'), ('SUSPENDED', 'suspended')], default='ACTIVE', max_length=16),
+            model_name="urlstatus",
+            name="state",
+            field=models.CharField(
+                choices=[
+                    ("ACTIVE", "active"),
+                    ("EXPIRED", "expired"),
+                    ("FLAGGED", "flagged"),
+                    ("DISABLED", "disabled"),
+                    ("SUSPENDED", "suspended"),
+                ],
+                default="ACTIVE",
+                max_length=16,
+            ),
         ),
     ]

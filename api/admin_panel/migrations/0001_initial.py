@@ -15,17 +15,47 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
-            name='AuditLog',
+            name="AuditLog",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('actions', models.CharField(choices=[('CREATE', 'create'), ('UPDATE', 'update'), ('DELETE', 'delete'), ('GET', 'get')], max_length=32)),
-                ('timestamp', models.DateTimeField(auto_now_add=True)),
-                ('content_type', models.CharField(blank=True, max_length=128, null=True)),
-                ('content_id', models.CharField(blank=True, max_length=128, null=True)),
-                ('ip_address', models.GenericIPAddressField(null=True)),
-                ('changes', models.JSONField(blank=True, default=dict, null=True)),
-                ('successful', models.BooleanField(blank=True, null=True)),
-                ('user', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to=settings.AUTH_USER_MODEL)),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "actions",
+                    models.CharField(
+                        choices=[
+                            ("CREATE", "create"),
+                            ("UPDATE", "update"),
+                            ("DELETE", "delete"),
+                            ("GET", "get"),
+                        ],
+                        max_length=32,
+                    ),
+                ),
+                ("timestamp", models.DateTimeField(auto_now_add=True)),
+                (
+                    "content_type",
+                    models.CharField(blank=True, max_length=128, null=True),
+                ),
+                ("content_id", models.CharField(blank=True, max_length=128, null=True)),
+                ("ip_address", models.GenericIPAddressField(null=True)),
+                ("changes", models.JSONField(blank=True, default=dict, null=True)),
+                ("successful", models.BooleanField(blank=True, null=True)),
+                (
+                    "user",
+                    models.ForeignKey(
+                        blank=True,
+                        null=True,
+                        on_delete=django.db.models.deletion.SET_NULL,
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
         ),
     ]

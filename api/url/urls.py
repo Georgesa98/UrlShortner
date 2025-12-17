@@ -1,4 +1,4 @@
-from django.urls import path
+from django.urls import path, include
 
 from api.url.views import (
     BatchShorten,
@@ -19,4 +19,5 @@ urlpatterns = [
         SpecificUrl.as_view(),
     ),
     path("", ListUrlsView.as_view()),
+    path("redirection/", include("api.url.redirection.urls")),
 ]
