@@ -9,7 +9,8 @@ from api.analytics.utils import (
 from config.settings_utils import get_analytics_track_ip
 from datetime import datetime, timezone, timedelta
 from django.db.models import Count, Q
-from api.url.models import Url, UrlStatus
+from api.url.models import Url
+from api.admin_panel.fraud.FraudService import FraudService
 
 
 class AnalyticsService:
@@ -35,7 +36,9 @@ class AnalyticsService:
             hashed_ip = None
             is_new_visitor = False
 
-        user_agent = parse_user_agent(request.META.get("HTTP_USER_AGENT", ""))
+        raw_ua = request.META.get("HTTP_USER_AGENT", "")
+        user_agent = parse_user_agent(raw_ua)
+        FraudService.flag_suspicious_ua(raw_ua, request, url_instance)
         url_instance.visits += 1
         if track_ip and not is_new_visitor:
             url_instance.unique_visits += 1

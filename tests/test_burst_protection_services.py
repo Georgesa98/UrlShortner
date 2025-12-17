@@ -238,7 +238,7 @@ class BurstProtectionServiceTest(TestCase):
 
     def test_flag_url_success(self):
         """Test that Url is successfully flagged"""
-        self.service._flag_url(self.test_short_url)
+        self.service._flag_url(self.test_short_url, self.test_ip)
 
         self.url_status.refresh_from_db()
         self.assertEqual(self.url_status.state, UrlStatus.State.FLAGGED)
@@ -247,10 +247,10 @@ class BurstProtectionServiceTest(TestCase):
     def test_flag_url_already_flagged(self):
         """Test that already flagged Url doesn't get re-flagged unnecessarily"""
         # Flag it first time
-        self.service._flag_url(self.test_short_url)
+        self.service._flag_url(self.test_short_url, self.test_ip)
 
         # Try to flag again
-        self.service._flag_url(self.test_short_url)
+        self.service._flag_url(self.test_short_url, self.test_ip)
 
         self.url_status.refresh_from_db()
         self.assertEqual(self.url_status.state, UrlStatus.State.FLAGGED)
@@ -258,7 +258,7 @@ class BurstProtectionServiceTest(TestCase):
     def test_flag_url_not_found(self):
         """Test handling of non-existent Url"""
         with self.assertRaises(Url.DoesNotExist):
-            self.service._flag_url("nonexistent")
+            self.service._flag_url("nonexistent", self.test_ip)
 
     def test_flag_url_status_not_found(self):
         """Test handling of missing UrlStatus"""
@@ -266,7 +266,7 @@ class BurstProtectionServiceTest(TestCase):
         self.url_status.delete()
 
         with self.assertRaises(UrlStatus.DoesNotExist):
-            self.service._flag_url(self.test_short_url)
+            self.service._flag_url(self.test_short_url, self.test_ip)
 
     def test_flag_url_changes_from_active_to_flagged(self):
         """Test that Url state changes from ACTIVE to FLAGGED"""
@@ -274,7 +274,7 @@ class BurstProtectionServiceTest(TestCase):
         self.assertEqual(self.url_status.state, UrlStatus.State.ACTIVE)
 
         # Flag the Url
-        self.service._flag_url(self.test_short_url)
+        self.service._flag_url(self.test_short_url, self.test_ip)
 
         # Verify state changed
         self.url_status.refresh_from_db()
@@ -282,7 +282,7 @@ class BurstProtectionServiceTest(TestCase):
 
     def test_flag_url_sets_reason(self):
         """Test that flagging sets appropriate reason"""
-        self.service._flag_url(self.test_short_url)
+        self.service._flag_url(self.test_short_url, self.test_ip)
 
         self.url_status.refresh_from_db()
         self.assertIsNotNone(self.url_status.reason)

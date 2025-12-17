@@ -3,6 +3,7 @@ from config import settings
 from config.settings_utils import get_throttle_rates
 import time
 from rest_framework.throttling import SimpleRateThrottle
+from api.admin_panel.fraud.FraudService import FraudService
 
 
 class RedisRateLimiter:
@@ -65,6 +66,9 @@ class BaseRedisThrottle(SimpleRateThrottle):
         self.metadata = metadata
 
         request.throttle_metadata = metadata
+
+        if not is_allowed:
+            FraudService.flag_throttle_violation(request, view, self.rate)
 
         return is_allowed
 

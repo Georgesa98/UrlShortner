@@ -22,5 +22,6 @@ db.sqlite3
 # Logs
 logs/*.log
 
+.ignore
 docs
 AGENTS.md

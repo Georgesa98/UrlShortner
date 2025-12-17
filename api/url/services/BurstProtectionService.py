@@ -2,6 +2,7 @@ import redis
 from django.conf import settings
 from api.url.models import Url, UrlStatus
 from datetime import datetime, timezone
+from api.admin_panel.fraud.FraudService import FraudService
 
 
 class BurstProtectionService:
@@ -72,11 +73,12 @@ class BurstProtectionService:
         )
         return count >= threshold
 
-    def _flag_url(self, short_url):
+    def _flag_url(self, short_url, ip):
         """Flag a URL as having excessive traffic.
 
         Args:
             short_url (str): The short URL to flag.
+            ip (str): The IP address triggering the flag.
         """
         url_instance = Url.objects.get(short_url=short_url)
         url_status_instance = UrlStatus.objects.get(url=url_instance)
@@ -84,6 +86,7 @@ class BurstProtectionService:
             url_status_instance.state = UrlStatus.State.FLAGGED
             url_status_instance.reason = "Too many requests on the url"
             url_status_instance.save()
+            FraudService.flag_burst_protection(url_instance, ip)
 
     def _track_click(self, short_url: str, ip: str):
         """Track a click for burst protection.
@@ -125,7 +128,7 @@ class BurstProtectionService:
                 return False
             try:
                 if self._detect_burst(ip, short_url):
-                    self._flag_url(short_url)
+                    self._flag_url(short_url, ip)
                     return False
                 self._track_click(short_url, ip)
                 return True

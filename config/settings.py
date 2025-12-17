@@ -82,6 +82,7 @@ INSTALLED_APPS = [
     "api.admin_panel",
     "api.admin_panel.system",
     "api.admin_panel.insight",
+    "api.admin_panel.fraud",
 ]
 
 MIDDLEWARE = [
