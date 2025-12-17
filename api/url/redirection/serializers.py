@@ -170,3 +170,78 @@ class RedirectionRuleSerializer(serializers.ModelSerializer):
                     raise serializers.ValidationError(
                         {"referrer": f"'{ref}' is not a valid domain or URL pattern."}
                     )
+
+
+class TestRedirectionSerializer(serializers.Serializer):
+    url_id = serializers.IntegerField(
+        required=True, help_text="ID of the URL to test rules for"
+    )
+    country = serializers.CharField(
+        max_length=2,
+        required=False,
+        allow_blank=True,
+        help_text="2-letter country code",
+    )
+    device_type = serializers.ChoiceField(
+        choices=["mobile", "desktop", "tablet"], required=False, help_text="Device type"
+    )
+    browser = serializers.ChoiceField(
+        choices=[
+            "chrome",
+            "firefox",
+            "safari",
+            "edge",
+            "opera",
+            "brave",
+            "vivaldi",
+            "chromium",
+            "internet_explorer",
+        ],
+        required=False,
+        help_text="Browser name",
+    )
+    os = serializers.ChoiceField(
+        choices=[
+            "windows",
+            "macos",
+            "linux",
+            "android",
+            "ios",
+            "ubuntu",
+            "centos",
+            "debian",
+            "fedora",
+        ],
+        required=False,
+        help_text="Operating system",
+    )
+    language = serializers.CharField(
+        max_length=2,
+        required=False,
+        allow_blank=True,
+        help_text="2-letter language code",
+    )
+    mobile = serializers.BooleanField(required=False, help_text="Is mobile device")
+    referrer = serializers.URLField(
+        required=False, allow_blank=True, help_text="Referrer URL"
+    )
+    time_range = serializers.CharField(
+        required=False, allow_blank=True, help_text="Current time in HH:MM format"
+    )
+
+    def validate_country(self, value):
+        if value:
+            try:
+                countries.get(value.upper())
+            except KeyError:
+                raise serializers.ValidationError(
+                    "Invalid ISO 3166-1 alpha-2 country code."
+                )
+        return value.upper() if value else None
+
+    def validate_time_range(self, value):
+        if value:
+            time_pattern = re.compile(r"^([01]?[0-9]|2[0-3]):[0-5][0-9]$")
+            if not time_pattern.match(value):
+                raise serializers.ValidationError("Must be in HH:MM format (24-hour).")
+        return value

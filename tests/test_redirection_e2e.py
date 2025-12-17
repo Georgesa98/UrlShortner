@@ -677,3 +677,162 @@ class TestRedirectionEvaluation:
 
         assert response.status_code == status.HTTP_302_FOUND
         assert response["Location"] == "https://mobile.example.com"
+
+
+@pytest.mark.django_db
+class TestRuleEvaluationEndpoint:
+    """Test POST /api/url/redirection/rules/test/ endpoint for rule evaluation without redirection"""
+
+    def setup_method(self):
+        self.client = APIClient()
+        self.admin_user = User.objects.create_user(
+            username="adminuser",
+            email="admin@example.com",
+            password="adminpass123",
+            role=User.Role.ADMIN,
+        )
+        self.client.force_authenticate(user=self.admin_user)
+
+        self.regular_user = User.objects.create_user(
+            username="regularuser",
+            email="regular@example.com",
+            password="regularpass123",
+            role=User.Role.USER,
+        )
+
+        self.url = Url.objects.create(
+            long_url="https://www.example.com/test",
+            short_url="evaltest",
+            user=self.regular_user,
+        )
+        UrlStatus.objects.create(url=self.url, state=UrlStatus.State.ACTIVE)
+
+        self.evaluate_url = "/api/url/redirection/rules/test/"
+
+    def test_evaluate_no_rules_returns_original_url(self):
+        """Test evaluation with no rules returns original URL"""
+        payload = {"url_id": self.url.id, "context": {}}
+        response = self.client.post(self.evaluate_url, payload, format="json")
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["success"] == True
+        assert response.data["data"]["target_url"] == self.url.long_url
+        assert response.data["data"]["matched_rule"] is None
+
+    def test_evaluate_rule_matches_returns_target_url(self):
+        """Test evaluation when a rule matches"""
+        rule = RedirectionRule.objects.create(
+            name="Mobile eval",
+            url=self.url,
+            conditions={"device_type": "mobile"},
+            target_url="https://mobile.eval.example.com",
+            priority=1,
+            is_active=True,
+        )
+        payload = {"url_id": self.url.id, "device_type": "mobile"}
+        response = self.client.post(self.evaluate_url, payload, format="json")
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["data"]["matched_rule"]["id"] == rule.id
+        assert (
+            response.data["data"]["matched_rule"]["target_url"]
+            == "https://mobile.eval.example.com"
+        )
+
+    def test_evaluate_no_match_returns_original_url(self):
+        """Test evaluation when no rule matches"""
+        RedirectionRule.objects.create(
+            name="Mobile eval",
+            url=self.url,
+            conditions={"device_type": "mobile"},
+            target_url="https://mobile.eval.example.com",
+            priority=1,
+            is_active=True,
+        )
+        payload = {"url_id": self.url.id, "device_type": "desktop"}
+        response = self.client.post(self.evaluate_url, payload, format="json")
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["data"]["target_url"] == self.url.long_url
+        assert response.data["data"]["matched_rule"] is None
+
+    def test_evaluate_multiple_rules_priority_ordering(self):
+        """Test evaluation respects priority (lowest number = highest priority)"""
+        high_priority_rule = RedirectionRule.objects.create(
+            name="High priority eval",
+            url=self.url,
+            conditions={"device_type": "mobile"},
+            target_url="https://high.eval.example.com",
+            priority=1,
+            is_active=True,
+        )
+        RedirectionRule.objects.create(
+            name="Low priority eval",
+            url=self.url,
+            conditions={"device_type": "mobile"},
+            target_url="https://low.eval.example.com",
+            priority=2,
+            is_active=True,
+        )
+        payload = {"url_id": self.url.id, "device_type": "mobile"}
+        response = self.client.post(self.evaluate_url, payload, format="json")
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["data"]["matched_rule"]["id"] == high_priority_rule.id
+        assert (
+            response.data["data"]["matched_rule"]["target_url"]
+            == "https://high.eval.example.com"
+        )
+
+    def test_evaluate_inactive_rule_ignored(self):
+        """Test evaluation ignores inactive rules"""
+        RedirectionRule.objects.create(
+            name="Inactive eval",
+            url=self.url,
+            conditions={"device_type": "mobile"},
+            target_url="https://inactive.eval.example.com",
+            priority=1,
+            is_active=False,
+        )
+        payload = {"url_id": self.url.id, "device_type": "mobile"}
+        response = self.client.post(self.evaluate_url, payload, format="json")
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["data"]["target_url"] == self.url.long_url
+        assert response.data["data"]["matched_rule"] is None
+
+    def test_evaluate_conditions_browser(self):
+        """Test evaluation with browser condition"""
+        rule = RedirectionRule.objects.create(
+            name="Chrome eval",
+            url=self.url,
+            conditions={"browser": "chrome"},
+            target_url="https://chrome.eval.example.com",
+            priority=1,
+            is_active=True,
+        )
+        payload = {"url_id": self.url.id, "browser": "chrome"}
+        response = self.client.post(self.evaluate_url, payload, format="json")
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["data"]["matched_rule"]["id"] == rule.id
+        assert (
+            response.data["data"]["matched_rule"]["target_url"]
+            == "https://chrome.eval.example.com"
+        )
+
+    def test_evaluate_invalid_url_id(self):
+        """Test evaluation with non-existent URL ID"""
+        payload = {"url_id": 999999}
+        response = self.client.post(self.evaluate_url, payload, format="json")
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert response.data["success"] == False
+
+    def test_evaluate_non_admin_access_denied(self):
+        """Test that non-admin users cannot access evaluation endpoint"""
+        regular_client = APIClient()
+        regular_client.force_authenticate(user=self.regular_user)
+        payload = {"url_id": self.url.id}
+        response = regular_client.post(self.evaluate_url, payload, format="json")
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_evaluate_payload_validation_error(self):
+        """Test evaluation with invalid payload (missing fields)"""
+        payload = {}  # Missing url_id
+        response = self.client.post(self.evaluate_url, payload, format="json")
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert response.data["success"] == False

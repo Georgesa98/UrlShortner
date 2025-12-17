@@ -91,6 +91,35 @@ class RedirectionService:
             "priority"
         )
 
+    def test_evaluate_rules(self, url_id, test_context):
+        """Test rule evaluation with provided context, return matched rule or None."""
+        try:
+            from api.url.models import Url
+
+            Url.objects.get(id=url_id)
+
+            active_rules = self.get_active_rules_for_url(url_id)
+            if not active_rules:
+                return None
+
+            normalized_context = {
+                "country": test_context.get("country"),
+                "device_type": test_context.get("device_type"),
+                "browser": test_context.get("browser"),
+                "os": test_context.get("os"),
+                "language": test_context.get("language"),
+                "mobile": test_context.get("mobile"),
+                "referrer": test_context.get("referrer"),
+                "time_range": test_context.get("time_range"),
+            }
+
+            matched_rule = self._evaluate_rules(active_rules, normalized_context)
+            return matched_rule
+        except Url.DoesNotExist:
+            raise ValueError(f"URL with ID {url_id} not found")
+        except Exception as e:
+            raise ValueError(f"Error evaluating rules: {str(e)}")
+
     def evaluate_redirection_rules(self, request, url_instance):
         """Evaluate active redirection rules for the URL and return redirect URL if match."""
         try:
@@ -102,7 +131,6 @@ class RedirectionService:
             matched_rule = self._evaluate_rules(active_rules, request_context)
             return matched_rule
         except Exception:
-            # Fail gracefully - return None for default redirect
             return None
 
     def _extract_request_context(self, request):

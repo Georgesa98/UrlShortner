@@ -1,10 +1,12 @@
 from rest_framework.generics import GenericAPIView
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.exceptions import ValidationError
 from api.custom_auth.permissions import IsAdmin
 from api.throttling import IPRateThrottle, UserRateThrottle
 from config.utils.responses import SuccessResponse, ErrorResponse
 from .RedirectionService import RedirectionService
-from .serializers import RedirectionRuleSerializer
+from .serializers import RedirectionRuleSerializer, TestRedirectionSerializer
+from api.url.models import Url
 
 
 class RedirectionRulesListView(GenericAPIView):
@@ -114,3 +116,54 @@ class RedirectionRuleDetailView(GenericAPIView):
             return ErrorResponse(message=str(e), status=404)
         except Exception as e:
             return ErrorResponse(message=str(e), status=400)
+
+
+class TestRedirectionView(GenericAPIView):
+    serializer_class = TestRedirectionSerializer
+    permission_classes = [IsAuthenticated, IsAdmin]
+    throttle_classes = [IPRateThrottle, UserRateThrottle]
+
+    def post(self, request):
+        try:
+            serializer = self.get_serializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            validated_data = serializer.validated_data
+
+            url_id = validated_data.pop("url_id")
+
+            service = RedirectionService()
+            matched_rule = service.test_evaluate_rules(url_id, validated_data)
+            url = Url.objects.get(id=url_id)
+
+            if matched_rule:
+                response_data = {
+                    "matched_rule": {
+                        "id": matched_rule.id,
+                        "name": matched_rule.name,
+                        "target_url": matched_rule.target_url,
+                        "priority": matched_rule.priority,
+                        "conditions": matched_rule.conditions,
+                    },
+                    "target_url": matched_rule.target_url,
+                    "test_context": validated_data,
+                }
+                message = "Rule matched successfully"
+            else:
+                response_data = {
+                    "matched_rule": None,
+                    "target_url": url.long_url,
+                    "test_context": validated_data,
+                }
+                message = "No rule matched the provided context"
+
+            return SuccessResponse(
+                data=response_data,
+                message=message,
+                status=200,
+            )
+        except ValidationError as e:
+            return ErrorResponse(message=str(e), status=400)
+        except ValueError as e:
+            return ErrorResponse(message=str(e), status=400)
+        except Exception as e:
+            return ErrorResponse(message=str(e), status=500)
