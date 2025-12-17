@@ -1,5 +1,6 @@
 from rest_framework.generics import GenericAPIView
 from rest_framework.views import Response, status
+from config.utils.responses import SuccessResponse, ErrorResponse
 from rest_framework.serializers import ValidationError
 from api.admin_panel.system.SystemService import SystemService
 from api.admin_panel.system.models import SystemConfiguration
@@ -22,7 +23,11 @@ class HealthView(GenericAPIView):
 
     def get(self, request):
         report = self.system_service.get_system_health()
-        return Response(report, status=status.HTTP_200_OK)
+        return SuccessResponse(
+            data=report,
+            message="System health report retrieved successfully",
+            status=status.HTTP_200_OK,
+        )
 
 
 class ListSystemConfigurationView(GenericAPIView):
@@ -34,9 +39,13 @@ class ListSystemConfigurationView(GenericAPIView):
         try:
             configs = ConfigService.get_all_configs()
             serializer = SystemConfigurationSerializer(configs, many=True)
-            return Response(serializer.data, status=status.HTTP_200_OK)
+            return SuccessResponse(
+                data=serializer.data,
+                message="System configurations retrieved successfully",
+                status=status.HTTP_200_OK,
+            )
         except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            return ErrorResponse(message=str(e), status=status.HTTP_400_BAD_REQUEST)
 
 
 class SpecificSystemConfigurationView(GenericAPIView):
@@ -47,15 +56,19 @@ class SpecificSystemConfigurationView(GenericAPIView):
     def get(self, request, key):
         try:
             value = ConfigService.get_config(key)
-            return Response({"key": key, "value": value}, status=status.HTTP_200_OK)
+            data = {"key": key, "value": value}
+            return SuccessResponse(
+                data=data,
+                message="Configuration retrieved successfully",
+                status=status.HTTP_200_OK,
+            )
         except SystemConfiguration.DoesNotExist:
-            return Response(
-                {"error": "key does not exist"},
-                status=status.HTTP_404_NOT_FOUND,
+            return ErrorResponse(
+                message="Key does not exist", status=status.HTTP_404_NOT_FOUND
             )
         except Exception as e:
-            return Response(
-                {"error": f"Unexpected error: {str(e)}"},
+            return ErrorResponse(
+                message=f"Unexpected error: {str(e)}",
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
@@ -68,18 +81,22 @@ class SpecificSystemConfigurationView(GenericAPIView):
                 validated_data = serializer.validated_data
                 ConfigService.set_config(key, validated_data["value"])
 
-                return Response(
-                    {"message": f"Configuration '{key}' updated successfully"},
+                return SuccessResponse(
+                    message=f"Configuration '{key}' updated successfully",
                     status=status.HTTP_200_OK,
                 )
             else:
-                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                return ErrorResponse(
+                    errors=serializer.errors,
+                    message="Validation failed",
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
 
         except ValidationError as e:
-            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            return ErrorResponse(message=str(e), status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
-            return Response(
-                {"error": f"Unexpected error: {str(e)}"},
+            return ErrorResponse(
+                message=f"Unexpected error: {str(e)}",
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
@@ -115,5 +132,16 @@ class BatchCreateSystemConfigurationView(GenericAPIView):
             "errors": all_errors,
         }
 
-        status_code = status.HTTP_400_BAD_REQUEST if all_errors else status.HTTP_200_OK
-        return Response(response_data, status=status_code)
+        if all_errors:
+            return ErrorResponse(
+                errors=all_errors,
+                data=response_data.get("results", {}),
+                message="Batch configuration update failed",
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        else:
+            return SuccessResponse(
+                data=response_data,
+                message="Batch configurations updated successfully",
+                status=status.HTTP_200_OK,
+            )

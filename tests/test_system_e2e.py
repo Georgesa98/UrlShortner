@@ -90,13 +90,15 @@ class TestHealthEndpointResponse:
         response = self.client.get(self.url)
 
         assert response.status_code == status.HTTP_200_OK
-        assert "status" in response.data
-        assert "timestamp" in response.data
-        assert "components" in response.data
-        assert "metadata" in response.data
+        assert response.data["success"] == True
+        data = response.data["data"]
+        assert "status" in data
+        assert "timestamp" in data
+        assert "components" in data
+        assert "metadata" in data
 
         # Verify components exist
-        components = response.data["components"]
+        components = data["components"]
         assert "database" in components
         assert "cache" in components
         assert "redis" in components
@@ -108,7 +110,8 @@ class TestHealthEndpointResponse:
         """Test metadata contains required fields"""
         response = self.client.get(self.url)
 
-        metadata = response.data["metadata"]
+        data = response.data["data"]
+        metadata = data["metadata"]
         assert "version" in metadata
         assert "environment" in metadata
         assert "debug" in metadata
@@ -117,7 +120,8 @@ class TestHealthEndpointResponse:
         """Test each component has status field"""
         response = self.client.get(self.url)
 
-        for component_name, component_data in response.data["components"].items():
+        data = response.data["data"]
+        for component_name, component_data in data["components"].items():
             assert "status" in component_data, f"{component_name} missing status"
             assert component_data["status"] in [
                 HealthStatus.HEALTHY,
@@ -129,8 +133,9 @@ class TestHealthEndpointResponse:
         """Test overall status is healthy when all components are healthy"""
         response = self.client.get(self.url)
 
+        data = response.data["data"]
         # If test environment is properly configured, should be healthy
-        assert response.data["status"] in [
+        assert data["status"] in [
             HealthStatus.HEALTHY,
             HealthStatus.DEGRADED,
             HealthStatus.UNHEALTHY,
@@ -140,7 +145,8 @@ class TestHealthEndpointResponse:
         """Test database component contains expected fields"""
         response = self.client.get(self.url)
 
-        db_component = response.data["components"]["database"]
+        data = response.data["data"]
+        db_component = data["components"]["database"]
         assert "status" in db_component
         assert "latency_ms" in db_component
         assert "vendor" in db_component
@@ -150,7 +156,7 @@ class TestHealthEndpointResponse:
         """Test Redis component contains expected fields"""
         response = self.client.get(self.url)
 
-        redis_component = response.data["components"]["redis"]
+        redis_component = response.data["data"]["components"]["redis"]
         assert "status" in redis_component
 
         if redis_component["status"] != HealthStatus.UNHEALTHY:
@@ -162,7 +168,7 @@ class TestHealthEndpointResponse:
         """Test Celery component contains expected fields"""
         response = self.client.get(self.url)
 
-        celery_component = response.data["components"]["celery"]
+        celery_component = response.data["data"]["components"]["celery"]
         assert "status" in celery_component
         assert "broker_connected" in celery_component
 
@@ -170,7 +176,7 @@ class TestHealthEndpointResponse:
         """Test disk component contains expected fields"""
         response = self.client.get(self.url)
 
-        disk_component = response.data["components"]["disk"]
+        disk_component = response.data["data"]["components"]["disk"]
         assert "status" in disk_component
         assert "total_gb" in disk_component
         assert "used_gb" in disk_component
@@ -181,7 +187,7 @@ class TestHealthEndpointResponse:
         """Test memory component contains expected fields"""
         response = self.client.get(self.url)
 
-        memory_component = response.data["components"]["memory"]
+        memory_component = response.data["data"]["components"]["memory"]
         assert "status" in memory_component
         assert "total_gb" in memory_component
         assert "used_gb" in memory_component
@@ -217,7 +223,7 @@ class TestHealthEndpointDegradedScenarios:
         response = self.client.get(self.url)
 
         assert response.status_code == status.HTTP_200_OK
-        disk_component = response.data["components"]["disk"]
+        disk_component = response.data["data"]["components"]["disk"]
         assert disk_component["status"] == HealthStatus.DEGRADED
         assert disk_component["percent_used"] == 85.0
 
@@ -234,7 +240,7 @@ class TestHealthEndpointDegradedScenarios:
         response = self.client.get(self.url)
 
         assert response.status_code == status.HTTP_200_OK
-        disk_component = response.data["components"]["disk"]
+        disk_component = response.data["data"]["components"]["disk"]
         assert disk_component["status"] == HealthStatus.UNHEALTHY
         assert disk_component["percent_used"] == 95.0
 
@@ -251,7 +257,7 @@ class TestHealthEndpointDegradedScenarios:
         response = self.client.get(self.url)
 
         assert response.status_code == status.HTTP_200_OK
-        memory_component = response.data["components"]["memory"]
+        memory_component = response.data["data"]["components"]["memory"]
         assert memory_component["status"] == HealthStatus.DEGRADED
         assert memory_component["percent_used"] == 84.0
 
@@ -268,7 +274,7 @@ class TestHealthEndpointDegradedScenarios:
         response = self.client.get(self.url)
 
         assert response.status_code == status.HTTP_200_OK
-        memory_component = response.data["components"]["memory"]
+        memory_component = response.data["data"]["components"]["memory"]
         assert memory_component["status"] == HealthStatus.UNHEALTHY
         assert memory_component["percent_used"] == 93.0
 
@@ -285,7 +291,7 @@ class TestHealthEndpointDegradedScenarios:
         response = self.client.get(self.url)
 
         assert response.status_code == status.HTTP_200_OK
-        db_component = response.data["components"]["database"]
+        db_component = response.data["data"]["components"]["database"]
         assert db_component["status"] == HealthStatus.DEGRADED
         assert db_component["latency_ms"] == 1500.0
 
@@ -317,7 +323,7 @@ class TestHealthEndpointFailureScenarios:
         response = self.client.get(self.url)
 
         assert response.status_code == status.HTTP_200_OK
-        db_component = response.data["components"]["database"]
+        db_component = response.data["data"]["components"]["database"]
         assert db_component["status"] == HealthStatus.UNHEALTHY
         assert "error" in db_component
         assert "error_type" in db_component
@@ -336,10 +342,11 @@ class TestHealthEndpointFailureScenarios:
 
         assert response.status_code == status.HTTP_200_OK
         # Overall status should be unhealthy
-        assert response.data["status"] == HealthStatus.UNHEALTHY
+        assert response.data["data"]["status"] == HealthStatus.UNHEALTHY
         # Verify database component is unhealthy
         assert (
-            response.data["components"]["database"]["status"] == HealthStatus.UNHEALTHY
+            response.data["data"]["components"]["database"]["status"]
+            == HealthStatus.UNHEALTHY
         )
 
 
@@ -394,7 +401,7 @@ class TestHealthEndpointTimestamp:
         response = self.client.get(self.url)
 
         assert response.status_code == status.HTTP_200_OK
-        timestamp = response.data["timestamp"]
+        timestamp = response.data["data"]["timestamp"]
 
         # Verify it's a valid ISO format timestamp
         try:
@@ -409,7 +416,7 @@ class TestHealthEndpointTimestamp:
         after = datetime.now(timezone.utc)
 
         timestamp = datetime.fromisoformat(
-            response.data["timestamp"].replace("Z", "+00:00")
+            response.data["data"]["timestamp"].replace("Z", "+00:00")
         )
 
         assert before <= timestamp <= after, "Timestamp is not current"
@@ -437,9 +444,9 @@ class TestSystemConfigurationViewSet:
 
         assert response.status_code == status.HTTP_200_OK
         # Response should be a list of configuration objects
-        assert isinstance(response.data, list)
+        assert isinstance(response.data["data"], list)
         # Each item should have required fields
-        for config in response.data:
+        for config in response.data["data"]:
             assert "key" in config
             assert "value" in config
             assert "description" in config
@@ -457,7 +464,7 @@ class TestSystemConfigurationViewSet:
             response = self.client.get(url)
 
             assert response.status_code == status.HTTP_400_BAD_REQUEST
-            assert "error" in response.data
+            assert "message" in response.data
 
 
 @pytest.mark.django_db
@@ -485,10 +492,10 @@ class TestSpecificSystemConfigurationView:
         # Now retrieve it
         response = self.client.get(config_url)
         assert response.status_code == status.HTTP_200_OK
-        assert "key" in response.data
-        assert "value" in response.data
-        assert response.data["key"] == "max_urls_per_user"
-        assert response.data["value"] == "50"
+        assert "key" in response.data["data"]
+        assert "value" in response.data["data"]
+        assert response.data["data"]["key"] == "max_urls_per_user"
+        assert response.data["data"]["value"] == "50"
 
     def test_get_specific_system_configuration_not_found(self):
         """Test retrieval of non-existent system configuration"""
@@ -497,7 +504,7 @@ class TestSpecificSystemConfigurationView:
 
         # Expecting a 500 error as specified in the view implementation
         assert response.status_code == status.HTTP_404_NOT_FOUND
-        assert "error" in response.data
+        assert "message" in response.data
 
     def test_post_specific_system_configuration_success(self):
         """Test successful update of system configuration"""
@@ -565,12 +572,12 @@ class TestBatchCreateSystemConfigurationView:
         response = self.client.post(url, configs, format="json")
 
         assert response.status_code == status.HTTP_200_OK
-        assert "results" in response.data
-        assert "errors" in response.data
+        assert "results" in response.data["data"]
+        assert "errors" in response.data["data"]
         assert (
-            len(response.data["results"]) >= 0
+            len(response.data["data"]["results"]) >= 0
         )  # May be empty if configs didn't change
-        assert len(response.data["errors"]) == 0
+        assert len(response.data["data"]["errors"]) == 0
 
     def test_batch_create_system_configuration_with_errors(self):
         """Test batch creation with some valid and some invalid configurations"""
@@ -586,7 +593,8 @@ class TestBatchCreateSystemConfigurationView:
         response = self.client.post(url, configs, format="json")
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert "results" in response.data
+        # For error responses, data contains the results directly
+        assert isinstance(response.data["data"], dict)
         assert "errors" in response.data
         # At least some errors should be present
         assert len(response.data["errors"]) > 0
@@ -598,10 +606,10 @@ class TestBatchCreateSystemConfigurationView:
         response = self.client.post(url, configs, format="json")
 
         assert response.status_code == status.HTTP_200_OK
-        assert "results" in response.data
-        assert "errors" in response.data
-        assert len(response.data["results"]) == 0
-        assert len(response.data["errors"]) == 0
+        assert "results" in response.data["data"]
+        assert "errors" in response.data["data"]
+        assert len(response.data["data"]["results"]) == 0
+        assert len(response.data["data"]["errors"]) == 0
 
     def test_batch_create_system_configuration_missing_configs_key(self):
         """Test batch creation without configs key in payload"""
@@ -614,5 +622,5 @@ class TestBatchCreateSystemConfigurationView:
         assert response.status_code in [status.HTTP_200_OK, status.HTTP_400_BAD_REQUEST]
         # If successful, response should have empty results/errors
         if response.status_code == status.HTTP_200_OK:
-            assert "results" in response.data
-            assert "errors" in response.data
+            assert "results" in response.data["data"]
+            assert "errors" in response.data["data"]

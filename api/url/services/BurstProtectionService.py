@@ -16,6 +16,14 @@ class BurstProtectionService:
             password=settings.REDIS_PASSWORD,
             decode_responses=True,
         )
+        self.default_thresholds = {
+            "short_term_window": 10,  # seconds
+            "short_term_limit": 10,
+            "medium_term_window": 60,  # seconds
+            "medium_term_limit": 50,
+            "long_term_window": 3600,  # seconds
+            "long_term_limit": 1000,
+        }
 
     def _detect_burst(self, ip: str, short_url: str):
         """Detect if current traffic constitutes a burst.
@@ -76,6 +84,26 @@ class BurstProtectionService:
             url_status_instance.state = UrlStatus.State.FLAGGED
             url_status_instance.reason = "Too many requests on the url"
             url_status_instance.save()
+
+    def _track_click(self, short_url: str, ip: str):
+        """Track a click for burst protection.
+
+        Args:
+            short_url (str): The short URL identifier.
+            ip (str): The IP address.
+        """
+        timestamp = datetime.now(timezone.utc).timestamp()
+        url_key = f"burst_protection:url:{short_url}"
+        ip_key = f"burst_protection:ip:{ip}"
+
+        # Add new entry
+        self.redis_client.zadd(url_key, {str(timestamp): timestamp})
+        self.redis_client.zadd(ip_key, {str(timestamp): timestamp})
+
+        # Clean up old entries beyond long_term_window
+        cutoff_time = timestamp - self.default_thresholds["long_term_window"]
+        self.redis_client.zremrangebyscore(url_key, "-inf", cutoff_time)
+        self.redis_client.zremrangebyscore(ip_key, "-inf", cutoff_time)
 
     def check_burst(self, ip: str, short_url: str):
         """Check and handle burst protection for a request.

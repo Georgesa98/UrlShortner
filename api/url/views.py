@@ -1,6 +1,7 @@
 from django.http import HttpResponse
 from rest_framework.views import Response, status
 from rest_framework.generics import GenericAPIView
+from config.utils.responses import SuccessResponse, ErrorResponse
 from api.analytics.utils import get_ip_address
 from api.throttling import IPRateThrottle, UserRateThrottle
 from api.url.models import Url, UrlStatus
@@ -38,9 +39,13 @@ class Shortener(GenericAPIView):
             if shorten_serializer.is_valid(raise_exception=True):
                 url_instance = UrlService.create_url(shorten_serializer.data)
                 response_serializer = ResponseUrlSerializer(url_instance)
-                return Response(response_serializer.data, status.HTTP_201_CREATED)
+                return SuccessResponse(
+                    data=response_serializer.data,
+                    message="URL shortened successfully",
+                    status=status.HTTP_201_CREATED,
+                )
         except ValidationError as e:
-            return Response(str(e), status.HTTP_400_BAD_REQUEST)
+            return ErrorResponse(message=str(e), status=status.HTTP_400_BAD_REQUEST)
 
 
 class BatchShorten(GenericAPIView):
@@ -61,12 +66,18 @@ class BatchShorten(GenericAPIView):
             if serializer.is_valid(raise_exception=True):
                 data = UrlService.batch_shorten(serializer.data, user_id)
                 response_serializer = ResponseUrlSerializer(data, many=True)
-                return Response(response_serializer.data, status.HTTP_201_CREATED)
+                return SuccessResponse(
+                    data=response_serializer.data,
+                    message="URLs shortened successfully",
+                    status=status.HTTP_201_CREATED,
+                )
         except ValidationError as e:
-            return Response(str(e), status.HTTP_400_BAD_REQUEST)
+            return ErrorResponse(message=str(e), status=status.HTTP_400_BAD_REQUEST)
 
         except Exception as e:
-            return Response(str(e), status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return ErrorResponse(
+                message=str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 
 class SpecificUrl(GenericAPIView):
@@ -84,23 +95,27 @@ class SpecificUrl(GenericAPIView):
         try:
             url_instance = self.get_object(short_url)
             if url_instance is None:
-                return Response(
-                    {"error": "URL not found"}, status=status.HTTP_404_NOT_FOUND
+                return ErrorResponse(
+                    message="URL not found", status=status.HTTP_404_NOT_FOUND
                 )
             self.check_object_permissions(request, url_instance)
             serializer = ResponseUrlSerializer(url_instance)
-            return Response(serializer.data, status.HTTP_200_OK)
+            return SuccessResponse(
+                data=serializer.data,
+                message="URL retrieved successfully",
+                status=status.HTTP_200_OK,
+            )
         except PermissionDenied as e:
-            return Response(str(e), status.HTTP_403_FORBIDDEN)
+            return ErrorResponse(message=str(e), status=status.HTTP_403_FORBIDDEN)
         except Exception as e:
-            return Response(str(e), status.HTTP_404_NOT_FOUND)
+            return ErrorResponse(message=str(e), status=status.HTTP_404_NOT_FOUND)
 
     def patch(self, request, short_url):
         try:
             url_instance = self.get_object(short_url)
             if url_instance is None:
-                return Response(
-                    {"error": "URL not found"}, status=status.HTTP_404_NOT_FOUND
+                return ErrorResponse(
+                    message="URL not found", status=status.HTTP_404_NOT_FOUND
                 )
             self.check_object_permissions(request, url_instance)
             serializer = ShortenUrlSerializer(
@@ -111,26 +126,36 @@ class SpecificUrl(GenericAPIView):
                 UrlService.update_url(url_instance, serializer.validated_data)
                 url_instance.refresh_from_db()
                 response_serializer = ResponseUrlSerializer(url_instance)
-                return Response(response_serializer.data, status.HTTP_200_OK)
+                return SuccessResponse(
+                    data=response_serializer.data,
+                    message="URL updated successfully",
+                    status=status.HTTP_200_OK,
+                )
         except PermissionDenied as e:
-            return Response(str(e), status.HTTP_403_FORBIDDEN)
+            return ErrorResponse(message=str(e), status=status.HTTP_403_FORBIDDEN)
         except Exception as e:
-            return Response(str(e), status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return ErrorResponse(
+                message=str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
     def delete(self, request, short_url):
         try:
             url_instance = self.get_object(short_url)
             if url_instance is None:
-                return Response(
-                    {"error": "URL not found"}, status=status.HTTP_404_NOT_FOUND
+                return ErrorResponse(
+                    message="URL not found", status=status.HTTP_404_NOT_FOUND
                 )
             self.check_object_permissions(request, url_instance)
             url_instance.delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
+            return SuccessResponse(
+                message="URL deleted successfully", status=status.HTTP_204_NO_CONTENT
+            )
         except PermissionDenied as e:
-            return Response(str(e), status.HTTP_403_FORBIDDEN)
+            return ErrorResponse(message=str(e), status=status.HTTP_403_FORBIDDEN)
         except Exception as e:
-            return Response(str(e), status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return ErrorResponse(
+                message=str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 
 class ListUrlsView(GenericAPIView):
@@ -148,21 +173,26 @@ class ListUrlsView(GenericAPIView):
                 limit, page, url_status, user_id
             )
             serializer = ShortenUrlSerializer(result.object_list, many=True)
-            return Response(
-                {
-                    "urls": serializer.data,
-                    "pagination": {
-                        "total": result.paginator.count,
-                        "page": result.number,
-                        "limit": limit,
-                        "total_pages": result.paginator.num_pages,
-                        "has_next": result.has_next(),
-                        "has_previous": result.has_previous(),
-                    },
-                }
+            data = {
+                "urls": serializer.data,
+                "pagination": {
+                    "total": result.paginator.count,
+                    "page": result.number,
+                    "limit": limit,
+                    "total_pages": result.paginator.num_pages,
+                    "has_next": result.has_next(),
+                    "has_previous": result.has_previous(),
+                },
+            }
+            return SuccessResponse(
+                data=data,
+                message="URLs fetched successfully",
+                status=status.HTTP_200_OK,
             )
         except Exception as e:
-            return Response(str(e), status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return ErrorResponse(
+                message=str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 
 class Redirect(GenericAPIView):
@@ -176,22 +206,21 @@ class Redirect(GenericAPIView):
             ip = get_ip_address(request)
             is_safe = self.protection_service.check_burst(ip, short_url)
             if not is_safe:
-                return Response(
-                    {"error": "too many requests on this url"},
-                    status.HTTP_429_TOO_MANY_REQUESTS,
+                return ErrorResponse(
+                    message="Too many requests on this URL",
+                    status=status.HTTP_429_TOO_MANY_REQUESTS,
                 )
             url_instance = Url.objects.get(short_url=short_url)
             url_status = UrlStatus.objects.get(url=url_instance)
             if url_status.state == url_status.State.EXPIRED:
-                return Response(
-                    {"error": "URL is inactive or expired"},
-                    status=status.HTTP_410_GONE,
+                return ErrorResponse(
+                    message="URL is inactive or expired", status=status.HTTP_410_GONE
                 )
 
             analytic_service.record_visit(request, url_instance)
             return redirect(url_instance.long_url)
         except Exception as e:
-            return Response(str(e), status.HTTP_404_NOT_FOUND)
+            return ErrorResponse(message=str(e), status=status.HTTP_404_NOT_FOUND)
 
 
 class GenerateQrcode(GenericAPIView):
@@ -207,6 +236,6 @@ class GenerateQrcode(GenericAPIView):
             response = HttpResponse(qr_image, "image/png", 200)
             return response
         except PermissionDenied as e:
-            return Response(str(e), status.HTTP_403_FORBIDDEN)
+            return ErrorResponse(message=str(e), status=status.HTTP_403_FORBIDDEN)
         except Url.DoesNotExist as e:
-            return Response(str(e), status.HTTP_404_NOT_FOUND)
+            return ErrorResponse(message=str(e), status=status.HTTP_404_NOT_FOUND)

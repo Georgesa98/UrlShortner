@@ -30,9 +30,11 @@ class TestTopVisitedEndpoint:
         response = self.client.get(self.url)
 
         assert response.status_code == status.HTTP_200_OK
-        assert "top_urls" in response.data
-        assert response.data["count"] == 0
-        assert len(response.data["top_urls"]) == 0
+        assert response.data["success"] == True
+        data = response.data["data"]
+        assert "top_urls" in data
+        assert data["count"] == 0
+        assert len(data["top_urls"]) == 0
 
     def test_top_visited_with_urls(self):
         """Test top visited with multiple URLs"""
@@ -59,14 +61,16 @@ class TestTopVisitedEndpoint:
         response = self.client.get(self.url)
 
         assert response.status_code == status.HTTP_200_OK
-        assert response.data["count"] == 3
-        assert len(response.data["top_urls"]) == 3
+        assert response.data["success"] == True
+        data = response.data["data"]
+        assert data["count"] == 3
+        assert len(data["top_urls"]) == 3
 
         # Verify sorted by visits (descending)
-        visits = [item["visits"] for item in response.data["top_urls"]]
+        visits = [item["visits"] for item in data["top_urls"]]
         assert visits == sorted(visits, reverse=True)
-        assert response.data["top_urls"][0]["visits"] == 200
-        assert response.data["top_urls"][0]["short_url"] == "third123"
+        assert data["top_urls"][0]["visits"] == 200
+        assert data["top_urls"][0]["short_url"] == "third123"
 
     def test_top_visited_only_user_urls(self):
         """Test top visited returns only authenticated user's URLs"""
@@ -91,8 +95,10 @@ class TestTopVisitedEndpoint:
         response = self.client.get(self.url)
 
         assert response.status_code == status.HTTP_200_OK
-        assert response.data["count"] == 1
-        short_urls = [item["short_url"] for item in response.data["top_urls"]]
+        assert response.data["success"] == True
+        data = response.data["data"]
+        assert data["count"] == 1
+        short_urls = [item["short_url"] for item in data["top_urls"]]
         assert "mine123" in short_urls
         assert "theirs123" not in short_urls
 
@@ -108,9 +114,9 @@ class TestTopVisitedEndpoint:
         response = self.client.get(self.url)
 
         assert response.status_code == status.HTTP_200_OK
-        assert len(response.data["top_urls"]) == 1
+        assert len(response.data["data"]["top_urls"]) == 1
 
-        url_data = response.data["top_urls"][0]
+        url_data = response.data["data"]["top_urls"][0]
         assert "id" in url_data
         assert "short_url" in url_data
         assert "long_url" in url_data
@@ -155,15 +161,17 @@ class TestURLSummaryEndpoint:
         response = self.client.get(url)
 
         assert response.status_code == status.HTTP_200_OK
-        assert "basic_info" in response.data
-        assert "analytics" in response.data
+        assert response.data["success"] == True
+        data = response.data["data"]
+        assert "basic_info" in data
+        assert "analytics" in data
 
         # Verify Url data
-        assert response.data["basic_info"]["id"] == self.url_obj.id
-        assert response.data["basic_info"]["short_url"] == self.url_obj.short_url
-        assert response.data["basic_info"]["long_url"] == self.url_obj.long_url
-        assert response.data["basic_info"]["visits"] == 50
-        assert response.data["basic_info"]["unique_visits"] == 30
+        assert data["basic_info"]["id"] == self.url_obj.id
+        assert data["basic_info"]["short_url"] == self.url_obj.short_url
+        assert data["basic_info"]["long_url"] == self.url_obj.long_url
+        assert data["basic_info"]["visits"] == 50
+        assert data["basic_info"]["unique_visits"] == 30
 
     def test_url_summary_with_days_parameter(self):
         """Test Url summary with custom days parameter"""
@@ -190,9 +198,9 @@ class TestURLSummaryEndpoint:
         response = self.client.get(url)
 
         assert response.status_code == status.HTTP_200_OK
-        basic_info = response.data["basic_info"]
-        analytics = response.data["analytics"]
-        top_metrics = response.data["top_metrics"]
+        basic_info = response.data["data"]["basic_info"]
+        analytics = response.data["data"]["analytics"]
+        top_metrics = response.data["data"]["top_metrics"]
 
         assert "visits" in basic_info
         assert "unique_visits" in basic_info
@@ -215,7 +223,7 @@ class TestURLSummaryEndpoint:
         response = self.client.get(url)
 
         assert response.status_code == status.HTTP_200_OK
-        daily_visits = response.data["analytics"]["daily_visits"]
+        daily_visits = response.data["data"]["analytics"]["daily_visits"]
 
         assert isinstance(daily_visits, list)
         if len(daily_visits) > 0:
@@ -232,7 +240,7 @@ class TestURLSummaryEndpoint:
         response = self.client.get(url)
 
         assert response.status_code == status.HTTP_200_OK
-        top_locations = response.data["top_metrics"]["countries"]
+        top_locations = response.data["data"]["top_metrics"]["countries"]
 
         assert isinstance(top_locations, list)
         if len(top_locations) > 0:
@@ -267,6 +275,7 @@ class TestURLSummaryEndpoint:
 
 
 @pytest.mark.django_db
+@pytest.mark.usefixtures("disable_burst_protection")
 class TestAnalyticsIntegration:
     """Integration tests for analytics workflows"""
 
@@ -285,8 +294,8 @@ class TestAnalyticsIntegration:
             "/api/url/shorten/", create_payload, format="json"
         )
         assert create_response.status_code == status.HTTP_201_CREATED
-        short_url = create_response.data["short_url"]
-        url_id = create_response.data["id"]
+        short_url = create_response.data["data"]["short_url"]
+        url_id = create_response.data["data"]["id"]
 
         # Simulate visits
         for i in range(3):
@@ -297,13 +306,14 @@ class TestAnalyticsIntegration:
         top_response = self.client.get("/api/analytics/top-visited/")
         assert top_response.status_code == status.HTTP_200_OK
         assert any(
-            item["short_url"] == short_url for item in top_response.data["top_urls"]
+            item["short_url"] == short_url
+            for item in top_response.data["data"]["top_urls"]
         )
 
         # Check Url summary
         summary_response = self.client.get(f"/api/analytics/url-summary/{url_id}")
         assert summary_response.status_code == status.HTTP_200_OK
-        assert summary_response.data["basic_info"]["visits"] >= 3
+        assert summary_response.data["data"]["basic_info"]["visits"] >= 3
 
     def test_multiple_urls_analytics(self):
         """Test analytics with multiple URLs"""
@@ -317,23 +327,23 @@ class TestAnalyticsIntegration:
             )
             urls.append(
                 {
-                    "short_url": create_response.data["short_url"],
-                    "id": create_response.data["id"],
+                    "short_url": create_response.data["data"]["short_url"],
+                    "id": create_response.data["data"]["id"],
                 }
             )
 
         # Add visits to URLs with different amounts
         for idx, url_data in enumerate(urls):
             for _ in range((idx + 1) * 5):  # 5, 10, 15 visits
-                self.client.get(f'/api/url/redirect/{url_data["short_url"]}/')
+                self.client.get(f"/api/url/redirect/{url_data['short_url']}/")
 
         # Check top visited shows correct order
         top_response = self.client.get("/api/analytics/top-visited/")
         assert top_response.status_code == status.HTTP_200_OK
-        assert len(top_response.data["top_urls"]) == 3
+        assert len(top_response.data["data"]["top_urls"]) == 3
 
         # Verify descending order by visits
-        visits = [item["visits"] for item in top_response.data["top_urls"]]
+        visits = [item["visits"] for item in top_response.data["data"]["top_urls"]]
         assert visits == sorted(visits, reverse=True)
 
     def test_analytics_device_breakdown(self):
@@ -344,8 +354,8 @@ class TestAnalyticsIntegration:
             {"long_url": "https://www.example.com/devices"},
             format="json",
         )
-        url_id = create_response.data["id"]
-        short_url = create_response.data["short_url"]
+        url_id = create_response.data["data"]["id"]
+        short_url = create_response.data["data"]["short_url"]
         url_obj = Url.objects.get(short_url=short_url)
 
         # Create visits with different devices
@@ -363,7 +373,7 @@ class TestAnalyticsIntegration:
         summary_response = self.client.get(f"/api/analytics/url-summary/{url_id}")
         assert summary_response.status_code == status.HTTP_200_OK
 
-        device_breakdown = summary_response.data["top_metrics"]["devices"]
+        device_breakdown = summary_response.data["data"]["top_metrics"]["devices"]
         assert (
             device_breakdown[0]["device"] == "desktop"
             and device_breakdown[0]["count"] >= 2
@@ -381,8 +391,8 @@ class TestAnalyticsIntegration:
             {"long_url": "https://www.example.com/timerange"},
             format="json",
         )
-        url_id = create_response.data["id"]
-        short_url = create_response.data["short_url"]
+        url_id = create_response.data["data"]["id"]
+        short_url = create_response.data["data"]["short_url"]
         url_obj = Url.objects.get(short_url=short_url)
 
         # Create visits at different times
@@ -413,6 +423,6 @@ class TestAnalyticsIntegration:
         assert response_30days.status_code == status.HTTP_200_OK
 
         # 30-day should have more or equal visits than 7-day
-        total_7 = response_7days.data["analytics"]["unique_vs_total"]["total"]
-        total_30 = response_30days.data["analytics"]["unique_vs_total"]["total"]
+        total_7 = response_7days.data["data"]["analytics"]["unique_vs_total"]["total"]
+        total_30 = response_30days.data["data"]["analytics"]["unique_vs_total"]["total"]
         assert total_30 >= total_7

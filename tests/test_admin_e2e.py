@@ -62,9 +62,11 @@ class TestAdminGetUserUrlsEndpoint:
         response = self.client.get(url)
 
         assert response.status_code == status.HTTP_200_OK
-        assert len(response.data["urls"]) == 2
-        assert response.data["pagination"]["total"] == 2
-        assert response.data["pagination"]["page"] == 1
+        assert response.data["success"] == True
+        data = response.data["data"]
+        assert len(data["urls"]) == 2
+        assert data["pagination"]["total"] == 2
+        assert data["pagination"]["page"] == 1
 
     def test_get_user_urls_pagination(self):
         """Test pagination of user's URLs"""
@@ -82,11 +84,11 @@ class TestAdminGetUserUrlsEndpoint:
         response = self.client.get(url)
 
         assert response.status_code == status.HTTP_200_OK
-        assert len(response.data["urls"]) == 5
-        assert response.data["pagination"]["total"] == 12  # 2 existing + 10 new
-        assert response.data["pagination"]["limit"] == 5
-        assert response.data["pagination"]["page"] == 1
-        assert response.data["pagination"]["has_next"] is True
+        assert len(response.data["data"]["urls"]) == 5
+        assert response.data["data"]["pagination"]["total"] == 12  # 2 existing + 10 new
+        assert response.data["data"]["pagination"]["limit"] == 5
+        assert response.data["data"]["pagination"]["page"] == 1
+        assert response.data["data"]["pagination"]["has_next"] is True
 
     def test_get_user_urls_unauthorized(self):
         """Test retrieval without admin privileges"""
@@ -157,7 +159,7 @@ class TestAdminBulkUrlDeletionEndpoint:
         response = self.client.post(url, payload, format="json")
 
         assert response.status_code == status.HTTP_200_OK
-        assert response.data["deleted_count"] == 2
+        assert response.data["data"]["deleted_count"] == 2
         assert not Url.objects.filter(id=self.url1.id).exists()
         assert not Url.objects.filter(id=self.url2.id).exists()
 
@@ -169,7 +171,7 @@ class TestAdminBulkUrlDeletionEndpoint:
         response = self.client.post(url, payload, format="json")
 
         assert response.status_code == status.HTTP_200_OK
-        assert response.data["deleted_count"] == 1
+        assert response.data["data"]["deleted_count"] == 1
         assert not Url.objects.filter(id=self.url1.id).exists()
         assert Url.objects.filter(id=self.url2.id).exists()
 
@@ -253,8 +255,8 @@ class TestAdminBulkFlagUrlEndpoint:
         response = self.client.post(url, payload, format="json")
 
         assert response.status_code == status.HTTP_200_OK
-        assert response.data["success_count"] == 2
-        assert len(response.data["failed_items"]) == 0
+        assert response.data["data"]["success_count"] == 2
+        assert len(response.data["data"]["failed_items"]) == 0
 
         # Verify changes in database
         self.status1.refresh_from_db()
@@ -281,8 +283,8 @@ class TestAdminBulkFlagUrlEndpoint:
         response = self.client.post(url, payload, format="json")
 
         assert response.status_code == status.HTTP_200_OK
-        assert response.data["success_count"] == 1
-        assert len(response.data["failed_items"]) == 1
+        assert response.data["data"]["success_count"] == 1
+        assert len(response.data["data"]["failed_items"]) == 1
 
         # Verify that the valid URL was updated
         self.status1.refresh_from_db()
@@ -340,10 +342,12 @@ class TestAdminGetUrlDetailsEndpoint:
         response = self.client.get(url)
 
         assert response.status_code == status.HTTP_200_OK
-        assert "url" in response.data
-        assert "url_status" in response.data
-        assert "recent_clicks" in response.data
-        assert len(response.data["recent_clicks"]) <= 10  # Limited to 10 in service
+        assert "url" in response.data["data"]
+        assert "url_status" in response.data["data"]
+        assert "recent_clicks" in response.data["data"]
+        assert (
+            len(response.data["data"]["recent_clicks"]) <= 10
+        )  # Limited to 10 in service
 
     def test_get_url_details_unauthorized(self):
         """Test URL details retrieval without admin privileges"""
@@ -418,8 +422,10 @@ class TestAdminSearchUrlsEndpoint:
         response = self.client.get(url)
 
         assert response.status_code == status.HTTP_200_OK
-        assert response.data["pagination"]["total"] >= 1
-        assert any(item["name"] == "First URL" for item in response.data["urls"])
+        assert response.data["data"]["pagination"]["total"] >= 1
+        assert any(
+            item["name"] == "First URL" for item in response.data["data"]["urls"]
+        )
 
     def test_search_urls_by_short_url(self):
         """Test searching URLs by short URL"""
@@ -428,8 +434,10 @@ class TestAdminSearchUrlsEndpoint:
         response = self.client.get(url)
 
         assert response.status_code == status.HTTP_200_OK
-        assert response.data["pagination"]["total"] >= 1
-        assert any(item["short_url"] == "second123" for item in response.data["urls"])
+        assert response.data["data"]["pagination"]["total"] >= 1
+        assert any(
+            item["short_url"] == "second123" for item in response.data["data"]["urls"]
+        )
 
     def test_search_urls_by_long_url(self):
         """Test searching URLs by long URL"""
@@ -438,9 +446,10 @@ class TestAdminSearchUrlsEndpoint:
         response = self.client.get(url)
 
         assert response.status_code == status.HTTP_200_OK
-        assert response.data["pagination"]["total"] >= 1
+        assert response.data["data"]["pagination"]["total"] >= 1
         assert any(
-            "anotherdomain.com" in item["long_url"] for item in response.data["urls"]
+            "anotherdomain.com" in item["long_url"]
+            for item in response.data["data"]["urls"]
         )
 
     def test_search_urls_pagination(self):
@@ -450,10 +459,10 @@ class TestAdminSearchUrlsEndpoint:
         response = self.client.get(url)
 
         assert response.status_code == status.HTTP_200_OK
-        assert len(response.data["urls"]) == 2
-        assert response.data["pagination"]["total"] == 3
-        assert response.data["pagination"]["limit"] == 2
-        assert response.data["pagination"]["page"] == 1
+        assert len(response.data["data"]["urls"]) == 2
+        assert response.data["data"]["pagination"]["total"] == 3
+        assert response.data["data"]["pagination"]["limit"] == 2
+        assert response.data["data"]["pagination"]["page"] == 1
 
     def test_search_urls_empty_query(self):
         """Test search with empty query parameter"""
@@ -502,7 +511,7 @@ class TestAdminUpdateUrlDestinationEndpoint:
         response = self.client.patch(url, payload, format="json")
 
         assert response.status_code == status.HTTP_200_OK
-        assert response.data["long_url"] == "https://www.example.com/new"
+        assert response.data["data"]["long_url"] == "https://www.example.com/new"
 
         # Verify in database
         self.url.refresh_from_db()
@@ -577,8 +586,8 @@ class TestAdminGetUsersEndpoint:
         response = self.client.get(url)
 
         assert response.status_code == status.HTTP_200_OK
-        assert response.data["pagination"]["total"] >= 3
-        assert len(response.data["users"]) > 0
+        assert response.data["data"]["pagination"]["total"] >= 3
+        assert len(response.data["data"]["users"]) > 0
 
     def test_get_users_with_role_filter(self):
         """Test retrieval of users with role filter"""
@@ -587,7 +596,7 @@ class TestAdminGetUsersEndpoint:
         response = self.client.get(url)
 
         assert response.status_code == status.HTTP_200_OK
-        assert all(user["role"] == "USER" for user in response.data["users"])
+        assert all(user["role"] == "USER" for user in response.data["data"]["users"])
 
     def test_get_users_with_active_filter(self):
         """Test retrieval of users with active filter"""
@@ -596,7 +605,7 @@ class TestAdminGetUsersEndpoint:
         response = self.client.get(url)
 
         assert response.status_code == status.HTTP_200_OK
-        assert all(user["is_active"] == True for user in response.data["users"])
+        assert all(user["is_active"] == True for user in response.data["data"]["users"])
 
     def test_get_users_pagination(self):
         """Test pagination of users"""
@@ -605,9 +614,9 @@ class TestAdminGetUsersEndpoint:
         response = self.client.get(url)
 
         assert response.status_code == status.HTTP_200_OK
-        assert len(response.data["users"]) == 2
-        assert response.data["pagination"]["limit"] == 2
-        assert response.data["pagination"]["page"] == 1
+        assert len(response.data["data"]["users"]) == 2
+        assert response.data["data"]["pagination"]["limit"] == 2
+        assert response.data["data"]["pagination"]["page"] == 1
 
     def test_get_users_unauthorized(self):
         """Test user retrieval without admin privileges"""
@@ -660,7 +669,7 @@ class TestAdminToggleBanUserEndpoint:
         response = self.client.patch(url)
 
         assert response.status_code == status.HTTP_200_OK
-        assert response.data["is_active"] == False  # Should now be banned
+        assert response.data["data"]["is_active"] == False  # Should now be banned
 
         # Verify in database
         self.regular_user.refresh_from_db()
@@ -669,7 +678,7 @@ class TestAdminToggleBanUserEndpoint:
         # Toggle again to unban
         response = self.client.patch(url)
         assert response.status_code == status.HTTP_200_OK
-        assert response.data["is_active"] == True  # Should now be unbanned
+        assert response.data["data"]["is_active"] == True  # Should now be unbanned
 
     def test_toggle_ban_user_unauthorized(self):
         """Test ban toggle without admin privileges"""
@@ -728,7 +737,7 @@ class TestAdminBulkUserDeletionEndpoint:
         response = self.client.post(url, payload, format="json")
 
         assert response.status_code == status.HTTP_200_OK
-        assert response.data["deleted_count"] == 2
+        assert response.data["data"]["deleted_count"] == 2
         assert not User.objects.filter(id=self.user1.id).exists()
         assert not User.objects.filter(id=self.user2.id).exists()
 
@@ -796,11 +805,11 @@ class TestAdminGetUserDetailsEndpoint:
         response = self.client.get(url)
 
         assert response.status_code == status.HTTP_200_OK
-        assert "user" in response.data
-        assert "urls" in response.data
-        assert response.data["user"]["id"] == self.regular_user.id
-        assert response.data["user"]["username"] == "regularuser"
-        assert len(response.data["urls"]) == 2
+        assert "user" in response.data["data"]
+        assert "urls" in response.data["data"]
+        assert response.data["data"]["user"]["id"] == self.regular_user.id
+        assert response.data["data"]["user"]["username"] == "regularuser"
+        assert len(response.data["data"]["urls"]) == 2
 
     def test_get_user_details_unauthorized(self):
         """Test user details retrieval without admin privileges"""
@@ -860,8 +869,10 @@ class TestAdminSearchUsersEndpoint:
         response = self.client.get(url)
 
         assert response.status_code == status.HTTP_200_OK
-        assert response.data["pagination"]["total"] >= 1
-        assert any(user["username"] == "john_doe" for user in response.data["users"])
+        assert response.data["data"]["pagination"]["total"] >= 1
+        assert any(
+            user["username"] == "john_doe" for user in response.data["data"]["users"]
+        )
 
     def test_search_users_by_first_name(self):
         """Test searching users by first name"""
@@ -870,8 +881,10 @@ class TestAdminSearchUsersEndpoint:
         response = self.client.get(url)
 
         assert response.status_code == status.HTTP_200_OK
-        assert response.data["pagination"]["total"] >= 1
-        assert any(user["first_name"] == "Jane" for user in response.data["users"])
+        assert response.data["data"]["pagination"]["total"] >= 1
+        assert any(
+            user["first_name"] == "Jane" for user in response.data["data"]["users"]
+        )
 
     def test_search_users_by_last_name(self):
         """Test searching users by last name"""
@@ -880,8 +893,10 @@ class TestAdminSearchUsersEndpoint:
         response = self.client.get(url)
 
         assert response.status_code == status.HTTP_200_OK
-        assert response.data["pagination"]["total"] >= 1
-        assert any(user["last_name"] == "Doe" for user in response.data["users"])
+        assert response.data["data"]["pagination"]["total"] >= 1
+        assert any(
+            user["last_name"] == "Doe" for user in response.data["data"]["users"]
+        )
 
     def test_search_users_pagination(self):
         """Test pagination of user search results"""
@@ -890,9 +905,9 @@ class TestAdminSearchUsersEndpoint:
         response = self.client.get(url)
 
         assert response.status_code == status.HTTP_200_OK
-        assert len(response.data["users"]) == 1
-        assert response.data["pagination"]["limit"] == 1
-        assert response.data["pagination"]["page"] == 1
+        assert len(response.data["data"]["users"]) == 1
+        assert response.data["data"]["pagination"]["limit"] == 1
+        assert response.data["data"]["pagination"]["page"] == 1
 
     def test_search_users_empty_query(self):
         """Test search with empty query parameter"""

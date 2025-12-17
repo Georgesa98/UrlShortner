@@ -109,11 +109,13 @@ class TestPlatformStatsViewResponse:
             response = self.client.get(self.url)
 
             assert response.status_code == status.HTTP_200_OK
-            assert "total_clicks" in response.data
-            assert "new_urls" in response.data
-            assert "new_users" in response.data
-            assert "new_visitors" in response.data
-            assert response.data == expected_stats
+            assert response.data["success"] == True
+            data = response.data["data"]
+            assert "total_clicks" in data
+            assert "new_urls" in data
+            assert "new_users" in data
+            assert "new_visitors" in data
+            assert data == expected_stats
 
     def test_time_range_parameter_handling(self):
         """Test time_range parameter is handled correctly"""
@@ -249,13 +251,13 @@ class TestGrowthMetricsViewResponse:
             response = self.client.get(self.url)
 
             assert response.status_code == status.HTTP_200_OK
-            assert "growth_interval" in response.data
-            assert "data_points" in response.data
-            assert "metrics" in response.data
-            assert "users_growth" in response.data["metrics"]
-            assert "urls_growth" in response.data["metrics"]
-            assert "clicks_volume" in response.data["metrics"]
-            assert response.data == expected_metrics
+            assert "growth_interval" in response.data["data"]
+            assert "data_points" in response.data["data"]
+            assert "metrics" in response.data["data"]
+            assert "users_growth" in response.data["data"]["metrics"]
+            assert "urls_growth" in response.data["data"]["metrics"]
+            assert "clicks_volume" in response.data["data"]["metrics"]
+            assert response.data["data"] == expected_metrics
 
 
 @pytest.mark.django_db
@@ -399,16 +401,16 @@ class TestTopPerformersViewResponse:
             response = self.client.get(self.url)
 
             assert response.status_code == status.HTTP_200_OK
-            assert isinstance(response.data, list)
-            if response.data:
-                performer = response.data[0]
+            assert isinstance(response.data["data"], list)
+            if response.data["data"]:
+                performer = response.data["data"][0]
                 assert "rank" in performer
                 assert "identifier_type" in performer
                 assert "identifier_value" in performer
                 assert "metric" in performer
                 assert "metric_value" in performer
                 assert "details" in performer
-                assert response.data == expected_performers
+                assert response.data["data"] == expected_performers
 
 
 @pytest.mark.django_db
@@ -509,13 +511,13 @@ class TestPeakTimesViewResponse:
             response = self.client.get(self.url)
 
             assert response.status_code == status.HTTP_200_OK
-            assert "day" in response.data
-            assert "hour" in response.data
-            assert "peak_day" in response.data["day"]
-            assert "avg_clicks" in response.data["day"]
-            assert "peak_hour" in response.data["hour"]
-            assert "avg_clicks" in response.data["hour"]
-            assert response.data == expected_peak_times
+            assert "day" in response.data["data"]
+            assert "hour" in response.data["data"]
+            assert "peak_day" in response.data["data"]["day"]
+            assert "avg_clicks" in response.data["data"]["day"]
+            assert "peak_hour" in response.data["data"]["hour"]
+            assert "avg_clicks" in response.data["data"]["hour"]
+            assert response.data["data"] == expected_peak_times
 
 
 @pytest.mark.django_db
@@ -615,7 +617,7 @@ class TestGeoDistributionViewResponse:
             response = self.client.get(self.url)
 
             assert response.status_code == status.HTTP_200_OK
-            assert isinstance(response.data, list)
+            assert isinstance(response.data["data"], list)
 
     def test_response_structure(self):
         """Test geo distribution endpoint returns correct response structure"""
@@ -632,13 +634,13 @@ class TestGeoDistributionViewResponse:
             response = self.client.get(self.url)
 
             assert response.status_code == status.HTTP_200_OK
-            if response.data:
-                country_data = response.data[0]
+            if response.data["data"]:
+                country_data = response.data["data"][0]
                 assert "rank" in country_data
                 assert "country" in country_data
                 assert "clicks" in country_data
                 assert "percentage" in country_data
-                assert response.data == expected_geo_data
+                assert response.data["data"] == expected_geo_data
 
 
 @pytest.mark.django_db

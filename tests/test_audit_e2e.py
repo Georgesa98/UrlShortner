@@ -53,7 +53,7 @@ class TestAuditService:
         )
 
         assert create_response.status_code == status.HTTP_201_CREATED
-        short_url = create_response.data["short_url"]
+        short_url = create_response.data["data"]["short_url"]
 
         initial_audit_count = AuditLog.objects.count()
 
@@ -85,7 +85,7 @@ class TestAuditService:
         )
 
         assert create_response.status_code == status.HTTP_201_CREATED
-        short_url = create_response.data["short_url"]
+        short_url = create_response.data["data"]["short_url"]
 
         initial_audit_count = AuditLog.objects.count()
 
@@ -113,7 +113,7 @@ class TestAuditService:
         )
 
         assert create_response.status_code == status.HTTP_201_CREATED
-        short_url = create_response.data["short_url"]
+        short_url = create_response.data["data"]["short_url"]
 
         initial_audit_count = AuditLog.objects.count()
 
@@ -136,7 +136,7 @@ class TestAuditService:
         )
 
         assert response.status_code == status.HTTP_201_CREATED
-        short_url = response.data["short_url"]
+        short_url = response.data["data"]["short_url"]
 
         # Check the audit entry
         latest_audit = AuditLog.objects.last()
@@ -231,12 +231,12 @@ class TestAuditMiddleware:
         # First, create a resource to update
         create_response = self.client.post(
             "/api/url/shorten/",
-            {"long_url": "https://www.example.com/initial"},
+            {"long_url": "https://www.example.com/original"},
             format="json",
         )
 
         assert create_response.status_code == status.HTTP_201_CREATED
-        short_url = create_response.data["short_url"]
+        short_url = create_response.data["data"]["short_url"]
 
         initial_count = AuditLog.objects.count()
 
@@ -262,7 +262,7 @@ class TestAuditMiddleware:
         )
 
         assert create_response.status_code == status.HTTP_201_CREATED
-        short_url = create_response.data["short_url"]
+        short_url = create_response.data["data"]["short_url"]
 
         initial_count = AuditLog.objects.count()
 
@@ -288,7 +288,7 @@ class TestAuditMiddleware:
         )
 
         assert create_response.status_code == status.HTTP_201_CREATED
-        short_url = create_response.data["short_url"]
+        short_url = create_response.data["data"]["short_url"]
 
         initial_count = AuditLog.objects.count()
 
@@ -313,7 +313,7 @@ class TestAuditMiddleware:
         )
 
         assert create_response.status_code == status.HTTP_201_CREATED
-        short_url = create_response.data["short_url"]
+        short_url = create_response.data["data"]["short_url"]
 
         initial_count = AuditLog.objects.count()
 
@@ -369,9 +369,11 @@ class TestAuditLogsEndpoint:
         response = self.client.get("/api/admin/audit/logs/")
 
         assert response.status_code == status.HTTP_200_OK
-        assert "data" in response.data
-        assert "pagination" in response.data
-        assert len(response.data["data"]) > 0
+        assert response.data["success"] == True
+        data = response.data["data"]
+        assert "data" in data
+        assert "pagination" in data
+        assert len(data["data"]) > 0
 
     def test_get_audit_logs_requires_admin(self):
         """Test that regular users cannot access audit logs"""
@@ -393,9 +395,11 @@ class TestAuditLogsEndpoint:
         )
 
         assert response.status_code == status.HTTP_200_OK
-        assert "data" in response.data
+        assert response.data["success"] == True
+        data = response.data["data"]
+        assert "data" in data
         # All returned logs should be for the specified user
-        for log in response.data["data"]:
+        for log in data["data"]:
             assert log["user_id"] == self.regular_user.id
 
     def test_get_audit_logs_with_action_filter(self):
@@ -403,9 +407,11 @@ class TestAuditLogsEndpoint:
         response = self.client.get("/api/admin/audit/logs/?action=CREATE")
 
         assert response.status_code == status.HTTP_200_OK
-        assert "data" in response.data
+        assert response.data["success"] == True
+        data = response.data["data"]
+        assert "data" in data
         # All returned logs should have the specified action
-        for log in response.data["data"]:
+        for log in data["data"]:
             assert log["action"] == "CREATE"
 
     def test_get_audit_logs_with_date_filter(self):
@@ -418,32 +424,38 @@ class TestAuditLogsEndpoint:
         )
 
         assert response.status_code == status.HTTP_200_OK
-        assert "data" in response.data
+        assert response.data["success"] == True
+        assert "data" in response.data["data"]
 
     def test_get_audit_logs_with_pagination(self):
         """Test pagination of audit logs"""
         response = self.client.get("/api/admin/audit/logs/?page=1&page_size=1")
 
         assert response.status_code == status.HTTP_200_OK
-        assert "data" in response.data
-        assert "pagination" in response.data
-        assert len(response.data["data"]) <= 1
-        assert response.data["pagination"]["current_page"] == 1
+        assert response.data["success"] == True
+        data = response.data["data"]
+        assert "data" in data
+        assert "pagination" in data
+        assert len(data["data"]) <= 1
+        assert data["pagination"]["current_page"] == 1
 
     def test_get_audit_logs_with_invalid_date_format(self):
         """Test error handling for invalid date format"""
         response = self.client.get("/api/admin/audit/logs/?date_from=invalid-date")
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert "error" in response.data
+        assert response.data["success"] == False
+        assert "Invalid date format" in response.data["message"]
 
     def test_get_audit_logs_sorted_by_timestamp(self):
         """Test that audit logs are sorted by timestamp by default"""
         response = self.client.get("/api/admin/audit/logs/?sort_by=-timestamp")
 
         assert response.status_code == status.HTTP_200_OK
-        assert "data" in response.data
+        assert response.data["success"] == True
+        data = response.data["data"]
+        assert "data" in data
         # Check that the results are sorted by timestamp in descending order
-        if len(response.data["data"]) > 1:
-            timestamps = [log["timestamp"] for log in response.data["data"]]
+        if len(data["data"]) > 1:
+            timestamps = [log["timestamp"] for log in data["data"]]
             assert timestamps == sorted(timestamps, reverse=True)

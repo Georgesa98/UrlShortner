@@ -1,4 +1,5 @@
 from rest_framework.views import APIView, Response, status
+from config.utils.responses import SuccessResponse, ErrorResponse
 from api.admin_panel.audit.AuditService import AuditService
 from datetime import datetime
 from api.custom_auth.authentication import CookieJWTAuthentication
@@ -26,16 +27,16 @@ class GetAuditLogsView(APIView):
             try:
                 date_from = datetime.strptime(date_from_str, "%Y-%m-%d")
             except ValueError:
-                return Response(
-                    {"error": "Invalid date format for date_from. Use YYYY-MM-DD."},
+                return ErrorResponse(
+                    message="Invalid date format for date_from. Use YYYY-MM-DD.",
                     status=status.HTTP_400_BAD_REQUEST,
                 )
         if date_to_str:
             try:
                 date_to = datetime.strptime(date_to_str, "%Y-%m-%d")
             except ValueError:
-                return Response(
-                    {"error": "Invalid date format for date_to. Use YYYY-MM-DD."},
+                return ErrorResponse(
+                    message="Invalid date format for date_to. Use YYYY-MM-DD.",
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
@@ -49,8 +50,12 @@ class GetAuditLogsView(APIView):
                 page_size=page_size,
                 sort_by=sort_by,
             )
-            return Response(audit_logs, status=status.HTTP_200_OK)
+            return SuccessResponse(
+                data=audit_logs,
+                message="Audit logs retrieved successfully",
+                status=status.HTTP_200_OK,
+            )
         except Exception as e:
-            return Response(
-                {"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            return ErrorResponse(
+                message=str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )

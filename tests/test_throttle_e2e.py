@@ -86,9 +86,9 @@ class TestAuthenticatedUserRateLimiting:
 
         # At least some rate limit info should be present
         if response.status_code == status.HTTP_429_TOO_MANY_REQUESTS:
-            assert any(
-                header in response for header in possible_headers
-            ), "Rate limit response should include rate limit headers"
+            assert any(header in response for header in possible_headers), (
+                "Rate limit response should include rate limit headers"
+            )
 
     def test_different_endpoints_separate_limits(self):
         """Test that different endpoints have separate rate limits"""
@@ -98,7 +98,7 @@ class TestAuthenticatedUserRateLimiting:
         create_response = self.client.post(
             shorten_url, {"long_url": "https://www.example.com/test"}, format="json"
         )
-        short_url = create_response.data["short_url"]
+        short_url = create_response.data["data"]["short_url"]
 
         # Exhaust rate limit on shorten endpoint
         for i in range(100):
@@ -176,9 +176,9 @@ class TestIPBasedRateLimiting:
         # Different IP should still work
         response = self.client.get(redirect_url, REMOTE_ADDR="192.168.1.200")
 
-        assert (
-            response.status_code == status.HTTP_302_FOUND
-        ), "Different IPs should have separate rate limits"
+        assert response.status_code == status.HTTP_302_FOUND, (
+            "Different IPs should have separate rate limits"
+        )
 
 
 @pytest.mark.django_db
@@ -230,7 +230,7 @@ class TestThrottlingIntegration:
             )
             if response.status_code == status.HTTP_201_CREATED:
                 operations_count["create"] += 1
-                urls_created.append(response.data["short_url"])
+                urls_created.append(response.data["data"]["short_url"])
 
         # Retrieve URLs
         for short_url in urls_created:
@@ -264,9 +264,9 @@ class TestThrottlingIntegration:
         final_count = URL.objects.count()
 
         # Only successfully created URLs should be in database
-        assert (
-            final_count == initial_count + created_count
-        ), "Rate-limited requests should not create partial data"
+        assert final_count == initial_count + created_count, (
+            "Rate-limited requests should not create partial data"
+        )
 
     def test_throttle_recovery_after_wait(self):
         """Test that rate limits recover after waiting"""
@@ -332,7 +332,7 @@ class TestThrottlingIntegration:
             {"long_url": "https://www.example.com/update-test"},
             format="json",
         )
-        short_url = create_response.data["short_url"]
+        short_url = create_response.data["data"]["short_url"]
 
         # Try to update it many times
         rate_limited = False
@@ -365,7 +365,7 @@ class TestThrottlingIntegration:
                 format="json",
             )
             if response.status_code == status.HTTP_201_CREATED:
-                short_urls.append(response.data["short_url"])
+                short_urls.append(response.data["data"]["short_url"])
 
         # Try to delete them all rapidly
         rate_limited = False

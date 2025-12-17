@@ -38,14 +38,17 @@ class TestURLShortenEndpoint:
         response = self.client.post(self.url, payload, format="json")
 
         assert response.status_code == status.HTTP_201_CREATED
-        assert "short_url" in response.data
-        assert response.data["long_url"] == payload["long_url"]
-        assert response.data["user"] == self.user.id
-        assert response.data["visits"] == 0
-        assert "created_at" in response.data
-        assert "updated_at" in response.data
-        assert response.data["url_status"]["state"] == "ACTIVE"
-        assert response.data["last_accessed"] is None
+        assert response.data["success"] == True
+        assert "URL shortened successfully" in response.data["message"]
+        data = response.data["data"]
+        assert "short_url" in data
+        assert data["long_url"] == payload["long_url"]
+        assert data["user"] == self.user.id
+        assert data["visits"] == 0
+        assert "created_at" in data
+        assert "updated_at" in data
+        assert data["url_status"]["state"] == "ACTIVE"
+        assert data["last_accessed"] is None
 
     def test_shorten_url_with_expiry(self):
         """Test Url shortening with expiry date"""
@@ -58,8 +61,10 @@ class TestURLShortenEndpoint:
         response = self.client.post(self.url, payload, format="json")
 
         assert response.status_code == status.HTTP_201_CREATED
-        assert response.data["expiry_date"] is not None
-        assert response.data["days_until_expiry"] is not None
+        assert response.data["success"] == True
+        data = response.data["data"]
+        assert data["expiry_date"] is not None
+        assert data["days_until_expiry"] is not None
 
     def test_shorten_url_unauthenticated(self):
         """Test Url shortening without authentication"""
@@ -77,6 +82,8 @@ class TestURLShortenEndpoint:
         response = self.client.post(self.url, payload, format="json")
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert response.data["success"] == False
+        assert "long_url" in response.data["message"]
 
     def test_shorten_url_missing_field(self):
         """Test Url shortening without required field"""
@@ -85,6 +92,8 @@ class TestURLShortenEndpoint:
         response = self.client.post(self.url, payload, format="json")
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert response.data["success"] == False
+        assert "long_url" in response.data["message"]
 
 
 @pytest.mark.django_db
@@ -112,9 +121,11 @@ class TestURLRetrieveEndpoint:
         response = self.client.get(url)
 
         assert response.status_code == status.HTTP_200_OK
-        assert response.data["short_url"] == self.url_obj.short_url
-        assert response.data["long_url"] == self.url_obj.long_url
-        assert response.data["user"] == self.user.id
+        assert response.data["success"] == True
+        data = response.data["data"]
+        assert data["short_url"] == self.url_obj.short_url
+        assert data["long_url"] == self.url_obj.long_url
+        assert data["user"] == self.user.id
 
     def test_retrieve_url_not_owner(self):
         """Test Url retrieval by non-owner"""
@@ -172,7 +183,9 @@ class TestURLUpdateEndpoint:
         response = self.client.patch(url, payload, format="json")
 
         assert response.status_code == status.HTTP_200_OK
-        assert response.data["expiry_date"] is not None
+        assert response.data["success"] == True
+        data = response.data["data"]
+        assert data["expiry_date"] is not None
 
     def test_update_url_long_url_success(self):
         """Test successful long Url update"""
@@ -182,7 +195,9 @@ class TestURLUpdateEndpoint:
         response = self.client.patch(url, payload, format="json")
 
         assert response.status_code == status.HTTP_200_OK
-        assert response.data["long_url"] == payload["long_url"]
+        assert response.data["success"] == True
+        data = response.data["data"]
+        assert data["long_url"] == payload["long_url"]
 
     def test_update_url_not_owner(self):
         """Test Url update by non-owner"""
@@ -280,6 +295,7 @@ class TestURLDeleteEndpoint:
 
 
 @pytest.mark.django_db
+@pytest.mark.usefixtures("disable_burst_protection")
 class TestURLRedirectEndpoint:
     """Test GET /api/url/redirect/{short_url} endpoint"""
 
@@ -355,6 +371,7 @@ class TestURLRedirectEndpoint:
 
 
 @pytest.mark.django_db
+@pytest.mark.usefixtures("disable_burst_protection")
 class TestURLEndpointsIntegration:
     """Integration tests for complete Url workflows"""
 
@@ -373,12 +390,16 @@ class TestURLEndpointsIntegration:
             "/api/url/shorten/", create_payload, format="json"
         )
         assert create_response.status_code == status.HTTP_201_CREATED
-        short_url = create_response.data["short_url"]
+        assert create_response.data["success"] == True
+        create_data = create_response.data["data"]
+        short_url = create_data["short_url"]
 
         # Retrieve Url
         retrieve_response = self.client.get(f"/api/url/{short_url}/")
         assert retrieve_response.status_code == status.HTTP_200_OK
-        assert retrieve_response.data["long_url"] == create_payload["long_url"]
+        assert retrieve_response.data["success"] == True
+        retrieve_data = retrieve_response.data["data"]
+        assert retrieve_data["long_url"] == create_payload["long_url"]
 
         # Update Url
         update_payload = {"long_url": "https://www.example.com/updated"}
@@ -386,7 +407,9 @@ class TestURLEndpointsIntegration:
             f"/api/url/{short_url}/", update_payload, format="json"
         )
         assert update_response.status_code == status.HTTP_200_OK
-        assert update_response.data["long_url"] == update_payload["long_url"]
+        assert update_response.data["success"] == True
+        update_data = update_response.data["data"]
+        assert update_data["long_url"] == update_payload["long_url"]
 
         # Delete Url
         delete_response = self.client.delete(f"/api/url/{short_url}/")
@@ -403,7 +426,8 @@ class TestURLEndpointsIntegration:
         create_response = self.client.post(
             "/api/url/shorten/", create_payload, format="json"
         )
-        short_url = create_response.data["short_url"]
+        create_data = create_response.data["data"]
+        short_url = create_data["short_url"]
 
         # Test redirect
         redirect_response = self.client.get(f"/api/url/redirect/{short_url}/")
@@ -411,10 +435,13 @@ class TestURLEndpointsIntegration:
 
         # Verify visit count updated
         retrieve_response = self.client.get(f"/api/url/{short_url}/")
-        assert retrieve_response.data["visits"] > 0
+        assert retrieve_response.data["success"] == True
+        retrieve_data = retrieve_response.data["data"]
+        assert retrieve_data["visits"] > 0
 
 
 @pytest.mark.django_db
+@pytest.mark.usefixtures("disable_burst_protection")
 class TestCustomAliasFeature:
     """Test custom alias functionality for Url shortening"""
 
@@ -440,9 +467,9 @@ class TestCustomAliasFeature:
         response = self.client.post(url, payload, format="json")
 
         assert response.status_code == status.HTTP_201_CREATED
-        assert response.data["short_url"] == "my-custom-link"
-        assert response.data["is_custom_alias"] is True
-        assert response.data["long_url"] == payload["long_url"]
+        assert response.data["data"]["short_url"] == "my-custom-link"
+        assert response.data["data"]["is_custom_alias"] is True
+        assert response.data["data"]["long_url"] == payload["long_url"]
 
         # Verify in database
         url_obj = Url.objects.get(short_url="my-custom-link")
@@ -495,9 +522,9 @@ class TestCustomAliasFeature:
             }
             response = self.client.post(url, payload, format="json")
 
-            assert (
-                response.status_code == status.HTTP_400_BAD_REQUEST
-            ), f"Alias '{invalid_alias}' should be invalid"
+            assert response.status_code == status.HTTP_400_BAD_REQUEST, (
+                f"Alias '{invalid_alias}' should be invalid"
+            )
 
     def test_custom_alias_valid_formats(self):
         """Test valid custom alias formats"""
@@ -518,10 +545,10 @@ class TestCustomAliasFeature:
             }
             response = self.client.post(url, payload, format="json")
 
-            assert (
-                response.status_code == status.HTTP_201_CREATED
-            ), f"Alias '{valid_alias}' should be valid. Got: {response.data}"
-            assert response.data["short_url"] == valid_alias
+            assert response.status_code == status.HTTP_201_CREATED, (
+                f"Alias '{valid_alias}' should be valid. Got: {response.data}"
+            )
+            assert response.data["data"]["short_url"] == valid_alias
 
     def test_custom_alias_length_limits(self):
         """Test custom alias length validation"""
@@ -569,9 +596,9 @@ class TestCustomAliasFeature:
         response = self.client.post(url, payload, format="json")
 
         assert response.status_code == status.HTTP_201_CREATED
-        assert response.data["is_custom_alias"] is False
-        assert len(response.data["short_url"]) > 0
-        assert response.data["short_url"] != payload["long_url"]
+        assert response.data["data"]["is_custom_alias"] is False
+        assert len(response.data["data"]["short_url"]) > 0
+        assert response.data["data"]["short_url"] != payload["long_url"]
 
     def test_update_url_custom_alias(self):
         """Test updating a Url's custom alias"""
@@ -582,7 +609,7 @@ class TestCustomAliasFeature:
             "custom_alias": "original-alias",
         }
         create_response = self.client.post(create_url, payload, format="json")
-        short_url = create_response.data["short_url"]
+        short_url = create_response.data["data"]["short_url"]
 
         # Try to update the alias (this might not be allowed depending on your logic)
         update_url = f"/api/url/{short_url}/"
@@ -717,9 +744,9 @@ class TestQRCodeGeneration:
         new_files = files_after - files_before
         qr_files = [f for f in new_files if "qr" in f.lower() or "png" in f.lower()]
 
-        assert (
-            len(qr_files) == 0
-        ), f"QR code should not be saved to disk. Found: {qr_files}"
+        assert len(qr_files) == 0, (
+            f"QR code should not be saved to disk. Found: {qr_files}"
+        )
 
     def test_qr_code_no_authentication_required(self):
         """Test QR code generation without authentication (if public)"""
@@ -827,9 +854,10 @@ class TestBatchURLShortening:
         response = self.client.post(self.url, payload, format="json")
 
         assert response.status_code == status.HTTP_201_CREATED
+        assert response.data["success"] == True
 
         # Get the results array (adjust key based on your implementation)
-        results = response.data
+        results = response.data["data"]
 
         assert len(results) == 3
 
@@ -856,8 +884,9 @@ class TestBatchURLShortening:
         response = self.client.post(self.url, payload, format="json")
 
         assert response.status_code == status.HTTP_201_CREATED
+        assert response.data["success"] == True
 
-        results = response.data
+        results = response.data["data"]
 
         assert len(results) == 2
 
@@ -883,8 +912,9 @@ class TestBatchURLShortening:
         response = self.client.post(self.url, payload, format="json")
 
         assert response.status_code == status.HTTP_201_CREATED
+        assert response.data["success"] == True
 
-        results = response.data
+        results = response.data["data"]
 
         # First should have custom alias
         assert results[0]["short_url"] == "custom-mixed"
@@ -910,7 +940,7 @@ class TestBatchURLShortening:
 
         assert response.status_code == status.HTTP_201_CREATED
 
-        results = response.data
+        results = response.data["data"]
         assert len(results) == 1
 
     def test_batch_shorten_invalid_url_in_batch(self):
@@ -993,7 +1023,7 @@ class TestBatchURLShortening:
 
         assert response.status_code == status.HTTP_201_CREATED
 
-        results = response.data
+        results = response.data["data"]
 
         # Verify expiry dates were set
         for result in results:
@@ -1010,7 +1040,7 @@ class TestBatchURLShortening:
 
         # Depending on your limits, this might succeed or fail
         if response.status_code == status.HTTP_201_CREATED:
-            results = response.data
+            results = response.data["data"]
             assert len(results) == 50
         elif response.status_code == status.HTTP_400_BAD_REQUEST:
             # Batch size limit exceeded
@@ -1069,9 +1099,9 @@ class TestBatchURLShortening:
         assert response.status_code == status.HTTP_201_CREATED
 
         # Verify response structure
-        assert isinstance(response.data, dict) or isinstance(response.data, list)
+        assert isinstance(response.data, dict)
 
-        results = response.data
+        results = response.data["data"]
 
         if isinstance(results, list) and len(results) > 0:
             first_result = results[0]
@@ -1082,6 +1112,7 @@ class TestBatchURLShortening:
 
 
 @pytest.mark.django_db
+@pytest.mark.usefixtures("disable_burst_protection")
 class TestNewFeaturesIntegration:
     """Integration tests combining new features"""
 
@@ -1115,11 +1146,11 @@ class TestNewFeaturesIntegration:
         )
         assert batch_response.status_code == status.HTTP_201_CREATED
 
-        results = batch_response.data
+        results = batch_response.data["data"]
 
         # Generate QR code for each
         for result in results:
-            qr_url = f'/api/url/qr/{result["short_url"]}/'
+            qr_url = f"/api/url/qr/{result['short_url']}/"
             qr_response = self.client.get(qr_url)
 
             assert qr_response.status_code == status.HTTP_200_OK
@@ -1164,10 +1195,10 @@ class TestURLShortenWithAutoShortCode:
         response = self.client.post(self.url, payload, format="json")
 
         assert response.status_code == status.HTTP_201_CREATED
-        assert "short_url" in response.data
-        assert len(response.data["short_url"]) == 8
-        assert response.data["long_url"] == payload["long_url"]
-        assert response.data["user"] == self.user.id
+        assert "short_url" in response.data["data"]
+        assert len(response.data["data"]["short_url"]) == 8
+        assert response.data["data"]["long_url"] == payload["long_url"]
+        assert response.data["data"]["user"] == self.user.id
 
     def test_shorten_url_code_removed_from_pool(self):
         """Test that assigned short code is removed from Redis pool"""
@@ -1175,7 +1206,7 @@ class TestURLShortenWithAutoShortCode:
 
         payload = {"long_url": "https://www.example.com/test"}
         response = self.client.post(self.url, payload, format="json")
-        assigned_short_url = response.data["short_url"]
+        assigned_short_url = response.data["data"]["short_url"]
 
         # Verify pool size decreased
         new_size = ShortCodeService().redis_client.scard(ShortCodeService.POOL_KEY)
@@ -1194,7 +1225,7 @@ class TestURLShortenWithAutoShortCode:
             payload = {"long_url": f"https://www.example.com/url{i}"}
             response = self.client.post(self.url, payload, format="json")
             assert response.status_code == status.HTTP_201_CREATED
-            short_urls.add(response.data["short_url"])
+            short_urls.add(response.data["data"]["short_url"])
 
         # All codes should be unique
         assert len(short_urls) == 10
@@ -1208,8 +1239,8 @@ class TestURLShortenWithAutoShortCode:
         response = self.client.post(self.url, payload, format="json")
 
         assert response.status_code == status.HTTP_201_CREATED
-        assert "short_url" in response.data
-        assert len(response.data["short_url"]) == 8
+        assert "short_url" in response.data["data"]
+        assert len(response.data["data"]["short_url"]) == 8
 
     def test_shorten_url_saves_to_database(self):
         """Test that shortened URL is saved correctly to database"""
@@ -1219,7 +1250,7 @@ class TestURLShortenWithAutoShortCode:
         assert response.status_code == status.HTTP_201_CREATED
 
         # Verify in database
-        url_obj = Url.objects.get(short_url=response.data["short_url"])
+        url_obj = Url.objects.get(short_url=response.data["data"]["short_url"])
         assert url_obj.long_url == payload["long_url"]
         assert url_obj.user == self.user
         assert url_obj.visits == 0
@@ -1397,8 +1428,8 @@ class TestShortCodeCollisionResistance:
             assert response1.status_code == status.HTTP_201_CREATED
             assert response2.status_code == status.HTTP_201_CREATED
 
-            short_urls.add(response1.data["short_url"])
-            short_urls.add(response2.data["short_url"])
+            short_urls.add(response1.data["data"]["short_url"])
+            short_urls.add(response2.data["data"]["short_url"])
 
         # All codes should be unique (10 total)
         assert len(short_urls) == 10
@@ -1412,7 +1443,7 @@ class TestShortCodeCollisionResistance:
             payload = {"long_url": f"https://www.example.com/rapid{i}"}
             response = self.client.post("/api/url/shorten/", payload, format="json")
             assert response.status_code == status.HTTP_201_CREATED
-            short_urls.append(response.data["short_url"])
+            short_urls.append(response.data["data"]["short_url"])
 
         # All codes should be unique
         assert len(short_urls) == len(set(short_urls))
@@ -1422,7 +1453,7 @@ class TestShortCodeCollisionResistance:
         self.client.force_authenticate(user=self.user)
         payload = {"long_url": "https://www.example.com/test"}
         response1 = self.client.post("/api/url/shorten/", payload, format="json")
-        short_url = response1.data["short_url"]
+        short_url = response1.data["data"]["short_url"]
 
         # Try to create another URL object with same short_url (should fail at DB level)
         with pytest.raises(Exception):  # IntegrityError expected
@@ -1458,7 +1489,7 @@ class TestPoolHealthMonitoring:
         payload = {"long_url": "https://www.example.com/after-depletion"}
         response = self.client.post("/api/url/shorten/", payload, format="json")
         assert response.status_code == status.HTTP_201_CREATED
-        assert len(response.data["short_url"]) == 8
+        assert len(response.data["data"]["short_url"]) == 8
 
     def test_pool_size_check_accuracy(self):
         """Test that pool size checks are accurate"""

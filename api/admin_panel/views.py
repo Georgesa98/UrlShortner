@@ -1,4 +1,5 @@
 from rest_framework.views import APIView, Response, status
+from config.utils.responses import SuccessResponse, ErrorResponse
 from rest_framework.generics import GenericAPIView
 from api.admin_panel.services.UrlManagementService import UrlManagementService
 from api.admin_panel.services.UserManagementService import UserManagementService
@@ -24,7 +25,6 @@ User = get_user_model()
 
 
 class GetUserUrlsView(GenericAPIView):
-
     throttle_classes = [IPRateThrottle, UserRateThrottle]
     authentication_classes = [CookieJWTAuthentication]
     permission_classes = [IsAdminOrStaff, IsAuthenticated]
@@ -43,19 +43,22 @@ class GetUserUrlsView(GenericAPIView):
                 "urls": serializer.data,
                 "pagination": result["pagination"],
             }
-            return Response(response_data)
+            return SuccessResponse(
+                data=response_data,
+                message="User URLs retrieved successfully",
+                status=status.HTTP_200_OK,
+            )
         except User.DoesNotExist:
-            return Response(
-                {"error": "User not found"}, status=status.HTTP_404_NOT_FOUND
+            return ErrorResponse(
+                message="User not found", status=status.HTTP_404_NOT_FOUND
             )
         except Exception as e:
-            return Response(
-                {"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            return ErrorResponse(
+                message=str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
 
 class BulkUrlDeletionView(APIView):
-
     throttle_classes = [IPRateThrottle, UserRateThrottle]
     authentication_classes = [CookieJWTAuthentication]
     permission_classes = [IsAdminOrStaff]
@@ -64,21 +67,24 @@ class BulkUrlDeletionView(APIView):
         try:
             url_ids = request.data.get("url_ids", [])
             if not url_ids:
-                return Response(
-                    {"error": "url_ids list is required"},
+                return ErrorResponse(
+                    message="url_ids list is required",
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
             deleted_count = UrlManagementService.bulk_url_deletion(url_ids)
-            return Response({"deleted_count": deleted_count}, status=status.HTTP_200_OK)
+            return SuccessResponse(
+                data={"deleted_count": deleted_count},
+                message="URLs deleted successfully",
+                status=status.HTTP_200_OK,
+            )
         except Exception as e:
-            return Response(
-                {"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            return ErrorResponse(
+                message=str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
 
 class BulkFlagUrlView(APIView):
-
     throttle_classes = [IPRateThrottle, UserRateThrottle]
     authentication_classes = [CookieJWTAuthentication]
     permission_classes = [IsAdminOrStaff]
@@ -87,21 +93,24 @@ class BulkFlagUrlView(APIView):
         try:
             data = request.data.get("data", [])
             if not data:
-                return Response(
-                    {"error": "data list with url_id and state is required"},
+                return ErrorResponse(
+                    message="data list with url_id and state is required",
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
             result = UrlManagementService.bulk_flag_url(data)
-            return Response(result, status=status.HTTP_200_OK)
+            return SuccessResponse(
+                data=result,
+                message="URLs flagged successfully",
+                status=status.HTTP_200_OK,
+            )
         except Exception as e:
-            return Response(
-                {"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            return ErrorResponse(
+                message=str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
 
 class GetUrlDetailsView(APIView):
-
     throttle_classes = [IPRateThrottle, UserRateThrottle]
     authentication_classes = [CookieJWTAuthentication]
     permission_classes = [IsAdminOrStaff]
@@ -120,19 +129,22 @@ class GetUrlDetailsView(APIView):
                 "url_status": status_serializer.data,
                 "recent_clicks": recent_clicks_serializer.data,
             }
-            return Response(response_data, status=status.HTTP_200_OK)
+            return SuccessResponse(
+                data=response_data,
+                message="URL details retrieved successfully",
+                status=status.HTTP_200_OK,
+            )
         except Url.DoesNotExist:
-            return Response(
-                {"error": "URL not found"}, status=status.HTTP_404_NOT_FOUND
+            return ErrorResponse(
+                message="URL not found", status=status.HTTP_404_NOT_FOUND
             )
         except Exception as e:
-            return Response(
-                {"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            return ErrorResponse(
+                message=str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
 
 class SearchUrlsView(GenericAPIView):
-
     throttle_classes = [IPRateThrottle, UserRateThrottle]
     authentication_classes = [CookieJWTAuthentication]
     permission_classes = [IsAdminOrStaff]
@@ -141,8 +153,8 @@ class SearchUrlsView(GenericAPIView):
         try:
             query = request.GET.get("q", "")
             if not query:
-                return Response(
-                    {"error": "Query parameter 'q' is required"},
+                return ErrorResponse(
+                    message="Query parameter 'q' is required",
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
@@ -158,15 +170,18 @@ class SearchUrlsView(GenericAPIView):
                 "urls": serializer.data,
                 "pagination": result["pagination"],
             }
-            return Response(response_data)
+            return SuccessResponse(
+                data=response_data,
+                message="URLs searched successfully",
+                status=status.HTTP_200_OK,
+            )
         except Exception as e:
-            return Response(
-                {"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            return ErrorResponse(
+                message=str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
 
 class UpdateUrlDestinationView(APIView):
-
     throttle_classes = [IPRateThrottle, UserRateThrottle]
     authentication_classes = [CookieJWTAuthentication]
     permission_classes = [IsAdminOrStaff]
@@ -175,8 +190,8 @@ class UpdateUrlDestinationView(APIView):
         try:
             new_destination = request.data.get("new_destination", "")
             if not new_destination:
-                return Response(
-                    {"error": "new_destination is required"},
+                return ErrorResponse(
+                    message="new_destination is required",
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
@@ -184,19 +199,22 @@ class UpdateUrlDestinationView(APIView):
                 short_url, new_destination
             )
             serializer = ResponseUrlSerializer(updated_url)
-            return Response(serializer.data, status=status.HTTP_200_OK)
+            return SuccessResponse(
+                data=serializer.data,
+                message="URL destination updated successfully",
+                status=status.HTTP_200_OK,
+            )
         except Url.DoesNotExist:
-            return Response(
-                {"error": "URL not found"}, status=status.HTTP_404_NOT_FOUND
+            return ErrorResponse(
+                message="URL not found", status=status.HTTP_404_NOT_FOUND
             )
         except Exception as e:
-            return Response(
-                {"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            return ErrorResponse(
+                message=str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
 
 class GetUsersView(GenericAPIView):
-
     throttle_classes = [IPRateThrottle, UserRateThrottle]
     authentication_classes = [CookieJWTAuthentication]
     permission_classes = [IsAdminOrStaff]
@@ -231,15 +249,18 @@ class GetUsersView(GenericAPIView):
                 page=page,
             )
 
-            return Response(result)
+            return SuccessResponse(
+                data=result,
+                message="Users retrieved successfully",
+                status=status.HTTP_200_OK,
+            )
         except Exception as e:
-            return Response(
-                {"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            return ErrorResponse(
+                message=str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
 
 class ToggleBanUserView(APIView):
-
     throttle_classes = [IPRateThrottle, UserRateThrottle]
     authentication_classes = [CookieJWTAuthentication]
     permission_classes = [IsAdminOrStaff]
@@ -258,19 +279,22 @@ class ToggleBanUserView(APIView):
                 "date_joined": user_instance.date_joined,
                 "last_login": user_instance.last_login,
             }
-            return Response(user_data, status=status.HTTP_200_OK)
+            return SuccessResponse(
+                data=user_data,
+                message="User ban status toggled successfully",
+                status=status.HTTP_200_OK,
+            )
         except User.DoesNotExist:
-            return Response(
-                {"error": "User not found"}, status=status.HTTP_404_NOT_FOUND
+            return ErrorResponse(
+                message="User not found", status=status.HTTP_404_NOT_FOUND
             )
         except Exception as e:
-            return Response(
-                {"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            return ErrorResponse(
+                message=str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
 
 class BulkUserDeletionView(APIView):
-
     throttle_classes = [IPRateThrottle, UserRateThrottle]
     authentication_classes = [CookieJWTAuthentication]
     permission_classes = [IsAdminOrStaff]
@@ -279,21 +303,24 @@ class BulkUserDeletionView(APIView):
         try:
             user_ids = request.data.get("user_ids", [])
             if not user_ids:
-                return Response(
-                    {"error": "user_ids list is required"},
+                return ErrorResponse(
+                    message="user_ids list is required",
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
             deleted_count = UserManagementService.bulk_user_deletion(user_ids)
-            return Response({"deleted_count": deleted_count}, status=status.HTTP_200_OK)
+            return SuccessResponse(
+                data={"deleted_count": deleted_count},
+                message="Users deleted successfully",
+                status=status.HTTP_200_OK,
+            )
         except Exception as e:
-            return Response(
-                {"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            return ErrorResponse(
+                message=str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
 
 class GetUserDetailsView(APIView):
-
     throttle_classes = [IPRateThrottle, UserRateThrottle]
     authentication_classes = [CookieJWTAuthentication]
     permission_classes = [IsAdminOrStaff]
@@ -319,19 +346,22 @@ class GetUserDetailsView(APIView):
             urls_serializer = ResponseUrlSerializer(urls, many=True)
 
             response_data = {"user": user_data, "urls": urls_serializer.data}
-            return Response(response_data, status=status.HTTP_200_OK)
+            return SuccessResponse(
+                data=response_data,
+                message="User details retrieved successfully",
+                status=status.HTTP_200_OK,
+            )
         except User.DoesNotExist:
-            return Response(
-                {"error": "User not found"}, status=status.HTTP_404_NOT_FOUND
+            return ErrorResponse(
+                message="User not found", status=status.HTTP_404_NOT_FOUND
             )
         except Exception as e:
-            return Response(
-                {"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            return ErrorResponse(
+                message=str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
 
 class SearchUsersView(GenericAPIView):
-
     throttle_classes = [IPRateThrottle, UserRateThrottle]
     authentication_classes = [CookieJWTAuthentication]
     permission_classes = [IsAdminOrStaff]
@@ -340,8 +370,8 @@ class SearchUsersView(GenericAPIView):
         try:
             query = request.GET.get("q", "")
             if not query:
-                return Response(
-                    {"error": "Query parameter 'q' is required"},
+                return ErrorResponse(
+                    message="Query parameter 'q' is required",
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
@@ -352,8 +382,12 @@ class SearchUsersView(GenericAPIView):
                 query, limit, page
             )
 
-            return Response(result)
+            return SuccessResponse(
+                data=result,
+                message="Users searched successfully",
+                status=status.HTTP_200_OK,
+            )
         except Exception as e:
-            return Response(
-                {"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            return ErrorResponse(
+                message=str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )

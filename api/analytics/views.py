@@ -1,5 +1,6 @@
 from django.shortcuts import render
 from rest_framework.views import APIView, Response, status
+from config.utils.responses import SuccessResponse, ErrorResponse
 from api.analytics.serializers.UrlSummarySerializer import UrlSummarySerializer
 from api.analytics.service import AnalyticsService
 from api.custom_auth.authentication import CookieJWTAuthentication
@@ -23,9 +24,16 @@ class TopVisitedUrlsView(APIView):
         try:
             top_urls = AnalyticsService.get_top_visited_urls(request.user.id, 10)
             serializer = ResponseUrlSerializer(top_urls, many=True)
-            return Response({"top_urls": serializer.data, "count": len(top_urls)})
+            data = {"top_urls": serializer.data, "count": len(top_urls)}
+            return SuccessResponse(
+                data=data,
+                message="Top visited URLs retrieved successfully",
+                status=status.HTTP_200_OK,
+            )
         except Exception as e:
-            return Response(str(e), status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return ErrorResponse(
+                message=str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 
 class GetUrlSummary(APIView):
@@ -40,6 +48,12 @@ class GetUrlSummary(APIView):
             self.check_object_permissions(request, url_instance)
             result = AnalyticsService.get_url_summary(url_id, range_days)
             serializer = UrlSummarySerializer(result)
-            return Response(serializer.data, status.HTTP_200_OK)
+            return SuccessResponse(
+                data=serializer.data,
+                message="URL summary retrieved successfully",
+                status=status.HTTP_200_OK,
+            )
         except Url.DoesNotExist:
-            return Response("Url does not exist", status.HTTP_404_NOT_FOUND)
+            return ErrorResponse(
+                message="URL does not exist", status=status.HTTP_404_NOT_FOUND
+            )
