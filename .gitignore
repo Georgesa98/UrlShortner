@@ -9,6 +9,7 @@ __pycache__
 
 # Test
 db.sqlite3
+.coverage
 
 # Sensitive Data
 .env

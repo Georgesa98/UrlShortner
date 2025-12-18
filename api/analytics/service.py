@@ -1,3 +1,6 @@
+import json
+import redis
+
 from api.analytics.models import Visit
 from api.analytics.utils import (
     convert_ip_to_location,
@@ -8,6 +11,7 @@ from api.analytics.utils import (
 )
 from config.settings_utils import get_analytics_track_ip
 from datetime import datetime, timezone, timedelta
+from django.conf import settings
 from django.db.models import Count, Q
 from api.url.models import Url
 from api.admin_panel.fraud.FraudService import FraudService
@@ -44,16 +48,36 @@ class AnalyticsService:
             url_instance.unique_visits += 1
         url_instance.last_accessed = datetime.now(timezone.utc)
         url_instance.save()
-        Visit.objects.create(
-            url=url_instance,
-            hashed_ip=hashed_ip,
-            geolocation=country,
-            operating_system=user_agent["os"],
-            browser=user_agent["browser"],
-            device=user_agent["device"],
-            referrer=request.META.get("HTTP_REFERRER", ""),
-            new_visitor=is_new_visitor,
-        )
+        try:
+            redis_conn = redis.Redis(
+                host=settings.REDIS_HOST,
+                port=settings.REDIS_PORT,
+                db=settings.REDIS_DB,
+                password=settings.REDIS_PASSWORD,
+            )
+            visit_data = {
+                "url_id": url_instance.id,
+                "hashed_ip": hashed_ip,
+                "geolocation": country,
+                "operating_system": user_agent["os"],
+                "browser": user_agent["browser"],
+                "device": user_agent["device"],
+                "referrer": request.META.get("HTTP_REFERRER", ""),
+                "new_visitor": is_new_visitor,
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            }
+            redis_conn.rpush("analytics:visits", json.dumps(visit_data))
+        except Exception:
+            Visit.objects.create(
+                url=url_instance,
+                hashed_ip=hashed_ip,
+                geolocation=country,
+                operating_system=user_agent["os"],
+                browser=user_agent["browser"],
+                device=user_agent["device"],
+                referrer=request.META.get("HTTP_REFERRER", ""),
+                new_visitor=is_new_visitor,
+            )
 
     @staticmethod
     def get_top_visited_urls(user_id: int, num: int):

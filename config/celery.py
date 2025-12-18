@@ -19,6 +19,10 @@ CELERY_BEAT_SCHEDUAL = {
         "task": "api.url.tasks.maintain_shortcode_pool",
         "schedule": crontab(minute="*/10"),
     },
+    "process-analytics-buffer": {
+        "task": "api.url.tasks.process_analytics_buffer",
+        "schedule": 30.0,
+    },
 }
 
 if __name__ == "__main__":

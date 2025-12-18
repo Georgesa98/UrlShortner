@@ -1,11 +1,14 @@
 import pytest
+import redis
 from django.contrib.auth import get_user_model
 from rest_framework.test import APIClient
 from rest_framework import status
 from datetime import datetime, timedelta, timezone
+from unittest.mock import patch
 from api.analytics.utils import hash_ip
 from api.url.models import Url
 from api.analytics.models import Visit
+from django.conf import settings
 
 """
 E2E tests for Analytics endpoints
@@ -297,10 +300,18 @@ class TestAnalyticsIntegration:
         short_url = create_response.data["data"]["short_url"]
         url_id = create_response.data["data"]["id"]
 
+        # Extract short code from short_url (remove domain if present)
+        code = short_url.split("/")[-1] if "/" in short_url else short_url
+
         # Simulate visits
         for i in range(3):
-            redirect_response = self.client.get(f"/api/url/redirect/{short_url}/")
+            redirect_response = self.client.get(f"/api/url/redirect/{code}/")
             assert redirect_response.status_code == status.HTTP_302_FOUND
+
+        # Process buffered analytics visits
+        from api.url.tasks import process_analytics_buffer
+
+        process_analytics_buffer()
 
         # Check top visited
         top_response = self.client.get("/api/analytics/top-visited/")
@@ -426,3 +437,202 @@ class TestAnalyticsIntegration:
         total_7 = response_7days.data["data"]["analytics"]["unique_vs_total"]["total"]
         total_30 = response_30days.data["data"]["analytics"]["unique_vs_total"]["total"]
         assert total_30 >= total_7
+
+
+@pytest.mark.django_db
+@pytest.mark.usefixtures("disable_burst_protection")
+class TestRedisAnalyticsBuffering:
+    """Test Redis-based analytics buffering functionality"""
+
+    def setup_method(self):
+        self.client = APIClient()
+        self.user = User.objects.create_user(
+            username="testuser", email="test@example.com", password="testpass123"
+        )
+        self.client.force_authenticate(user=self.user)
+        # Clear analytics queue before each test
+        redis_conn = redis.Redis(
+            host=settings.REDIS_HOST,
+            port=settings.REDIS_PORT,
+            db=settings.REDIS_DB,
+            password=settings.REDIS_PASSWORD,
+        )
+        redis_conn.delete("analytics:visits")
+
+    def teardown_method(self):
+        # Clean up queue after each test
+        redis_conn = redis.Redis(
+            host=settings.REDIS_HOST,
+            port=settings.REDIS_PORT,
+            db=settings.REDIS_DB,
+            password=settings.REDIS_PASSWORD,
+        )
+        redis_conn.delete("analytics:visits")
+
+    def test_redis_buffering_enqueues_visits(self):
+        """Test that visits are enqueued to Redis during URL redirection"""
+        # Create URL
+        create_response = self.client.post(
+            "/api/url/shorten/",
+            {"long_url": "https://www.example.com/buffer"},
+            format="json",
+        )
+        assert create_response.status_code == status.HTTP_201_CREATED
+        short_url = create_response.data["data"]["short_url"]
+        code = short_url.split("/")[-1] if "/" in short_url else short_url
+
+        # Perform redirect (triggers record_visit)
+        redirect_response = self.client.get(f"/api/url/redirect/{code}/")
+        assert redirect_response.status_code == status.HTTP_302_FOUND
+
+        # Check Redis queue has the visit data
+        redis_conn = redis.Redis(
+            host=settings.REDIS_HOST,
+            port=settings.REDIS_PORT,
+            db=settings.REDIS_DB,
+            password=settings.REDIS_PASSWORD,
+        )
+        visit_data = redis_conn.lpop("analytics:visits")
+        assert visit_data is not None
+
+        # Verify visit data structure
+        import json
+
+        visit_dict = json.loads(visit_data.decode("utf-8"))
+        assert "url_id" in visit_dict
+        assert "hashed_ip" in visit_dict
+        assert "timestamp" in visit_dict
+        assert visit_dict["url_id"] == create_response.data["data"]["id"]
+
+    def test_celery_task_processes_buffer(self):
+        """Test that Celery task processes buffered visits and inserts into DB"""
+        # Create URL and simulate multiple visits
+        create_response = self.client.post(
+            "/api/url/shorten/",
+            {"long_url": "https://www.example.com/task"},
+            format="json",
+        )
+        assert create_response.status_code == status.HTTP_201_CREATED
+        short_url = create_response.data["data"]["short_url"]
+        url_id = create_response.data["data"]["id"]
+        code = short_url.split("/")[-1] if "/" in short_url else short_url
+
+        # Perform 3 redirects
+        for _ in range(3):
+            redirect_response = self.client.get(f"/api/url/redirect/{code}/")
+            assert redirect_response.status_code == status.HTTP_302_FOUND
+
+        # Check visits are in Redis queue
+        redis_conn = redis.Redis(
+            host=settings.REDIS_HOST,
+            port=settings.REDIS_PORT,
+            db=settings.REDIS_DB,
+            password=settings.REDIS_PASSWORD,
+        )
+        queue_length = redis_conn.llen("analytics:visits")
+        assert queue_length == 3
+
+        # Run the processing task
+        from api.url.tasks import process_analytics_buffer
+
+        result = process_analytics_buffer()
+
+        # Verify task result
+        assert result["status"] == "success"
+        assert result["processed_count"] == 3
+
+        # Verify visits are now in database
+        visits_in_db = Visit.objects.filter(url_id=url_id)
+        assert visits_in_db.count() == 3
+
+        # Verify Redis queue is empty
+        queue_length_after = redis_conn.llen("analytics:visits")
+        assert queue_length_after == 0
+
+    def test_fallback_to_sync_write_on_redis_failure(self):
+        """Test fallback to synchronous DB write when Redis fails"""
+        # Create URL
+        create_response = self.client.post(
+            "/api/url/shorten/",
+            {"long_url": "https://www.example.com/fallback"},
+            format="json",
+        )
+        assert create_response.status_code == status.HTTP_201_CREATED
+        short_url = create_response.data["data"]["short_url"]
+        url_id = create_response.data["data"]["id"]
+        code = short_url.split("/")[-1] if "/" in short_url else short_url
+
+        # Mock Redis to raise exception
+        with patch("redis.Redis", side_effect=Exception("Redis connection failed")):
+            # Perform redirect - should fallback to sync write
+            redirect_response = self.client.get(f"/api/url/redirect/{code}/")
+            assert redirect_response.status_code == status.HTTP_302_FOUND
+
+        # Verify visit was written directly to DB despite Redis failure
+        visits_in_db = Visit.objects.filter(url_id=url_id)
+        assert visits_in_db.count() == 1
+
+        # Verify Redis queue is empty (since Redis failed)
+        redis_conn = redis.Redis(
+            host=settings.REDIS_HOST,
+            port=settings.REDIS_PORT,
+            db=settings.REDIS_DB,
+            password=settings.REDIS_PASSWORD,
+        )
+        queue_length = redis_conn.llen("analytics:visits")
+        assert queue_length == 0
+
+    def test_batch_processing_limit(self):
+        """Test that task processes up to 100 visits per batch"""
+        # Create URL and simulate 150 visits (optimized to avoid timeout)
+        create_response = self.client.post(
+            "/api/url/shorten/",
+            {"long_url": "https://www.example.com/batch"},
+            format="json",
+        )
+        assert create_response.status_code == status.HTTP_201_CREATED
+        url_id = create_response.data["data"]["id"]
+
+        # Add 150 visits directly to Redis queue for speed
+        import json
+
+        redis_conn = redis.Redis(
+            host=settings.REDIS_HOST,
+            port=settings.REDIS_PORT,
+            db=settings.REDIS_DB,
+            password=settings.REDIS_PASSWORD,
+        )
+        visit_template = {
+            "url_id": url_id,
+            "hashed_ip": "test_hash",
+            "geolocation": "US",
+            "operating_system": "Linux",
+            "browser": "Chrome",
+            "device": "desktop",
+            "referrer": "https://google.com",
+            "new_visitor": True,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        }
+        for _ in range(150):
+            redis_conn.rpush("analytics:visits", json.dumps(visit_template))
+
+        # Check 150 visits are in Redis queue
+        queue_length = redis_conn.llen("analytics:visits")
+        assert queue_length == 150
+
+        # Run the processing task once
+        from api.url.tasks import process_analytics_buffer
+
+        result = process_analytics_buffer()
+
+        # Verify only 100 were processed
+        assert result["status"] == "success"
+        assert result["processed_count"] == 100
+
+        # Verify 100 visits in DB
+        visits_in_db = Visit.objects.filter(url_id=url_id)
+        assert visits_in_db.count() == 100
+
+        # Verify 50 remain in queue
+        queue_length_after = redis_conn.llen("analytics:visits")
+        assert queue_length_after == 50
