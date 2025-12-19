@@ -1,8 +1,8 @@
-import redis
 from django.conf import settings
 from api.url.models import Url, UrlStatus
 from datetime import datetime, timezone
 from api.admin_panel.fraud.FraudService import FraudService
+from config.redis_utils import get_redis_client
 
 
 class BurstProtectionService:
@@ -10,13 +10,7 @@ class BurstProtectionService:
 
     def __init__(self):
         """Initialize the BurstProtectionService with Redis client."""
-        self.redis_client = redis.Redis(
-            host=settings.REDIS_HOST,
-            port=settings.REDIS_PORT,
-            db=settings.REDIS_DB,
-            password=settings.REDIS_PASSWORD,
-            decode_responses=True,
-        )
+        self.redis_client = get_redis_client()
         self.default_thresholds = {
             "short_term_window": 10,  # seconds
             "short_term_limit": 10,
@@ -136,18 +130,3 @@ class BurstProtectionService:
                 lock.release()
         except Exception as e:
             return False
-
-
-_burst_protection_instance = None
-
-
-def get_burst_protection_service():
-    """Get singleton instance of BurstProtectionService.
-
-    Returns:
-        BurstProtectionService: The singleton instance.
-    """
-    global _burst_protection_instance
-    if _burst_protection_instance is None:
-        _burst_protection_instance = BurstProtectionService()
-    return _burst_protection_instance

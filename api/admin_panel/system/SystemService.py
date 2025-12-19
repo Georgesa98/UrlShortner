@@ -1,6 +1,7 @@
 import psutil
 import redis
 from config import settings
+from config.redis_utils import get_redis_client
 from enum import Enum
 from datetime import datetime, timezone
 from django.db import connection
@@ -18,21 +19,10 @@ class SystemService:
 
     def __init__(self):
         """Initialize the SystemService with Redis client."""
-        self.redis_client = self._get_redis_client()
-
-    def _get_redis_client(self):
         try:
-            redis_password = (
-                settings.REDIS_PASSWORD if settings.REDIS_PASSWORD else None
-            )
-            redis_url = (
-                f"redis://:{redis_password}@{settings.REDIS_HOST}:{settings.REDIS_PORT}/{settings.REDIS_DB}"
-                if redis_password
-                else f"redis://{settings.REDIS_HOST}:{settings.REDIS_PORT}/{settings.REDIS_DB}"
-            )
-            return redis.from_url(redis_url)
+            self.redis_client = get_redis_client()
         except Exception:
-            return None
+            self.redis_client = None
 
     def _check_redis(self):
         if not self.redis_client:

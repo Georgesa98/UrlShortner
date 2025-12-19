@@ -1,6 +1,6 @@
-from redis import Redis
 from config import settings
 from config.settings_utils import get_throttle_rates
+from config.redis_utils import get_redis_client
 import time
 from rest_framework.throttling import SimpleRateThrottle
 from api.admin_panel.fraud.FraudService import FraudService
@@ -8,12 +8,7 @@ from api.admin_panel.fraud.FraudService import FraudService
 
 class RedisRateLimiter:
     def __init__(self):
-        self.redis_client = Redis(
-            host=settings.REDIS_HOST,
-            port=settings.REDIS_PORT,
-            db=settings.REDIS_DB,
-            password=settings.REDIS_PASSWORD,
-        )
+        self.redis_client = get_redis_client()
 
     def is_allowed(self, key: str, limit: int, window: int) -> tuple[bool, dict]:
         now = time.time()

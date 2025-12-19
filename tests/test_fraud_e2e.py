@@ -339,9 +339,9 @@ class TestFraudDetectionWorkflows:
         UrlStatus.objects.create(url=url_obj)
 
         # Simulate burst protection trigger
-        from api.url.services.BurstProtectionService import get_burst_protection_service
+        from api.url.services.BurstProtectionService import BurstProtectionService
 
-        service = get_burst_protection_service()
+        service = BurstProtectionService()
         initial_count = FraudIncident.objects.count()
         service._flag_url("burst123", "127.0.0.1")
         after_burst_count = FraudIncident.objects.count()

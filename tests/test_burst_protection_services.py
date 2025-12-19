@@ -3,10 +3,7 @@ from unittest.mock import Mock, patch, MagicMock
 from datetime import datetime, timezone
 import redis
 from datetime import datetime, timezone
-from api.url.services.BurstProtectionService import (
-    BurstProtectionService,
-    get_burst_protection_service,
-)
+from api.url.services.BurstProtectionService import BurstProtectionService
 from api.url.models import Url, UrlStatus
 
 
@@ -51,12 +48,6 @@ class BurstProtectionServiceTest(TestCase):
         self.assertEqual(self.service.default_thresholds["medium_term_limit"], 50)
         self.assertEqual(self.service.default_thresholds["long_term_window"], 3600)
         self.assertEqual(self.service.default_thresholds["long_term_limit"], 1000)
-
-    def test_singleton_pattern(self):
-        """Test that get_burst_protection_service returns singleton instance"""
-        service1 = get_burst_protection_service()
-        service2 = get_burst_protection_service()
-        self.assertIs(service1, service2)
 
     # ==================== Test _track_click ====================
 

@@ -1,7 +1,7 @@
 import string
 import random
-from redis import Redis
 from config import settings
+from config.redis_utils import get_redis_client
 from config.settings_utils import get_short_code_pool_size, get_short_code_length
 
 
@@ -15,13 +15,7 @@ class ShortCodeService:
 
     def __init__(self):
         """Initialize the ShortCodeService with Redis client."""
-        self.redis_client = Redis(
-            host=settings.REDIS_HOST,
-            port=settings.REDIS_PORT,
-            db=settings.REDIS_DB,
-            password=settings.REDIS_PASSWORD,
-            decode_responses=True,
-        )
+        self.redis_client = get_redis_client()
 
     def generate_code(self):
         """Generate a random short code of configured length.

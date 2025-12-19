@@ -1,7 +1,8 @@
 import json
-import redis
+import json
 
 from api.analytics.models import Visit
+from config.redis_utils import get_redis_client
 from api.analytics.utils import (
     convert_ip_to_location,
     get_ip_address,
@@ -49,12 +50,7 @@ class AnalyticsService:
         url_instance.last_accessed = datetime.now(timezone.utc)
         url_instance.save()
         try:
-            redis_conn = redis.Redis(
-                host=settings.REDIS_HOST,
-                port=settings.REDIS_PORT,
-                db=settings.REDIS_DB,
-                password=settings.REDIS_PASSWORD,
-            )
+            redis_conn = get_redis_client()
             visit_data = {
                 "url_id": url_instance.id,
                 "hashed_ip": hashed_ip,

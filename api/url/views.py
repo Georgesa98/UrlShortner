@@ -14,9 +14,7 @@ from api.custom_auth.authentication import CookieJWTAuthentication
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.serializers import ValidationError
 from rest_framework.exceptions import PermissionDenied
-from api.url.services.BurstProtectionService import (
-    get_burst_protection_service,
-)
+from api.url.services.BurstProtectionService import BurstProtectionService
 from api.url.services.UrlService import (
     UrlService,
 )
@@ -198,7 +196,7 @@ class ListUrlsView(GenericAPIView):
 
 class Redirect(GenericAPIView):
     def __init__(self, **kwargs):
-        self.protection_service = get_burst_protection_service()
+        self.protection_service = BurstProtectionService()
         self.service = RedirectionService()
         super().__init__(**kwargs)
 

@@ -1,7 +1,7 @@
 import json
-import redis
 
 from api.analytics.models import Visit
+from config.redis_utils import get_redis_client
 from api.url.services.ShortCodeService import ShortCodeService
 from config.celery import app
 from datetime import datetime, timezone
@@ -46,12 +46,7 @@ def maintain_shortcode_pool():
 def process_analytics_buffer():
     """Process buffered analytics visits from Redis and bulk insert into database."""
     try:
-        redis_conn = redis.Redis(
-            host=settings.REDIS_HOST,
-            port=settings.REDIS_PORT,
-            db=settings.REDIS_DB,
-            password=settings.REDIS_PASSWORD,
-        )
+        redis_conn = get_redis_client()
         visits_to_process = []
         for _ in range(100):
             visit_json = redis_conn.lpop("analytics:visits")
