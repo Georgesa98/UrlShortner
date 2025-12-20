@@ -1,0 +1,134 @@
+version: "3.8"
+
+services:
+    web:
+        build:
+            context: .
+            args:
+                - SECRET_KEY=dev-secret-key-change-in-production
+        ports:
+            - "8000:8000"
+        volumes:
+            - .:/app
+            - media_volume:/app/mediafiles
+        env_file:
+            - .env
+        environment:
+            - DEBUG=1
+            - SECRET_KEY=your-django-secret-key
+            - DATABASE_NAME=urlshortener
+            - DATABASE_USER=urlshortener
+            - DATABASE_PASSWORD=password
+            - DATABASE_HOST=db
+            - DATABASE_PORT=5432
+            - REDIS_HOST=redis
+            - REDIS_PORT=6379
+            - REDIS_DB=0
+            - REDIS_PASSWORD=
+            - CELERY_BROKER_URL=redis://redis:6379/0
+            - CELERY_RESULT_BACKEND=redis://redis:6379/0
+            - CELERY_TIMEZONE=UTC
+        depends_on:
+            - db
+            - redis
+        networks:
+            - app-network
+
+    db:
+        image: postgres:15
+        environment:
+            - POSTGRES_DB=urlshortener
+            - POSTGRES_USER=urlshortener
+            - POSTGRES_PASSWORD=password
+        volumes:
+            - postgres_data:/var/lib/postgresql/data
+        ports:
+            - "5433:5432"
+        networks:
+            - app-network
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U urlshortener -d urlshortener"]
+            interval: 30s
+            timeout: 10s
+            retries: 3
+
+    redis:
+        image: redis:7-alpine
+        ports:
+            - "6380:6379"
+        volumes:
+            - redis_data:/data
+        networks:
+            - app-network
+        healthcheck:
+            test: ["CMD", "redis-cli", "ping"]
+            interval: 30s
+            timeout: 10s
+            retries: 3
+
+    celery:
+        build:
+            context: .
+            args:
+                - SECRET_KEY=dev-secret-key-change-in-production
+        volumes:
+            - .:/app
+        environment:
+            - DEBUG=1
+            - SECRET_KEY=dev-secret-key-change-in-production
+            - DATABASE_NAME=urlshortener
+            - DATABASE_USER=urlshortener
+            - DATABASE_PASSWORD=password
+            - DATABASE_HOST=db
+            - DATABASE_PORT=5432
+            - REDIS_HOST=redis
+            - REDIS_PORT=6379
+            - REDIS_DB=0
+            - REDIS_PASSWORD=
+            - CELERY_BROKER_URL=redis://redis:6379/0
+            - CELERY_RESULT_BACKEND=redis://redis:6379/0
+            - CELERY_TIMEZONE=UTC
+        depends_on:
+            - db
+            - redis
+        networks:
+            - app-network
+        command: celery -A config worker --loglevel=info
+
+    celery-beat:
+        build:
+            context: .
+            args:
+                - SECRET_KEY=dev-secret-key-change-in-production
+        volumes:
+            - .:/app
+        environment:
+            - DEBUG=1
+            - SECRET_KEY=dev-secret-key-change-in-production
+            - DATABASE_NAME=urlshortener
+            - DATABASE_USER=urlshortener
+            - DATABASE_PASSWORD=password
+            - DATABASE_HOST=db
+            - DATABASE_PORT=5432
+            - REDIS_HOST=redis
+            - REDIS_PORT=6379
+            - REDIS_DB=0
+            - REDIS_PASSWORD=
+            - CELERY_BROKER_URL=redis://redis:6379/0
+            - CELERY_RESULT_BACKEND=redis://redis:6379/0
+            - CELERY_TIMEZONE=UTC
+        depends_on:
+            - db
+            - redis
+        networks:
+            - app-network
+        command: celery -A config beat --loglevel=info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+
+volumes:
+    postgres_data:
+    redis_data:
+    media_volume:
+
+networks:
+    app-network:
+        driver: bridge
