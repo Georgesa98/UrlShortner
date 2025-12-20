@@ -3,6 +3,7 @@ from api.analytics.models import Visit
 from config.settings import SECRET_KEY
 import geocoder
 import ipaddress
+from config.redis_utils import get_redis_client
 
 
 def hash_ip(ip: str) -> str:
@@ -22,11 +23,19 @@ def ip_address_match(hashed_ip: str) -> bool:
 
 
 def convert_ip_to_location(ip: str) -> str:
-    geo = geocoder.ip(ip)
-    if geo.country:
-        return geo.country
+    client = get_redis_client()
+    key = f"ip_country:{ip}"
+    cached = client.get(key)
+    if cached:
+        return cached
     else:
-        return "Unknown"
+        geo = geocoder.ip(ip)
+        if geo.country:
+            client.setex(name=key, time=86400, value=geo.country)
+            return geo.country
+        else:
+            client.setex(name=key, time=86400, value="")
+            return "Unknown"
 
 
 def parse_user_agent(user_agent: str) -> dict[str, str]:
