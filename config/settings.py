@@ -74,6 +74,7 @@ INSTALLED_APPS = [
     "drf_spectacular_sidecar",
     "rest_framework",
     "rest_framework_simplejwt",
+    "django_celery_beat",
     "djoser",
     "api",
     "api.custom_auth",

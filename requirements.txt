@@ -25,6 +25,7 @@ drf-spectacular==0.29.0
 drf-spectacular-sidecar==2025.10.1
 freezegun==1.5.5
 future==1.0.0
+gunicorn==23.0.0
 geocoder==1.38.1
 h11==0.16.0
 httpcore==1.0.9
@@ -79,3 +80,4 @@ user-agents==2.2.0
 validators==0.35.0
 vine==5.1.0
 wcwidth==0.2.14
+django-celery-beat==2.8.1

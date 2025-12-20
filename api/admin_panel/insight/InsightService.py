@@ -116,7 +116,7 @@ class InsightService:
             list: Ranked list of top performers with details.
         """
         response = []
-        if metric is "clicks":
+        if metric == "clicks":
             top_urls = Url.objects.all().order_by("-visits")[:limit]
             for rank in range(limit):
                 response.append(
@@ -132,7 +132,7 @@ class InsightService:
                         },
                     }
                 )
-        elif metric is "urls_created":
+        elif metric == "urls_created":
             top_users = (
                 Url.objects.select_related("user")
                 .values("user__username")
