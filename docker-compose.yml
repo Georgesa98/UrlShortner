@@ -14,6 +14,8 @@ services:
         env_file:
             - .env
         environment:
+            - DJANGO_SETTINGS_MODULE=config.settings
+            - DJANGO_`CONFIGURATION=Prod
             - DEBUG=1
             - SECRET_KEY=your-django-secret-key
             - DATABASE_NAME=urlshortener
