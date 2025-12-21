@@ -254,6 +254,11 @@ class TestFraudDetectionWorkflows:
         request.user = self.regular_user
         AnalyticsService.record_visit(request, url_obj)
 
+        # Process async analytics to create fraud incidents
+        from api.url.tasks import process_analytics_buffer
+
+        process_analytics_buffer()
+
         # Check admin can see fraud incident in overview
         self.client.force_authenticate(user=self.admin_user)
         overview_response = self.client.get("/api/admin/fraud/overview/")
@@ -280,6 +285,11 @@ class TestFraudDetectionWorkflows:
             request = self.factory.get("/", HTTP_USER_AGENT=ua)
             request.user = self.regular_user
             AnalyticsService.record_visit(request, url_obj)
+
+        # Process async analytics
+        from api.url.tasks import process_analytics_buffer
+
+        process_analytics_buffer()
 
         # Check admin overview shows multiple incidents
         self.client.force_authenticate(user=self.admin_user)
@@ -428,6 +438,11 @@ class TestFraudDetectionWorkflows:
             request = self.factory.get("/", HTTP_USER_AGENT="curl/7.68.0")
             request.user = user
             AnalyticsService.record_visit(request, url_obj)
+
+        # Process async analytics
+        from api.url.tasks import process_analytics_buffer
+
+        process_analytics_buffer()
 
         # Admin checks overview
         self.client.force_authenticate(user=self.admin_user)

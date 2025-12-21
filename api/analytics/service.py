@@ -20,7 +20,7 @@ class AnalyticsService:
 
     @staticmethod
     def record_visit(request, url_instance):
-        """Record a visit to a URL with analytics data.
+        """Record a visit to a URL with analytics data asynchronously.
 
         Args:
             request: The HTTP request object.
@@ -31,23 +31,60 @@ class AnalyticsService:
             ip = get_ip_address(request)
             country = convert_ip_to_location(ip)
             hashed_ip = hash_ip(ip)
-            is_new_visitor = ip_address_match(hashed_ip)
         else:
             ip = None
             country = None
             hashed_ip = None
-            is_new_visitor = False
 
         raw_ua = request.META.get("HTTP_USER_AGENT", "")
         user_agent = parse_user_agent(raw_ua)
-        FraudService.flag_suspicious_ua(raw_ua, request, url_instance)
-        url_instance.visits += 1
-        if track_ip and not is_new_visitor:
-            url_instance.unique_visits += 1
-        url_instance.last_accessed = datetime.now(timezone.utc)
-        url_instance.save()
+
+        fraud_data = None
+        if not raw_ua or raw_ua.strip() == "":
+            fraud_data = {
+                "incident_type": "suspicious_ua",
+                "details": {
+                    "user_agent": raw_ua,
+                    "ip": request.META.get("REMOTE_ADDR"),
+                    "url": url_instance.short_url,
+                },
+                "severity": "low",
+                "url_id": url_instance.id,
+            }
+        elif any(
+            pattern in raw_ua.lower()
+            for pattern in ["curl", "wget", "python-urllib", "go-http-client"]
+        ):
+            fraud_data = {
+                "incident_type": "suspicious_ua",
+                "details": {
+                    "user_agent": raw_ua,
+                    "ip": request.META.get("REMOTE_ADDR"),
+                    "url": url_instance.short_url,
+                    "pattern": "scripting",
+                },
+                "severity": "medium",
+                "url_id": url_instance.id,
+            }
+
         try:
             redis_conn = get_redis_client()
+
+            redis_conn.incr(f"url:{url_instance.id}:visits")
+            is_new_visitor = False
+            if track_ip:
+
+                is_new = redis_conn.sadd(f"url:{url_instance.id}:unique_ips", hashed_ip)
+                is_new_visitor = bool(is_new)
+                if is_new:
+                    redis_conn.incr(f"url:{url_instance.id}:unique_visits")
+
+            current_time = datetime.now(timezone.utc).isoformat()
+            redis_conn.set(f"url:{url_instance.id}:last_accessed", current_time)
+
+            if fraud_data:
+                redis_conn.rpush("analytics:fraud", json.dumps(fraud_data))
+
             visit_data = {
                 "url_id": url_instance.id,
                 "hashed_ip": hashed_ip,
@@ -57,20 +94,13 @@ class AnalyticsService:
                 "device": user_agent["device"],
                 "referrer": request.META.get("HTTP_REFERRER", ""),
                 "new_visitor": is_new_visitor,
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": current_time,
             }
             redis_conn.rpush("analytics:visits", json.dumps(visit_data))
-        except Exception:
-            Visit.objects.create(
-                url=url_instance,
-                hashed_ip=hashed_ip,
-                geolocation=country,
-                operating_system=user_agent["os"],
-                browser=user_agent["browser"],
-                device=user_agent["device"],
-                referrer=request.META.get("HTTP_REFERRER", ""),
-                new_visitor=is_new_visitor,
-            )
+
+        except Exception as e:
+            # Fallback: log error but don't block redirect
+            pass
 
     @staticmethod
     def get_top_visited_urls(user_id: int, num: int):

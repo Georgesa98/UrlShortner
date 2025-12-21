@@ -321,6 +321,11 @@ class TestURLRedirectEndpoint:
         assert response.status_code == status.HTTP_302_FOUND
         assert response["Location"] == self.url_obj.long_url
 
+        # Process async analytics to update visit count
+        from api.url.tasks import process_analytics_buffer
+
+        process_analytics_buffer()
+
         # Verify visit count incremented
         self.url_obj.refresh_from_db()
         assert self.url_obj.visits == 1
@@ -365,6 +370,11 @@ class TestURLRedirectEndpoint:
         for _ in range(3):
             response = self.client.get(url)
             assert response.status_code == status.HTTP_302_FOUND
+
+        # Process async analytics
+        from api.url.tasks import process_analytics_buffer
+
+        process_analytics_buffer()
 
         self.url_obj.refresh_from_db()
         assert self.url_obj.visits == initial_visits + 3
@@ -432,6 +442,11 @@ class TestURLEndpointsIntegration:
         # Test redirect
         redirect_response = self.client.get(f"/api/url/redirect/{short_url}/")
         assert redirect_response.status_code == status.HTTP_302_FOUND
+
+        # Process async analytics
+        from api.url.tasks import process_analytics_buffer
+
+        process_analytics_buffer()
 
         # Verify visit count updated
         retrieve_response = self.client.get(f"/api/url/{short_url}/")

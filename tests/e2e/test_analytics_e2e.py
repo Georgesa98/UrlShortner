@@ -539,7 +539,7 @@ class TestRedisAnalyticsBuffering:
 
         # Verify task result
         assert result["status"] == "success"
-        assert result["processed_count"] == 3
+        assert result["visits_processed"] == 3
 
         # Verify visits are now in database
         visits_in_db = Visit.objects.filter(url_id=url_id)
@@ -594,7 +594,7 @@ class TestRedisAnalyticsBuffering:
 
         # Verify only 100 were processed
         assert result["status"] == "success"
-        assert result["processed_count"] == 100
+        assert result["visits_processed"] == 100
 
         # Verify 100 visits in DB
         visits_in_db = Visit.objects.filter(url_id=url_id)
