@@ -24,8 +24,7 @@ class UrlManagementService:
         Returns:
             dict: Contains 'urls' (QuerySet) and 'pagination' details.
         """
-        owner = User.objects.get(pk=user_id)
-        urls = Url.objects.prefetch_related("url_status").filter(user=owner)
+        urls = Url.objects.select_related("url_status", "user").filter(user__id=user_id)
 
         paginator = Paginator(urls, limit)
         page_obj = paginator.get_page(page)
@@ -72,11 +71,12 @@ class UrlManagementService:
 
             for item in data:
                 try:
-                    url = Url.objects.get(id=item["url_id"])
-                    url_status = UrlStatus.objects.get(url=url)
-                    url_status.state = item["state"]
-                    url_status.reason = item.get("reason", "")
-                    url_status.save()
+                    url = Url.objects.select_related("url_status").get(
+                        id=item["url_id"]
+                    )
+                    url.url_status.state = item["state"]
+                    url.url_status.reason = item.get("reason", "")
+                    url.url_status.save()
                     success_count += 1
 
                 except Url.DoesNotExist:
@@ -97,14 +97,13 @@ class UrlManagementService:
         Returns:
             dict: URL details including status and recent clicks.
         """
-        url_instance = Url.objects.get(id=url_id)
-        url_status_instance = UrlStatus.objects.get(url=url_instance)
+        url_instance = Url.objects.select_related("url_status").get(id=url_id)
         recent_clicks = Visit.objects.filter(url=url_instance).order_by("-timestamp")[
             :10
         ]
         return {
             "url": url_instance,
-            "url_status": url_status_instance,
+            "url_status": url_instance.url_status,
             "recent_clicks": recent_clicks,
         }
 
@@ -120,10 +119,14 @@ class UrlManagementService:
         Returns:
             dict: Search results with urls and pagination info.
         """
-        urls = Url.objects.filter(
-            Q(long_url__icontains=query)
-            | Q(short_url__icontains=query)
-            | Q(name__icontains=query)
+        urls = (
+            Url.objects.select_related("user")
+            .select_related("url_status")
+            .filter(
+                Q(long_url__icontains=query)
+                | Q(short_url__icontains=query)
+                | Q(name__icontains=query)
+            )
         )
 
         paginator = Paginator(urls, limit)

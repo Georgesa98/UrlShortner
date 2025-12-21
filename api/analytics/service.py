@@ -1,6 +1,4 @@
 import json
-import json
-
 from api.analytics.models import Visit
 from config.redis_utils import get_redis_client
 from api.analytics.utils import (
@@ -12,7 +10,6 @@ from api.analytics.utils import (
 )
 from config.settings_utils import get_analytics_track_ip
 from datetime import datetime, timezone, timedelta
-from django.conf import settings
 from django.db.models import Count, Q
 from api.url.models import Url
 from api.admin_panel.fraud.FraudService import FraudService
@@ -88,7 +85,11 @@ class AnalyticsService:
         """
         from api.url.models import Url
 
-        return Url.objects.filter(user_id=user_id).order_by("-visits")[:num]
+        return (
+            Url.objects.select_related("url_status", "user")
+            .filter(user_id=user_id)
+            .order_by("-visits")[:num]
+        )
 
     @staticmethod
     def get_url_summary(url_id: str, range_days: int = 7):
@@ -106,7 +107,9 @@ class AnalyticsService:
         end_date = datetime.now(timezone.utc)
         start_date = end_date - timedelta(days=range_days)
 
-        visit_queryset = Visit.objects.filter(url=url_id, timestamp__gte=start_date)
+        visit_queryset = Visit.objects.select_related("url").filter(
+            url=url_id, timestamp__gte=start_date
+        )
 
         top_devices = (
             visit_queryset.values("device")

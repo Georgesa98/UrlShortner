@@ -86,7 +86,9 @@ class SpecificUrl(GenericAPIView):
 
     def get_object(self, short_url):
         try:
-            return Url.objects.get(short_url=short_url)
+            return Url.objects.select_related("url_status", "user").get(
+                short_url=short_url
+            )
         except Url.DoesNotExist:
             return None
 
@@ -210,9 +212,10 @@ class Redirect(GenericAPIView):
                     message="Too many requests on this URL",
                     status=status.HTTP_429_TOO_MANY_REQUESTS,
                 )
-            url_instance = Url.objects.get(short_url=short_url)
-            url_status = UrlStatus.objects.get(url=url_instance)
-            if url_status.state == url_status.State.EXPIRED:
+            url_instance = Url.objects.select_related("url_status").get(
+                short_url=short_url
+            )
+            if url_instance.url_status.state == url_instance.url_status.State.EXPIRED:
                 return ErrorResponse(
                     message="URL is inactive or expired", status=status.HTTP_410_GONE
                 )
@@ -237,7 +240,9 @@ class GenerateQrcode(GenericAPIView):
 
     def get(self, request, short_url):
         try:
-            url_instance = Url.objects.get(short_url=short_url)
+            url_instance = Url.objects.select_related("url_status", "user").get(
+                short_url=short_url
+            )
             self.check_object_permissions(request, url_instance)
             qr_image = generate_qrcode(url_instance.short_url)
             response = HttpResponse(qr_image, "image/png", 200)

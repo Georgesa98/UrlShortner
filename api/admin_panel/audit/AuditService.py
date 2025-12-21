@@ -88,7 +88,7 @@ class AuditService:
         Returns:
             dict: Paginated audit logs with metadata.
         """
-        queryset = AuditLog.objects.all()
+        queryset = AuditLog.objects.select_related("user").all()
 
         if user_id:
             queryset = queryset.filter(user_id=user_id)

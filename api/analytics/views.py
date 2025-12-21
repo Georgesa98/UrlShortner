@@ -44,7 +44,9 @@ class GetUrlSummary(APIView):
     def get(self, request, url_id):
         range_days = int(request.GET.get("days", 7))
         try:
-            url_instance = Url.objects.get(pk=url_id)
+            url_instance = Url.objects.select_related("url_status", "user").get(
+                pk=url_id
+            )
             self.check_object_permissions(request, url_instance)
             result = AnalyticsService.get_url_summary(url_id, range_days)
             serializer = UrlSummarySerializer(result)

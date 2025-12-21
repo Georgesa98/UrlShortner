@@ -74,12 +74,11 @@ class BurstProtectionService:
             short_url (str): The short URL to flag.
             ip (str): The IP address triggering the flag.
         """
-        url_instance = Url.objects.get(short_url=short_url)
-        url_status_instance = UrlStatus.objects.get(url=url_instance)
-        if url_status_instance.state != UrlStatus.State.FLAGGED:
-            url_status_instance.state = UrlStatus.State.FLAGGED
-            url_status_instance.reason = "Too many requests on the url"
-            url_status_instance.save()
+        url_instance = Url.objects.select_related('url_status').get(short_url=short_url)
+        if url_instance.url_status.state != UrlStatus.State.FLAGGED:
+            url_instance.url_status.state = UrlStatus.State.FLAGGED
+            url_instance.url_status.reason = "Too many requests on the url"
+            url_instance.url_status.save()
             FraudService.flag_burst_protection(url_instance, ip)
 
     def _track_click(self, short_url: str, ip: str):

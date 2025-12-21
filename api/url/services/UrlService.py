@@ -34,16 +34,17 @@ class UrlService:
             else False
         )
         user_instance = User.objects.get(pk=validated_data["user"])
-        url_instance = Url.objects.create(
+        url = Url.objects.create(
             user=user_instance,
             long_url=validated_data["long_url"],
             short_url=short_url,
             expiry_date=expiry_date,
             is_custom_alias=is_custom_alias,
         )
-        url_instance.save()
-        url_status_instance = UrlStatus.objects.create(url=url_instance)
-        url_status_instance.save()
+        url.save()
+        url_status = UrlStatus.objects.create(url=url)
+        url_status.save()
+        url_instance = Url.objects.select_related("url_status").get(id=url.id)
         return url_instance
 
     @staticmethod
@@ -83,7 +84,12 @@ class UrlService:
                 urls.append(url_instance)
             except Exception as e:
                 urls.append(str(e))
-        return urls
+        url_instances = list(
+            Url.objects.filter(id__in=[item.id for item in urls]).select_related(
+                "url_status", "user"
+            )
+        )
+        return url_instances
 
     @staticmethod
     def update_url(instance, validated_data):
@@ -118,7 +124,9 @@ class UrlService:
         Returns:
             Page: Paginated page object containing Url instances.
         """
-        queryset = Url.objects.select_related("url_status").filter(user=user_id)
+        queryset = Url.objects.select_related("url_status", "user").filter(
+            user__id=user_id
+        )
         if status:
             queryset = queryset.filter(url_status__state=status)
         queryset = queryset.order_by("-created_at")

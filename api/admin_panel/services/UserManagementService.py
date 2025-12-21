@@ -104,9 +104,10 @@ class UserManagementService:
         Returns:
             dict: User details with associated URLs.
         """
-        user_instance = User.objects.get(id=user_id)
-        url_instances = Url.objects.filter(user=user_instance)
-        return {"user": user_instance, "urls": url_instances}
+        url_instances = Url.objects.select_related("user", "url_status").filter(
+            user__id=user_id
+        )
+        return {"user": url_instances[0].user, "urls": url_instances}
 
     @staticmethod
     def search_users_with_pagination(query: str, limit: int = 10, page: int = 1):

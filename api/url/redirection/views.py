@@ -178,7 +178,7 @@ class TestRedirectionView(GenericAPIView):
             url_id = validated_data.pop("url_id")
 
             try:
-                url = Url.objects.get(id=url_id)
+                url = Url.objects.select_related("url_status", "user").get(id=url_id)
             except Url.DoesNotExist:
                 return ErrorResponse(message="URL not found", status=404)
 
