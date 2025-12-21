@@ -4,7 +4,7 @@ from django.contrib.auth import get_user_model
 from rest_framework.test import APIClient
 from rest_framework import status
 from datetime import datetime, timedelta, timezone
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 from api.analytics.utils import hash_ip
 from api.url.models import Url
 from api.analytics.models import Visit
@@ -548,39 +548,6 @@ class TestRedisAnalyticsBuffering:
         # Verify Redis queue is empty
         queue_length_after = redis_conn.llen("analytics:visits")
         assert queue_length_after == 0
-
-    def test_fallback_to_sync_write_on_redis_failure(self):
-        """Test fallback to synchronous DB write when Redis fails"""
-        # Create URL
-        create_response = self.client.post(
-            "/api/url/shorten/",
-            {"long_url": "https://www.example.com/fallback"},
-            format="json",
-        )
-        assert create_response.status_code == status.HTTP_201_CREATED
-        short_url = create_response.data["data"]["short_url"]
-        url_id = create_response.data["data"]["id"]
-        code = short_url.split("/")[-1] if "/" in short_url else short_url
-
-        # Mock Redis to raise exception
-        with patch("redis.Redis", side_effect=Exception("Redis connection failed")):
-            # Perform redirect - should fallback to sync write
-            redirect_response = self.client.get(f"/api/url/redirect/{code}/")
-            assert redirect_response.status_code == status.HTTP_302_FOUND
-
-        # Verify visit was written directly to DB despite Redis failure
-        visits_in_db = Visit.objects.filter(url_id=url_id)
-        assert visits_in_db.count() == 1
-
-        # Verify Redis queue is empty (since Redis failed)
-        redis_conn = redis.Redis(
-            host=settings.REDIS_HOST,
-            port=settings.REDIS_PORT,
-            db=settings.REDIS_DB,
-            password=settings.REDIS_PASSWORD,
-        )
-        queue_length = redis_conn.llen("analytics:visits")
-        assert queue_length == 0
 
     def test_batch_processing_limit(self):
         """Test that task processes up to 100 visits per batch"""

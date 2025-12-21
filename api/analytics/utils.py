@@ -23,19 +23,23 @@ def ip_address_match(hashed_ip: str) -> bool:
 
 
 def convert_ip_to_location(ip: str) -> str:
-    client = get_redis_client()
-    key = f"ip_country:{ip}"
-    cached = client.get(key)
-    if cached:
-        return cached
-    else:
-        geo = geocoder.ip(ip)
-        if geo.country:
-            client.setex(name=key, time=86400, value=geo.country)
-            return geo.country
+    try:
+        client = get_redis_client()
+        key = f"ip_country:{ip}"
+        cached = client.get(key)
+        if cached:
+            return cached
         else:
-            client.setex(name=key, time=86400, value="")
-            return "Unknown"
+            geo = geocoder.ip(ip)
+            if geo.country:
+                client.setex(name=key, time=86400, value=geo.country)
+                return geo.country
+            else:
+                client.setex(name=key, time=86400, value="Unknown")
+                return "Unknown"
+    except Exception:
+        geo = geocoder.ip(ip)
+        return geo.country if geo.country else "Unknown"
 
 
 def parse_user_agent(user_agent: str) -> dict[str, str]:

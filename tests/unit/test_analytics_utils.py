@@ -41,7 +41,7 @@ def test_cache_miss_unknown_ip(redis_client):
     assert result == "Unknown"
     key = f"ip_country:{ip}"
     cached = redis_client.get(key)
-    assert cached == (b"" if isinstance(cached, bytes) else "")
+    assert cached == "Unknown"
     ttl = redis_client.ttl(key)
     assert ttl == 86400
 
@@ -53,7 +53,7 @@ def test_invalid_ip(redis_client):
     assert result == "Unknown"
     key = f"ip_country:{ip}"
     cached = redis_client.get(key)
-    assert cached == (b"" if isinstance(cached, bytes) else "")
+    assert cached == "Unknown"
     ttl = redis_client.ttl(key)
     assert ttl == 86400
 
@@ -77,6 +77,6 @@ def test_geocoder_exception_handling(redis_client):
     assert result == "Unknown"
     key = f"ip_country:{ip}"
     cached = redis_client.get(key)
-    assert cached == (b"" if isinstance(cached, bytes) else "")
+    assert cached == "Unknown"
     ttl = redis_client.ttl(key)
     assert ttl == 86400

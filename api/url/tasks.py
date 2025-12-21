@@ -52,7 +52,7 @@ def process_analytics_buffer():
             visit_json = redis_conn.lpop("analytics:visits")
             if not visit_json:
                 break
-            visit_data = json.loads(visit_json.decode("utf-8"))
+            visit_data = json.loads(visit_json)
             visit_data["timestamp"] = datetime.fromisoformat(visit_data["timestamp"])
             visits_to_process.append(
                 Visit(
