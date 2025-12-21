@@ -1,13 +1,13 @@
 import hashlib
 from api.analytics.models import Visit
-from config.settings import SECRET_KEY
+from django.conf import settings
 import geocoder
 import ipaddress
 from config.redis_utils import get_redis_client
 
 
 def hash_ip(ip: str) -> str:
-    raw = f"{SECRET_KEY}:{ip}".encode()
+    raw = f"{settings.SECRET_KEY}:{ip}".encode()
     return hashlib.sha256(raw).hexdigest()
 
 

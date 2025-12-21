@@ -1,6 +1,5 @@
 import string
 import random
-from config import settings
 from config.redis_utils import get_redis_client
 from config.settings_utils import get_short_code_pool_size, get_short_code_length
 

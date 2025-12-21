@@ -1,4 +1,3 @@
-from config import settings
 from config.settings_utils import get_throttle_rates
 from config.redis_utils import get_redis_client
 import time

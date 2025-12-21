@@ -1,6 +1,6 @@
 import psutil
 import redis
-from config import settings
+from django.conf import settings
 from config.redis_utils import get_redis_client
 from enum import Enum
 from datetime import datetime, timezone

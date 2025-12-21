@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from rest_framework_simplejwt.views import TokenObtainPairView
 from datetime import datetime, timedelta, timezone
-from config import settings
+from django.conf import settings
 
 # Create your views here.
 
