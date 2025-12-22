@@ -4,7 +4,7 @@ from validators import url as validate_url, ValidationError
 import qrcode
 
 
-def generate_qrcode(url: str):
+def generate_qrcode(url: str) -> memoryview:
     qr = qrcode.QRCode(
         version=2,
         error_correction=qrcode.constants.ERROR_CORRECT_L,
@@ -20,7 +20,7 @@ def generate_qrcode(url: str):
     return buffer.getbuffer()
 
 
-def urlChecker(url: str):
+def urlChecker(url: str) -> bool:
     is_valid = validate_url(url)
     if isinstance(is_valid, ValidationError):
         return False

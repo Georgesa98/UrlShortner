@@ -7,7 +7,7 @@ User = get_user_model()
 
 class RedirectionService:
     @staticmethod
-    def create_rule(validated_data):
+    def create_rule(validated_data) -> object:
         """Create a new redirection rule with business logic."""
 
         url = validated_data["url"]
@@ -24,7 +24,7 @@ class RedirectionService:
         return rule
 
     @staticmethod
-    def get_rules(url_id=None, filters=None, ordering=None):
+    def get_rules(url_id=None, filters=None, ordering=None) -> object:
         """Retrieve redirection rules with flexible filtering."""
 
         queryset = RedirectionRule.objects.select_related("url")
@@ -39,7 +39,7 @@ class RedirectionService:
         return queryset.order_by(*ordering)
 
     @staticmethod
-    def get_rule_by_id(rule_id):
+    def get_rule_by_id(rule_id) -> object:
         """Get a single rule by ID."""
 
         try:
@@ -48,7 +48,7 @@ class RedirectionService:
             raise ValueError(f"Redirection rule with ID {rule_id} not found")
 
     @staticmethod
-    def update_rule(rule, validated_data):
+    def update_rule(rule, validated_data) -> object:
         """Update an existing redirection rule."""
 
         if "priority" in validated_data:
@@ -71,13 +71,13 @@ class RedirectionService:
         return rule
 
     @staticmethod
-    def delete_rule(rule):
+    def delete_rule(rule) -> bool:
         """Delete a redirection rule with cleanup logic."""
 
         rule.delete()
 
     @staticmethod
-    def batch_create_rules(validated_rules_data, user):
+    def batch_create_rules(validated_rules_data, user) -> list:
         """Bulk create redirection rules - assumes data is pre-validated.
 
         Args:
@@ -123,7 +123,7 @@ class RedirectionService:
         return created_rules
 
     @staticmethod
-    def batch_delete_rules(rule_ids, user):
+    def batch_delete_rules(rule_ids, user) -> int:
         """Bulk delete redirection rules with validation.
 
         Args:
@@ -160,7 +160,7 @@ class RedirectionService:
         return {"deleted_count": deleted_count, "failed_rules": failed_rules}
 
     @staticmethod
-    def reorder_priorities(url, start_priority=0):
+    def reorder_priorities(url, start_priority=0) -> None:
         """Reorder rule priorities for a URL."""
 
         rules = RedirectionRule.objects.filter(url=url).order_by("priority")
@@ -171,14 +171,14 @@ class RedirectionService:
             current_priority += 1
 
     @staticmethod
-    def get_active_rules_for_url(url_id):
+    def get_active_rules_for_url(url_id) -> object:
         """Get only active rules for rule evaluation."""
 
         return RedirectionRule.objects.filter(url_id=url_id, is_active=True).order_by(
             "priority"
         )
 
-    def test_evaluate_rules(self, url_id, test_context):
+    def test_evaluate_rules(self, url_id, test_context) -> object:
         """Test rule evaluation with provided context, return matched rule or None."""
         try:
             from api.url.models import Url
@@ -207,7 +207,7 @@ class RedirectionService:
         except Exception as e:
             raise ValueError(f"Error evaluating rules: {str(e)}")
 
-    def evaluate_redirection_rules(self, request, url_instance):
+    def evaluate_redirection_rules(self, request, url_instance) -> object:
         """Evaluate active redirection rules for the URL and return redirect URL if match."""
         try:
             active_rules = self.get_active_rules_for_url(url_instance.id)
@@ -220,7 +220,7 @@ class RedirectionService:
         except Exception:
             return None
 
-    def _extract_request_context(self, request):
+    def _extract_request_context(self, request) -> dict:
         """Extract client context for rule evaluation."""
         from api.analytics.utils import (
             get_ip_address,
@@ -259,7 +259,7 @@ class RedirectionService:
             "time_range": current_time,
         }
 
-    def _parse_accept_language(self, accept_language):
+    def _parse_accept_language(self, accept_language) -> str | None:
         """Parse Accept-Language header to get primary language."""
         if not accept_language:
             return None
@@ -267,14 +267,14 @@ class RedirectionService:
         primary = accept_language.split(",")[0].split("-")[0].split(";")[0].strip()
         return primary.lower()
 
-    def _evaluate_rules(self, rules, context):
+    def _evaluate_rules(self, rules, context) -> object:
         """Evaluate rules in priority order, return first match."""
         for rule in rules:
             if self._rule_matches(rule, context):
                 return rule
         return None
 
-    def _rule_matches(self, rule, context):
+    def _rule_matches(self, rule, context) -> bool:
         """Check if rule conditions match request context."""
         conditions = rule.conditions
         for key, expected_value in conditions.items():
@@ -283,7 +283,7 @@ class RedirectionService:
                 return False
         return True
 
-    def _condition_matches(self, key, expected, actual):
+    def _condition_matches(self, key, expected, actual) -> bool:
         """Check individual condition matching."""
         if actual is None:
             return False
@@ -310,7 +310,7 @@ class RedirectionService:
             )
         return False
 
-    def _time_in_range(self, current_time, time_range):
+    def _time_in_range(self, current_time, time_range) -> bool:
         """Check if current_time (HH:MM) is within time_range."""
         if not time_range or "start" not in time_range or "end" not in time_range:
             return False

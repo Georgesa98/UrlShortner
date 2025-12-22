@@ -12,11 +12,11 @@ class ShortCodeService:
     MIN_POOL_SIZE = get_short_code_pool_size()
     CODE_LENGTH = get_short_code_length()
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the ShortCodeService with Redis client."""
         self.redis_client = get_redis_client()
 
-    def generate_code(self):
+    def generate_code(self) -> str:
         """Generate a random short code of configured length.
 
         Returns:
@@ -24,7 +24,7 @@ class ShortCodeService:
         """
         return "".join(random.choices(self.CHARS, k=self.CODE_LENGTH))
 
-    def get_code(self):
+    def get_code(self) -> str:
         """Retrieve a short code from the pool or generate new one.
 
         Returns:
@@ -39,7 +39,7 @@ class ShortCodeService:
             self.refill_pool()
         return code
 
-    def refill_pool(self, target_size: int = None):
+    def refill_pool(self, target_size: int = None) -> int:
         """Refill the short code pool to the target size.
 
         Args:

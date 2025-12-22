@@ -8,7 +8,7 @@ from config.redis_utils import get_redis_client
 class BurstProtectionService:
     """Service for detecting and preventing burst traffic on URLs."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the BurstProtectionService with Redis client."""
         self.redis_client = get_redis_client()
         self.default_thresholds = {
@@ -20,7 +20,7 @@ class BurstProtectionService:
             "long_term_limit": 1000,
         }
 
-    def _detect_burst(self, ip: str, short_url: str):
+    def _detect_burst(self, ip: str, short_url: str) -> bool:
         """Detect if current traffic constitutes a burst.
 
         Args:
@@ -49,7 +49,7 @@ class BurstProtectionService:
                 return True
         return False
 
-    def _check_window_burst(self, key: str, start_time: float, threshold: int):
+    def _check_window_burst(self, key: str, start_time: float, threshold: int) -> bool:
         """Check if request count exceeds threshold in a time window.
 
         Args:
@@ -67,21 +67,21 @@ class BurstProtectionService:
         )
         return count >= threshold
 
-    def _flag_url(self, short_url, ip):
+    def _flag_url(self, short_url, ip) -> None:
         """Flag a URL as having excessive traffic.
 
         Args:
             short_url (str): The short URL to flag.
             ip (str): The IP address triggering the flag.
         """
-        url_instance = Url.objects.select_related('url_status').get(short_url=short_url)
+        url_instance = Url.objects.select_related("url_status").get(short_url=short_url)
         if url_instance.url_status.state != UrlStatus.State.FLAGGED:
             url_instance.url_status.state = UrlStatus.State.FLAGGED
             url_instance.url_status.reason = "Too many requests on the url"
             url_instance.url_status.save()
             FraudService.flag_burst_protection(url_instance, ip)
 
-    def _track_click(self, short_url: str, ip: str):
+    def _track_click(self, short_url: str, ip: str) -> None:
         """Track a click for burst protection.
 
         Args:
@@ -101,7 +101,7 @@ class BurstProtectionService:
         self.redis_client.zremrangebyscore(url_key, "-inf", cutoff_time)
         self.redis_client.zremrangebyscore(ip_key, "-inf", cutoff_time)
 
-    def check_burst(self, ip: str, short_url: str):
+    def check_burst(self, ip: str, short_url: str) -> bool:
         """Check and handle burst protection for a request.
 
         Args:

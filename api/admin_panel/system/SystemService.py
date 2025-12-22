@@ -17,14 +17,14 @@ class HealthStatus(str, Enum):
 class SystemService:
     """Service for system health monitoring and diagnostics."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the SystemService with Redis client."""
         try:
             self.redis_client = get_redis_client()
         except Exception:
             self.redis_client = None
 
-    def _check_redis(self):
+    def _check_redis(self) -> dict:
         if not self.redis_client:
             return {
                 "status": HealthStatus.UNHEALTHY,
@@ -59,7 +59,7 @@ class SystemService:
                 "error_type": type(e).__name__,
             }
 
-    def _check_celery(self):
+    def _check_celery(self) -> dict:
         try:
             broker_url = settings.CELERY_BROKER_URL
             celery_redis = redis.from_url(broker_url)
@@ -90,7 +90,7 @@ class SystemService:
                 "broker_connected": False,
             }
 
-    def _check_disk(self):
+    def _check_disk(self) -> dict:
         try:
             disk = psutil.disk_usage("/")
             percent_used = disk.percent
@@ -114,7 +114,7 @@ class SystemService:
                 "error_type": type(e).__name__,
             }
 
-    def _check_memory(self):
+    def _check_memory(self) -> dict:
         try:
             memory = psutil.virtual_memory()
             percent_used = memory.percent
@@ -138,7 +138,7 @@ class SystemService:
                 "error_type": type(e).__name__,
             }
 
-    def _check_database(self):
+    def _check_database(self) -> dict:
         try:
             start = datetime.now(timezone.utc)
             with connection.cursor() as cursor:
@@ -167,7 +167,7 @@ class SystemService:
                 "type": type(e).__name__,
             }
 
-    def _check_cache(self):
+    def _check_cache(self) -> dict:
         try:
             start = datetime.now(timezone.utc)
             test_key = "__health_check__"
@@ -194,7 +194,7 @@ class SystemService:
                 "type": type(e).__name__,
             }
 
-    def get_system_health(self):
+    def get_system_health(self) -> dict:
         """Get comprehensive system health report.
 
         Returns:

@@ -11,7 +11,7 @@ class FraudService:
     @staticmethod
     def log_incident(
         incident_type: str, details: dict, severity: str = "low", user=None, url=None
-    ):
+    ) -> object:
         FraudIncident.objects.create(
             incident_type=incident_type,
             details=details,
@@ -21,7 +21,7 @@ class FraudService:
         )
 
     @staticmethod
-    def flag_suspicious_ua(user_agent: str, request, url_instance):
+    def flag_suspicious_ua(user_agent: str, request, url_instance) -> bool:
         """Flag visits with suspicious user agents.
 
         Args:
@@ -64,7 +64,7 @@ class FraudService:
         return False
 
     @staticmethod
-    def flag_burst_protection(url_instance, ip):
+    def flag_burst_protection(url_instance, ip) -> None:
         """Log burst protection incidents.
 
         Args:
@@ -83,7 +83,7 @@ class FraudService:
         )
 
     @staticmethod
-    def flag_throttle_violation(request, view, rate):
+    def flag_throttle_violation(request, view, rate) -> None:
         """Log throttle violations.
 
         Args:
@@ -105,7 +105,7 @@ class FraudService:
         )
 
     @staticmethod
-    def get_overview_metrics(days: int = 7):
+    def get_overview_metrics(days: int = 7) -> dict:
         """Get aggregated fraud metrics for the last N days."""
         end_date = timezone.now()
         start_date = end_date - timedelta(days=days)
@@ -138,7 +138,7 @@ class FraudService:
         }
 
     @staticmethod
-    def flag_suspicious_ua(user_agent: str, request, url_instance):
+    def flag_suspicious_ua(user_agent: str, request, url_instance) -> bool:
         """Flag visits with suspicious user agents.
 
         Args:
@@ -181,7 +181,7 @@ class FraudService:
         return False
 
     @staticmethod
-    def flag_burst_protection(url_instance, ip):
+    def flag_burst_protection(url_instance, ip) -> None:
         """Log burst protection incidents.
 
         Args:
@@ -200,7 +200,7 @@ class FraudService:
         )
 
     @staticmethod
-    def flag_throttle_violation(request, view, rate):
+    def flag_throttle_violation(request, view, rate) -> None:
         """Log throttle violations.
 
         Args:

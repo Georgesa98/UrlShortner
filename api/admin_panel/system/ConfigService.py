@@ -5,7 +5,7 @@ class ConfigService:
     """Service for managing system configuration values."""
 
     @staticmethod
-    def get_all_configs():
+    def get_all_configs() -> object:
         """Retrieve all system configurations.
 
         Returns:
@@ -15,7 +15,7 @@ class ConfigService:
         return configs
 
     @staticmethod
-    def get_config(key, default=None):
+    def get_config(key, default=None) -> str:
         """Get a configuration value by key with optional default.
 
         Args:
@@ -38,7 +38,7 @@ class ConfigService:
                 raise SystemConfiguration.DoesNotExist
 
     @staticmethod
-    def set_config(key, value):
+    def set_config(key, value) -> object:
         """Set a configuration value by key.
 
         Args:
@@ -54,7 +54,7 @@ class ConfigService:
         return config
 
     @staticmethod
-    def batch_set_configs(configs_dict):
+    def batch_set_configs(configs_dict) -> dict:
         """Set multiple configuration values in batch.
 
         Args:

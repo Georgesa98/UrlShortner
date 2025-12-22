@@ -16,7 +16,7 @@ class InsightService:
     @staticmethod
     def get_platform_stats(
         time_range: str = (datetime.now(timezone.utc) - timedelta(days=7)).isoformat,
-    ):
+    ) -> dict:
         """Get platform statistics for a given time range.
 
         Args:
@@ -39,7 +39,7 @@ class InsightService:
         }
 
     @staticmethod
-    def get_growth_metrics():
+    def get_growth_metrics() -> dict:
         """Get growth metrics over the past 10 weeks.
 
         Returns:
@@ -105,7 +105,7 @@ class InsightService:
             }
 
     @staticmethod
-    def get_top_performers(metric: str, limit: int):
+    def get_top_performers(metric: str, limit: int) -> list:
         """Get top performers by specified metric.
 
         Args:
@@ -164,7 +164,7 @@ class InsightService:
         return response
 
     @staticmethod
-    def get_peak_times():
+    def get_peak_times() -> dict:
         """Get peak usage times based on visit data.
 
         Returns:
@@ -199,7 +199,7 @@ class InsightService:
         }
 
     @staticmethod
-    def get_geo_distribution():
+    def get_geo_distribution() -> dict:
         """Get geographic distribution of visits.
 
         Returns:

@@ -9,7 +9,7 @@ User = get_user_model()
 
 class UrlService:
     @staticmethod
-    def create_url(validated_data: dict):
+    def create_url(validated_data: dict) -> object:
         """Create a new URL instance with short code generation and status.
 
         Args:
@@ -48,7 +48,7 @@ class UrlService:
         return url_instance
 
     @staticmethod
-    def batch_shorten(validated_data: list, user_id: str):
+    def batch_shorten(validated_data: list, user_id: str) -> list:
         """Create multiple URLs in batch with short code generation.
 
         Args:
@@ -92,7 +92,7 @@ class UrlService:
         return url_instances
 
     @staticmethod
-    def update_url(instance, validated_data):
+    def update_url(instance, validated_data) -> object:
         """Update an existing URL instance with provided data.
 
         Args:
@@ -112,7 +112,7 @@ class UrlService:
     @staticmethod
     def fetch_urls_with_filter_and_pagination(
         limit: int, page: int, status: UrlStatus.State, user_id: str
-    ):
+    ) -> object:
         """Fetch paginated URLs for a user with optional status filtering.
 
         Args:

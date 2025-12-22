@@ -1,4 +1,4 @@
-def compare_instances(old_instance, new_instance):
+def compare_instances(old_instance, new_instance) -> dict:
 
     if old_instance.__class__ != new_instance.__class__:
         raise ValueError("Both instances must be of the same class")

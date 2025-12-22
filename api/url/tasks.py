@@ -12,7 +12,7 @@ from django.core.management import call_command
 
 
 @app.task()
-def deactivate_expired_urls_task():
+def deactivate_expired_urls_task() -> None:
     try:
         total_expired_urls_before = Url.objects.filter(
             expiration_date__lte=datetime.now(timezone.utc)
@@ -39,12 +39,12 @@ def deactivate_expired_urls_task():
 
 
 @app.task()
-def maintain_shortcode_pool():
+def maintain_shortcode_pool() -> None:
     ShortCodeService().refill_pool()
 
 
 @app.task()
-def process_analytics_buffer():
+def process_analytics_buffer() -> None:
     """Process buffered analytics data from Redis: visits, counters, and fraud incidents."""
     try:
         redis_conn = get_redis_client()

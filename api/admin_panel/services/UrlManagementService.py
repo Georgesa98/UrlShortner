@@ -13,7 +13,9 @@ class UrlManagementService:
     """Service for administrative URL management operations."""
 
     @staticmethod
-    def get_user_urls_with_pagination(user_id: int, limit: int = 10, page: int = 1):
+    def get_user_urls_with_pagination(
+        user_id: int, limit: int = 10, page: int = 1
+    ) -> dict:
         """Get paginated URLs for a specific user.
 
         Args:
@@ -42,7 +44,7 @@ class UrlManagementService:
         }
 
     @staticmethod
-    def bulk_url_deletion(url_ids: list):
+    def bulk_url_deletion(url_ids: list) -> int:
         """Delete multiple URLs by their IDs.
 
         Args:
@@ -56,7 +58,7 @@ class UrlManagementService:
         return count
 
     @staticmethod
-    def bulk_flag_url(data: List[Dict[str, Any]]):
+    def bulk_flag_url(data: List[Dict[str, Any]]) -> dict:
         """Bulk update URL statuses with flagging.
 
         Args:
@@ -88,7 +90,7 @@ class UrlManagementService:
             return {"success_count": success_count, "failed_items": failed_items}
 
     @staticmethod
-    def get_url_details(url_id: str):
+    def get_url_details(url_id: str) -> dict:
         """Get detailed information about a specific URL.
 
         Args:
@@ -108,7 +110,7 @@ class UrlManagementService:
         }
 
     @staticmethod
-    def search_urls_with_pagination(query: str, limit: int = 10, page: int = 1):
+    def search_urls_with_pagination(query: str, limit: int = 10, page: int = 1) -> dict:
         """Search URLs by query with pagination.
 
         Args:
@@ -145,7 +147,7 @@ class UrlManagementService:
         }
 
     @staticmethod
-    def updated_url_destination(short_url: str, new_destination: str):
+    def updated_url_destination(short_url: str, new_destination: str) -> object:
         """Update the destination URL for a short URL.
 
         Args:

@@ -17,7 +17,7 @@ class UserManagementService:
         order_by: str = "-date_joined",
         limit: int = 10,
         page: int = 1,
-    ):
+    ) -> dict:
         """Get paginated users with filtering.
 
         Args:
@@ -66,7 +66,7 @@ class UserManagementService:
         }
 
     @staticmethod
-    def toggle_ban_user(user_id: str):
+    def toggle_ban_user(user_id: str) -> object:
         """Toggle active status of a user (ban/unban).
 
         Args:
@@ -81,7 +81,7 @@ class UserManagementService:
         return user_instance
 
     @staticmethod
-    def bulk_user_deletion(user_ids: list):
+    def bulk_user_deletion(user_ids: list) -> int:
         """Delete multiple users by their IDs.
 
         Args:
@@ -95,7 +95,7 @@ class UserManagementService:
         return count
 
     @staticmethod
-    def get_user_details(user_id: str):
+    def get_user_details(user_id: str) -> object:
         """Get detailed information about a user including their URLs.
 
         Args:
@@ -110,7 +110,9 @@ class UserManagementService:
         return {"user": url_instances[0].user, "urls": url_instances}
 
     @staticmethod
-    def search_users_with_pagination(query: str, limit: int = 10, page: int = 1):
+    def search_users_with_pagination(
+        query: str, limit: int = 10, page: int = 1
+    ) -> object:
         """Search users by query with pagination.
 
         Args:

@@ -19,7 +19,7 @@ class AnalyticsService:
     """Service for recording and analyzing URL visit data."""
 
     @staticmethod
-    def record_visit(request, url_instance):
+    def record_visit(request, url_instance) -> None:
         """Record a visit to a URL with analytics data asynchronously.
 
         Args:
@@ -103,7 +103,7 @@ class AnalyticsService:
             pass
 
     @staticmethod
-    def get_top_visited_urls(user_id: int, num: int):
+    def get_top_visited_urls(user_id: int, num: int) -> object:
         """Get the top visited URLs for a user.
 
         Args:
@@ -122,7 +122,7 @@ class AnalyticsService:
         )
 
     @staticmethod
-    def get_url_summary(url_id: str, range_days: int = 7):
+    def get_url_summary(url_id: str, range_days: int = 7) -> dict:
         """Get detailed analytics summary for a URL.
 
         Args:

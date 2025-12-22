@@ -3,7 +3,7 @@ from rest_framework_simplejwt.exceptions import InvalidToken
 
 
 class CookieJWTAuthentication(JWTAuthentication):
-    def authenticate(self, request):
+    def authenticate(self, request) -> tuple | None:
         header = self.get_header(request)
         if header is not None:
             return super().authenticate(request)

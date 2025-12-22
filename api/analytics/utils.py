@@ -11,7 +11,7 @@ def hash_ip(ip: str) -> str:
     return hashlib.sha256(raw).hexdigest()
 
 
-def get_ip_address(request):
+def get_ip_address(request) -> str:
     x_forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR")
     if x_forwarded_for:
         return x_forwarded_for.split(",")[0].strip()

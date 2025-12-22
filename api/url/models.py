@@ -29,7 +29,7 @@ class Url(models.Model):
         ]
 
     @property
-    def days_until_expiry(self):
+    def days_until_expiry(self) -> int | None:
         if self.expiry_date:
             if isinstance(self.expiry_date, str):
                 expiry = datetime.fromisoformat(self.expiry_date)

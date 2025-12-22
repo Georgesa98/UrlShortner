@@ -15,7 +15,7 @@ class AuditService:
         action: str,
         ip_address: str,
         user_id: str = None,
-    ):
+    ) -> object:
         """Create initial audit log entry.
 
         Args:
@@ -47,7 +47,7 @@ class AuditService:
         content_id: str,
         successful: bool,
         changes: dict = None,
-    ):
+    ) -> None:
         """Update audit log with completion details.
 
         Args:
@@ -73,7 +73,7 @@ class AuditService:
         page=1,
         page_size=10,
         sort_by="-timestamp",
-    ):
+    ) -> dict:
         """Fetch paginated audit logs with filtering.
 
         Args:

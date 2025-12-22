@@ -6,7 +6,7 @@ from api.admin_panel.fraud.FraudService import FraudService
 
 
 class RedisRateLimiter:
-    def __init__(self):
+    def __init__(self) -> None:
         self.redis_client = get_redis_client()
 
     def is_allowed(self, key: str, limit: int, window: int) -> tuple[bool, dict]:
@@ -42,7 +42,7 @@ class RedisRateLimiter:
 class BaseRedisThrottle(SimpleRateThrottle):
     redis_limiter = RedisRateLimiter()
 
-    def allow_request(self, request, view):
+    def allow_request(self, request, view) -> bool:
         if self.rate is None:
             return True
 
@@ -66,7 +66,7 @@ class BaseRedisThrottle(SimpleRateThrottle):
 
         return is_allowed
 
-    def wait(self):
+    def wait(self) -> float | None:
         if hasattr(self, "metadata"):
             return max(0, self.metadata["reset"] - time.time())
         return None
@@ -75,10 +75,10 @@ class BaseRedisThrottle(SimpleRateThrottle):
 class IPRateThrottle(BaseRedisThrottle):
     scope = "ip"
 
-    def get_rate(self):
+    def get_rate(self) -> str:
         return get_throttle_rates()["ip"]
 
-    def get_cache_key(self, request, view):
+    def get_cache_key(self, request, view) -> str | None:
         if request.user.is_authenticated:
             return None
         ip = self.get_ident(request)
@@ -88,10 +88,10 @@ class IPRateThrottle(BaseRedisThrottle):
 class UserRateThrottle(BaseRedisThrottle):
     scope = "user"
 
-    def get_rate(self):
+    def get_rate(self) -> str:
         return get_throttle_rates()["user"]
 
-    def get_cache_key(self, request, view):
+    def get_cache_key(self, request, view) -> str | None:
         if request.user.is_authenticated:
             return f"throttle_user:{request.user.pk}"
         return None
