@@ -66,6 +66,7 @@ def process_analytics_buffer() -> None:
                     operating_system=visit_data["operating_system"],
                     browser=visit_data["browser"],
                     device=visit_data["device"],
+                    new_visitor=visit_data["new_visitor"],
                     referrer=visit_data["referrer"],
                     timestamp=visit_data["timestamp"],
                 )

@@ -1,18 +1,18 @@
 import json
+import logging
 from api.analytics.models import Visit
 from config.redis_utils import get_redis_client
 from api.analytics.utils import (
     convert_ip_to_location,
     get_ip_address,
     hash_ip,
-    ip_address_match,
     parse_user_agent,
 )
 from config.settings_utils import get_analytics_track_ip
 from datetime import datetime, timezone, timedelta
 from django.db.models import Count, Q
-from api.url.models import Url
-from api.admin_panel.fraud.FraudService import FraudService
+
+logger = logging.getLogger(__name__)
 
 
 class AnalyticsService:
@@ -20,7 +20,7 @@ class AnalyticsService:
 
     @staticmethod
     def record_visit(request, url_instance) -> None:
-        """Record a visit to a URL with analytics data asynchronously.
+        """Record a visit to a URL with analytics data using redis.
 
         Args:
             request: The HTTP request object.
@@ -92,15 +92,14 @@ class AnalyticsService:
                 "operating_system": user_agent["os"],
                 "browser": user_agent["browser"],
                 "device": user_agent["device"],
-                "referrer": request.META.get("HTTP_REFERRER", ""),
+                "referer": request.META.get("HTTP_REFERER", ""),
                 "new_visitor": is_new_visitor,
                 "timestamp": current_time,
             }
             redis_conn.rpush("analytics:visits", json.dumps(visit_data))
 
         except Exception as e:
-            # Fallback: log error but don't block redirect
-            pass
+            logger.error(f"error happened while recording a visit: {str(e)}")
 
     @staticmethod
     def get_top_visited_urls(user_id: int, num: int) -> object:
@@ -122,7 +121,7 @@ class AnalyticsService:
         )
 
     @staticmethod
-    def get_url_summary(url_id: str, range_days: int = 7) -> dict:
+    def get_url_summary(url_instance: object, range_days: int = 7) -> dict:
         """Get detailed analytics summary for a URL.
 
         Args:
@@ -132,13 +131,12 @@ class AnalyticsService:
         Returns:
             dict: Analytics data including basic info, daily visits, top metrics, and recent visitors.
         """
-        url_instance = Url.objects.select_related("url_status").get(id=url_id)
 
         end_date = datetime.now(timezone.utc)
         start_date = end_date - timedelta(days=range_days)
 
         visit_queryset = Visit.objects.select_related("url").filter(
-            url=url_id, timestamp__gte=start_date
+            url=url_instance.id, timestamp__gte=start_date
         )
 
         top_devices = (

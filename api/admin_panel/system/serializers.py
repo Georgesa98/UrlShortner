@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from .models import SystemConfiguration
-from config.settings.base import Base
+from django.conf import settings
 from typing import Union
 
 
@@ -15,7 +15,7 @@ class SystemConfigurationSerializer(serializers.ModelSerializer):
 
     def validate_key(self, value):
         """Validate that the configuration key is allowed."""
-        if value not in Base.ALLOWED_CONFIGS_SCHEMA:
+        if value not in settings.ALLOWED_CONFIGS_SCHEMA:
             raise serializers.ValidationError(
                 f"Configuration key '{value}' is not allowed"
             )
@@ -54,12 +54,12 @@ class SystemConfigurationSerializer(serializers.ModelSerializer):
         key = self._get_current_key()
         if not key:
             raise serializers.ValidationError("Key is required for validation")
-        if key not in ALLOWED_CONFIGS_SCHEMA:
+        if key not in settings.ALLOWED_CONFIGS_SCHEMA:
             raise serializers.ValidationError(
                 f"Configuration key '{key}' is not allowed"
             )
 
-        expected_type = ALLOWED_CONFIGS_SCHEMA[key]["type"]
+        expected_type = settings.ALLOWED_CONFIGS_SCHEMA[key]["type"]
 
         try:
             if expected_type == int:

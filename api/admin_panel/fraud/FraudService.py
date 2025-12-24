@@ -1,5 +1,7 @@
 from django.utils import timezone
 from datetime import timedelta
+
+from api.analytics.utils import get_ip_address
 from .models import FraudIncident
 from api.url.models import UrlStatus
 from django.db.models import Count
@@ -38,7 +40,7 @@ class FraudService:
                 "suspicious_ua",
                 {
                     "user_agent": user_agent,
-                    "ip": request.META.get("REMOTE_ADDR"),
+                    "ip": get_ip_address(request),
                     "url": url_instance.short_url,
                 },
                 severity="low",

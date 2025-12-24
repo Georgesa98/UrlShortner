@@ -48,7 +48,7 @@ class GetUrlSummary(APIView):
                 pk=url_id
             )
             self.check_object_permissions(request, url_instance)
-            result = AnalyticsService.get_url_summary(url_id, range_days)
+            result = AnalyticsService.get_url_summary(url_instance, range_days)
             serializer = UrlSummarySerializer(result)
             return SuccessResponse(
                 data=serializer.data,
