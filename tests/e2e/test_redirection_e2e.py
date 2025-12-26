@@ -413,11 +413,11 @@ class TestRedirectionEvaluation:
         assert response["Location"] == "https://en.example.com"
 
     def test_referrer_condition(self):
-        """Test referrer-based redirection"""
+        """Test referer-based redirection"""
         RedirectionRule.objects.create(
-            name="Google referrer",
+            name="Google referer",
             url=self.url,
-            conditions={"referrer": ["google.com"]},
+            conditions={"referer": ["google.com"]},
             target_url="https://from-google.example.com",
             priority=1,
             is_active=True,

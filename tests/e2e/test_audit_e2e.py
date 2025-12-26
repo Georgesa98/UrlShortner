@@ -4,8 +4,7 @@ from rest_framework.test import APIClient
 from rest_framework import status
 from api.admin_panel.audit.models import AuditLog
 from api.url.models import Url
-from datetime import datetime, timedelta, timezone
-
+from django.utils import timezone
 
 User = get_user_model()
 
@@ -417,7 +416,7 @@ class TestAuditLogsEndpoint:
     def test_get_audit_logs_with_date_filter(self):
         """Test filtering audit logs by date range"""
         # Get current date for the test
-        today = datetime.now().strftime("%Y-%m-%d")
+        today = timezone.now().strftime("%Y-%m-%d")
 
         response = self.client.get(
             f"/api/admin/audit/logs/?date_from={today}&date_to={today}"

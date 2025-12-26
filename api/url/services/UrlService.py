@@ -1,8 +1,8 @@
 from api.url.models import Url, UrlStatus
 from api.url.services.ShortCodeService import ShortCodeService
-from datetime import datetime, timezone
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.contrib.auth import get_user_model
+from django.utils import timezone
 
 User = get_user_model()
 
@@ -105,7 +105,7 @@ class UrlService:
         for field in ["long_url", "expiry_date"]:
             if field in validated_data:
                 setattr(instance, field, validated_data[field])
-        instance.updated_at = datetime.now(timezone.utc)
+        instance.updated_at = timezone.now()
         instance.save()
         return instance
 

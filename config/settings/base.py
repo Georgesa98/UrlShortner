@@ -84,6 +84,7 @@ class Base(Configuration):
         "api.custom_auth",
         "api.url",
         "api.url.redirection",
+        "api.url.link_rot",
         "api.analytics",
         "api.admin_panel",
         "api.admin_panel.system",

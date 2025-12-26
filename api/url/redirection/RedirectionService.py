@@ -1,6 +1,8 @@
 from .models import RedirectionRule
 from api.url.models import Url
 from django.contrib.auth import get_user_model
+from django.utils import timezone
+
 
 User = get_user_model()
 
@@ -196,7 +198,7 @@ class RedirectionService:
                 "os": test_context.get("os"),
                 "language": test_context.get("language"),
                 "mobile": test_context.get("mobile"),
-                "referrer": test_context.get("referrer"),
+                "referer": test_context.get("referer"),
                 "time_range": test_context.get("time_range"),
             }
 
@@ -240,7 +242,7 @@ class RedirectionService:
         ua_data = parse_user_agent(user_agent)
 
         # Current time for time_range
-        current_time = datetime.now().strftime("%H:%M")
+        current_time = timezone.now().strftime("%H:%M")
 
         mobile = ua_data.get("is_mobile", False) or ua_data.get(
             "device", ""
@@ -255,7 +257,7 @@ class RedirectionService:
                 request.META.get("HTTP_ACCEPT_LANGUAGE", "")
             ),
             "mobile": mobile,
-            "referrer": request.META.get("HTTP_REFERER", ""),
+            "referer": request.META.get("HTTP_REFERER", ""),
             "time_range": current_time,
         }
 
@@ -302,7 +304,7 @@ class RedirectionService:
             )
         elif key == "time_range":
             return self._time_in_range(actual, expected)
-        elif key == "referrer":
+        elif key == "referer":
             return (
                 any(pattern in actual for pattern in expected)
                 if isinstance(expected, list)

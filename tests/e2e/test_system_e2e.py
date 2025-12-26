@@ -3,7 +3,8 @@ from django.contrib.auth import get_user_model
 from rest_framework.test import APIClient
 from rest_framework import status
 from unittest.mock import patch, MagicMock, PropertyMock
-from datetime import datetime, timezone
+from datetime import datetime
+from django.utils import timezone
 import psutil
 from api.admin_panel.system.SystemService import HealthStatus
 
@@ -411,9 +412,9 @@ class TestHealthEndpointTimestamp:
 
     def test_timestamp_recent(self):
         """Test timestamp is recent (within last minute)"""
-        before = datetime.now(timezone.utc)
+        before = timezone.now()
         response = self.client.get(self.url)
-        after = datetime.now(timezone.utc)
+        after = timezone.now()
 
         timestamp = datetime.fromisoformat(
             response.data["data"]["timestamp"].replace("Z", "+00:00")

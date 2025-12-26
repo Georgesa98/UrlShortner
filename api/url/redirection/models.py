@@ -13,7 +13,7 @@ class RedirectionRule(models.Model):
         "language",
         "time_range",
         "mobile",
-        "referrer",
+        "referer",
     ]
 
     name = models.CharField(max_length=255, help_text="Descriptive name for the rule")

@@ -330,7 +330,7 @@ class TestAdminGetUrlDetailsEndpoint:
             Visit.objects.create(
                 url=self.url,
                 hashed_ip=hash_ip(f"192.168.1.{i}"),
-                referrer="referrer.example.com",
+                referer="referer.example.com",
                 browser="Chrome",
                 operating_system="Windows",
             )

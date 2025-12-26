@@ -4,8 +4,9 @@ from api.analytics.models import Visit
 from config.redis_utils import get_redis_client
 from api.url.services.ShortCodeService import ShortCodeService
 from config.celery import app
-from datetime import datetime, timezone
-from api.url.models import Url
+from datetime import datetime
+from django.utils import timezone
+from api.url.models import Url, UrlStatus
 from api.admin_panel.fraud.models import FraudIncident
 from django.conf import settings
 from django.core.management import call_command
@@ -15,11 +16,19 @@ from django.core.management import call_command
 def deactivate_expired_urls_task() -> None:
     try:
         total_expired_urls_before = Url.objects.filter(
-            expiration_date__lte=datetime.now(timezone.utc)
+            expiry_date__lte=timezone.now()
         ).count()
-        total_urls_before = Url.objects.filter(is_active=True).count()
+        total_urls_before = (
+            Url.objects.select_related("url_status")
+            .filter(url_status__state=UrlStatus.State.ACTIVE)
+            .count()
+        )
         call_command("deactivate_expired_urls", delete=False)
-        total_urls_after = Url.objects.filter(is_active=True).count()
+        total_urls_after = (
+            Url.objects.select_related("url_status")
+            .filter(url_status__state=UrlStatus.State.ACTIVE)
+            .count()
+        )
         cleaned_count = total_urls_before - total_urls_after
         return {
             "status": "success",
@@ -27,14 +36,14 @@ def deactivate_expired_urls_task() -> None:
             "expired_count_before": total_expired_urls_before,
             "total_count_before": total_urls_before,
             "total_count_after": total_urls_after,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": timezone.now().isoformat(),
         }
 
     except Exception as e:
         return {
             "status": "error",
             "message": str(e),
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": timezone.now().isoformat(),
         }
 
 
@@ -67,7 +76,7 @@ def process_analytics_buffer() -> None:
                     browser=visit_data["browser"],
                     device=visit_data["device"],
                     new_visitor=visit_data["new_visitor"],
-                    referrer=visit_data["referrer"],
+                    referer=visit_data["referer"],
                     timestamp=visit_data["timestamp"],
                 )
             )
@@ -124,11 +133,11 @@ def process_analytics_buffer() -> None:
             "visits_processed": len(visits_to_process),
             "fraud_processed": len(fraud_incidents),
             "urls_updated": len(url_updates),
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": timezone.now().isoformat(),
         }
     except Exception as e:
         return {
             "status": "error",
             "message": str(e),
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": timezone.now().isoformat(),
         }

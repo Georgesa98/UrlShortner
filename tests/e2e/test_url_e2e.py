@@ -3,11 +3,12 @@ import pytest
 from django.contrib.auth import get_user_model
 from rest_framework.test import APIClient
 from rest_framework import status
-from datetime import datetime, timedelta, timezone
+from datetime import timedelta
 from api.url.models import Url, UrlStatus
 import io
 from PIL import Image
 from django.core.cache import cache
+from django.utils import timezone
 from api.url.services.ShortCodeService import ShortCodeService
 from unittest.mock import patch
 
@@ -52,7 +53,7 @@ class TestURLShortenEndpoint:
 
     def test_shorten_url_with_expiry(self):
         """Test Url shortening with expiry date"""
-        expiry = datetime.now(timezone.utc) + timedelta(days=30)
+        expiry = timezone.now() + timedelta(days=30)
         payload = {
             "long_url": "https://www.example.com/temporary",
             "expiry_date": expiry.isoformat(),
@@ -177,7 +178,7 @@ class TestURLUpdateEndpoint:
     def test_update_url_expiry_success(self):
         """Test successful Url expiry date update"""
         url = f"/api/url/{self.url_obj.short_url}/"
-        new_expiry = datetime.now(timezone.utc) + timedelta(days=60)
+        new_expiry = timezone.now() + timedelta(days=60)
         payload = {"expiry_date": new_expiry.isoformat()}
 
         response = self.client.patch(url, payload, format="json")
@@ -345,7 +346,7 @@ class TestURLRedirectEndpoint:
             long_url="https://www.example.com/expired",
             short_url="expired123",
             user=self.user,
-            expiry_date=datetime.now(timezone.utc) - timedelta(days=1),
+            expiry_date=timezone.now() - timedelta(days=1),
         )
         UrlStatus.objects.create(url=expired_url, state=UrlStatus.State.EXPIRED)
         url = f"/api/url/redirect/{expired_url.short_url}/"
@@ -537,9 +538,9 @@ class TestCustomAliasFeature:
             }
             response = self.client.post(url, payload, format="json")
 
-            assert response.status_code == status.HTTP_400_BAD_REQUEST, (
-                f"Alias '{invalid_alias}' should be invalid"
-            )
+            assert (
+                response.status_code == status.HTTP_400_BAD_REQUEST
+            ), f"Alias '{invalid_alias}' should be invalid"
 
     def test_custom_alias_valid_formats(self):
         """Test valid custom alias formats"""
@@ -560,9 +561,9 @@ class TestCustomAliasFeature:
             }
             response = self.client.post(url, payload, format="json")
 
-            assert response.status_code == status.HTTP_201_CREATED, (
-                f"Alias '{valid_alias}' should be valid. Got: {response.data}"
-            )
+            assert (
+                response.status_code == status.HTTP_201_CREATED
+            ), f"Alias '{valid_alias}' should be valid. Got: {response.data}"
             assert response.data["data"]["short_url"] == valid_alias
 
     def test_custom_alias_length_limits(self):
@@ -759,9 +760,9 @@ class TestQRCodeGeneration:
         new_files = files_after - files_before
         qr_files = [f for f in new_files if "qr" in f.lower() or "png" in f.lower()]
 
-        assert len(qr_files) == 0, (
-            f"QR code should not be saved to disk. Found: {qr_files}"
-        )
+        assert (
+            len(qr_files) == 0
+        ), f"QR code should not be saved to disk. Found: {qr_files}"
 
     def test_qr_code_no_authentication_required(self):
         """Test QR code generation without authentication (if public)"""

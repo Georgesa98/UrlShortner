@@ -1,10 +1,12 @@
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta
+from django.utils import timezone
 from api.analytics.models import Visit
 from api.url.models import Url
 from django.contrib.auth import get_user_model
 from django.db.models import Q, Count
 from collections import defaultdict, Counter
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
+from django.utils import timezone
 import calendar
 
 User = get_user_model()
@@ -15,7 +17,7 @@ class InsightService:
 
     @staticmethod
     def get_platform_stats(
-        time_range: str = (datetime.now(timezone.utc) - timedelta(days=7)).isoformat,
+        time_range: str = (timezone.now() - timedelta(days=7)).isoformat,
     ) -> dict:
         """Get platform statistics for a given time range.
 
@@ -46,7 +48,7 @@ class InsightService:
             dict: Growth data for users, URLs, and clicks with weekly breakdowns.
         """
         data_points = 10
-        current_date = datetime.now(timezone.utc)
+        current_date = timezone.now()
         start_date = current_date - timedelta(weeks=data_points - 1)
 
         user_growth_data = []
@@ -170,7 +172,7 @@ class InsightService:
         Returns:
             dict: Peak day and hour with average clicks.
         """
-        thirty_days_ago = datetime.now(timezone.utc) - timedelta(days=30)
+        thirty_days_ago = timezone.now() - timedelta(days=30)
         visits = Visit.objects.filter(timestamp__gte=thirty_days_ago)
         day_counts = defaultdict(int)
         hour_counts = defaultdict(int)
@@ -205,7 +207,7 @@ class InsightService:
         Returns:
             list: Ranked countries by visit count with percentages.
         """
-        seven_days_ago = datetime.now(timezone.utc) - timedelta(days=7)
+        seven_days_ago = timezone.now() - timedelta(days=7)
         visits = Visit.objects.filter(
             timestamp__gte=seven_days_ago, geolocation__isnull=False
         ).exclude(geolocation="")

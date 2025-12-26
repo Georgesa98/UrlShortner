@@ -3,7 +3,8 @@ import redis
 from django.conf import settings
 from config.redis_utils import get_redis_client
 from enum import Enum
-from datetime import datetime, timezone
+from datetime import datetime
+from django.utils import timezone
 from django.db import connection
 from django.core.cache import cache
 
@@ -31,9 +32,9 @@ class SystemService:
                 "error": "Redis client not initialized",
             }
         try:
-            start = datetime.now(timezone.utc)
+            start = timezone.now()
             self.redis_client.ping()
-            latency_ms = (datetime.now(timezone.utc) - start).total_seconds() * 1000
+            latency_ms = (timezone.now() - start).total_seconds() * 1000
             info = self.redis_client.info()
             memory_used_mb = info.get("used_memory", 0) / (1024 * 1024)
             connected_clients = info.get("connected_clients", 0)
@@ -63,9 +64,9 @@ class SystemService:
         try:
             broker_url = settings.CELERY_BROKER_URL
             celery_redis = redis.from_url(broker_url)
-            start = datetime.now(timezone.utc)
+            start = timezone.now()
             celery_redis.ping()
-            latency_ms = (datetime.now(timezone.utc) - start).total_seconds() * 1000
+            latency_ms = (timezone.now() - start).total_seconds() * 1000
             info = celery_redis.info()
             status = HealthStatus.HEALTHY
             if latency_ms > 500:
@@ -140,11 +141,11 @@ class SystemService:
 
     def _check_database(self) -> dict:
         try:
-            start = datetime.now(timezone.utc)
+            start = timezone.now()
             with connection.cursor() as cursor:
                 cursor.execute("SELECT 1;")
                 cursor.fetchone()
-            latency_ms = (datetime.now(timezone.utc) - start).total_seconds() * 1000
+            latency_ms = (timezone.now() - start).total_seconds() * 1000
 
             db_settings = settings.DATABASES["default"]
 
@@ -169,13 +170,13 @@ class SystemService:
 
     def _check_cache(self) -> dict:
         try:
-            start = datetime.now(timezone.utc)
+            start = timezone.now()
             test_key = "__health_check__"
             test_value = "ok"
             cache.set(test_key, test_value, 10)
             result = cache.get(test_key)
             cache.delete(test_key)
-            latency_ms = (datetime.now(timezone.utc) - start).total_seconds() * 1000
+            latency_ms = (timezone.now() - start).total_seconds() * 1000
             status = HealthStatus.HEALTHY
             if latency_ms > 500:
                 status = HealthStatus.UNHEALTHY
@@ -218,7 +219,7 @@ class SystemService:
 
         return {
             "status": overall_status,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": timezone.now().isoformat(),
             "components": components,
             "metadata": {
                 "version": settings.APP_VERSION,

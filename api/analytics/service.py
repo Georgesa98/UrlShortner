@@ -9,7 +9,8 @@ from api.analytics.utils import (
     parse_user_agent,
 )
 from config.settings_utils import get_analytics_track_ip
-from datetime import datetime, timezone, timedelta
+from datetime import timedelta
+from django.utils import timezone
 from django.db.models import Count, Q
 
 logger = logging.getLogger(__name__)
@@ -79,7 +80,7 @@ class AnalyticsService:
                 if is_new:
                     redis_conn.incr(f"url:{url_instance.id}:unique_visits")
 
-            current_time = datetime.now(timezone.utc).isoformat()
+            current_time = timezone.now().isoformat()
             redis_conn.set(f"url:{url_instance.id}:last_accessed", current_time)
 
             if fraud_data:
@@ -132,7 +133,7 @@ class AnalyticsService:
             dict: Analytics data including basic info, daily visits, top metrics, and recent visitors.
         """
 
-        end_date = datetime.now(timezone.utc)
+        end_date = timezone.now()
         start_date = end_date - timedelta(days=range_days)
 
         visit_queryset = Visit.objects.select_related("url").filter(

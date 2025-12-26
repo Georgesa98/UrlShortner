@@ -39,7 +39,7 @@ class RedirectionRuleSerializer(serializers.ModelSerializer):
         self._validate_os(value.get("os"))
         self._validate_language(value.get("language"))
         self._validate_mobile(value.get("mobile"))
-        self._validate_referrer(value.get("referrer"))
+        self._validate_referer(value.get("referer"))
         self._validate_time_range(value.get("time_range"))
 
         return value
@@ -157,11 +157,11 @@ class RedirectionRuleSerializer(serializers.ModelSerializer):
                     {"mobile": "Must be a boolean (true/false)."}
                 )
 
-    def _validate_referrer(self, value):
+    def _validate_referer(self, value):
         if value is not None:
             if not isinstance(value, list):
                 raise serializers.ValidationError(
-                    {"referrer": "Must be a list of referrer patterns."}
+                    {"referer": "Must be a list of referer patterns."}
                 )
             domain_pattern = re.compile(
                 r"^(https?://)?([a-zA-Z0-9-]+\.)*[a-zA-Z0-9-]+\.[a-zA-Z]{2,}(/.*)?$"
@@ -169,7 +169,7 @@ class RedirectionRuleSerializer(serializers.ModelSerializer):
             for ref in value:
                 if not isinstance(ref, str) or not domain_pattern.match(ref):
                     raise serializers.ValidationError(
-                        {"referrer": f"'{ref}' is not a valid domain or URL pattern."}
+                        {"referer": f"'{ref}' is not a valid domain or URL pattern."}
                     )
 
 
@@ -256,8 +256,8 @@ class TestRedirectionSerializer(serializers.Serializer):
         help_text="2-letter language code",
     )
     mobile = serializers.BooleanField(required=False, help_text="Is mobile device")
-    referrer = serializers.URLField(
-        required=False, allow_blank=True, help_text="Referrer URL"
+    referer = serializers.URLField(
+        required=False, allow_blank=True, help_text="Referer URL"
     )
     time_range = serializers.CharField(
         required=False, allow_blank=True, help_text="Current time in HH:MM format"

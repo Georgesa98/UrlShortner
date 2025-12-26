@@ -1,6 +1,7 @@
 from django.db import models
 from django.conf import settings
-from datetime import datetime, timezone
+from datetime import datetime
+from django.utils import timezone
 
 
 # Create your models here.
@@ -36,7 +37,7 @@ class Url(models.Model):
             else:
                 expiry = self.expiry_date
 
-            days = (expiry - datetime.now(timezone.utc)).days
+            days = (expiry - timezone.now()).days
             return days if days >= 0 else None
         return None
 
@@ -47,10 +48,11 @@ class UrlStatus(models.Model):
         EXPIRED = "EXPIRED", "expired"
         FLAGGED = "FLAGGED", "flagged"
         DISABLED = "DISABLED", "disabled"
-        SUSPENDED = "SUSPENDED", "suspended"
+        BROKEN = "BROKEN", "broken"
 
     url = models.OneToOneField(Url, on_delete=models.CASCADE, related_name="url_status")
     state = models.CharField(
         max_length=16, choices=State.choices, default=State.ACTIVE, db_index=True
     )
     reason = models.CharField(max_length=256, null=True, blank=True)
+    last_checked = models.DateTimeField(null=True, blank=True)

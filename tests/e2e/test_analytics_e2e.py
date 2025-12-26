@@ -3,7 +3,8 @@ import redis
 from django.contrib.auth import get_user_model
 from rest_framework.test import APIClient
 from rest_framework import status
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
+from django.utils import timezone
 from unittest.mock import patch, MagicMock
 from api.analytics.utils import hash_ip
 from api.url.models import Url
@@ -192,7 +193,7 @@ class TestURLSummaryEndpoint:
             Visit.objects.create(
                 url=self.url_obj,
                 hashed_ip=hashed_ip,
-                referrer="https://google.com",
+                referer="https://google.com",
                 device="desktop",
                 new_visitor=True,
             )
@@ -410,17 +411,17 @@ class TestAnalyticsIntegration:
         Visit.objects.create(
             url=url_obj,
             hashed_ip=hash_ip("192.168.1.1"),
-            timestamp=datetime.now(timezone.utc),
+            timestamp=timezone.now(),
         )
         Visit.objects.create(
             url=url_obj,
             hashed_ip=hash_ip("192.168.1.2"),
-            timestamp=datetime.now(timezone.utc) - timedelta(days=5),
+            timestamp=timezone.now() - timedelta(days=5),
         )
         Visit.objects.create(
             url=url_obj,
             hashed_ip=hash_ip("192.168.1.3"),
-            timestamp=datetime.now(timezone.utc) - timedelta(days=10),
+            timestamp=timezone.now() - timedelta(days=10),
         )
 
         # Get 7-day analytics
@@ -576,9 +577,9 @@ class TestRedisAnalyticsBuffering:
             "operating_system": "Linux",
             "browser": "Chrome",
             "device": "desktop",
-            "referrer": "https://google.com",
+            "referer": "https://google.com",
             "new_visitor": True,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": timezone.now().isoformat(),
         }
         for _ in range(150):
             redis_conn.rpush("analytics:visits", json.dumps(visit_template))

@@ -1,6 +1,6 @@
 from django.conf import settings
 from api.url.models import Url, UrlStatus
-from datetime import datetime, timezone
+from django.utils import timezone
 from api.admin_panel.fraud.FraudService import FraudService
 from config.redis_utils import get_redis_client
 
@@ -30,7 +30,7 @@ class BurstProtectionService:
         Returns:
             bool: True if burst detected, False otherwise.
         """
-        timestamp = datetime.now(timezone.utc).timestamp()
+        timestamp = timezone.now().timestamp()
         url_key = f"burst_protection:url:{short_url}"
         ip_key = f"burst_protection:ip:{ip}"
         windows = [
@@ -63,7 +63,7 @@ class BurstProtectionService:
         count = self.redis_client.zcount(
             key,
             start_time,
-            datetime.now(timezone.utc).timestamp(),
+            timezone.now().timestamp(),
         )
         return count >= threshold
 
@@ -88,7 +88,7 @@ class BurstProtectionService:
             short_url (str): The short URL identifier.
             ip (str): The IP address.
         """
-        timestamp = datetime.now(timezone.utc).timestamp()
+        timestamp = timezone.now().timestamp()
         url_key = f"burst_protection:url:{short_url}"
         ip_key = f"burst_protection:ip:{ip}"
 

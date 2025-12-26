@@ -1,8 +1,7 @@
 from django.test import TestCase
 from unittest.mock import Mock, patch, MagicMock
-from datetime import datetime, timezone
 import redis
-from datetime import datetime, timezone
+from django.utils import timezone
 from api.url.services.BurstProtectionService import BurstProtectionService
 from api.url.models import Url, UrlStatus
 
@@ -18,7 +17,7 @@ class BurstProtectionServiceTest(TestCase):
         # Test data
         self.test_ip = "192.168.1.1"
         self.test_short_url = "abc123"
-        self.test_timestamp = datetime.now(timezone.utc).timestamp()
+        self.test_timestamp = timezone.now().timestamp()
 
         # Clear Redis data before each test
         self.service.redis_client.flushdb()
@@ -463,7 +462,7 @@ class BurstProtectionServiceTest(TestCase):
         """Test burst protection works with URLs that have expiry dates"""
         from datetime import timedelta
 
-        future_date = datetime.now(timezone.utc) + timedelta(days=7)
+        future_date = timezone.now() + timedelta(days=7)
         url_with_expiry = Url.objects.create(
             short_url="expiry123",
             long_url="https://expiryurl.com",
@@ -555,7 +554,7 @@ class BurstProtectionIntegrationTest(TestCase):
         # Trigger burst on first Url
         ip_key = f"burst_protection:ip:{self.test_ip}"
         for i in range(10):
-            timestamp = datetime.now(timezone.utc).timestamp() - i
+            timestamp = timezone.now().timestamp() - i
             self.service.redis_client.zadd(ip_key, {f"request_{timestamp}": timestamp})
 
         result1 = self.service.check_burst(self.test_ip, self.test_short_url)
