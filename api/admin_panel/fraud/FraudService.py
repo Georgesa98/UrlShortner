@@ -54,7 +54,7 @@ class FraudService:
                 "suspicious_ua",
                 {
                     "user_agent": user_agent,
-                    "ip": request.META.get("REMOTE_ADDR"),
+                    "ip": get_ip_address(request),
                     "url": url_instance.short_url,
                     "pattern": "scripting",
                 },
@@ -97,7 +97,7 @@ class FraudService:
         FraudService.log_incident(
             "throttle",
             {
-                "ip": request.META.get("REMOTE_ADDR"),
+                "ip": get_ip_address(request),
                 "user_id": user.id if user else None,
                 "rate": rate,
                 "endpoint": request.path,
@@ -157,7 +157,7 @@ class FraudService:
                 "suspicious_ua",
                 {
                     "user_agent": user_agent,
-                    "ip": request.META.get("REMOTE_ADDR"),
+                    "ip": get_ip_address(request),
                     "url": url_instance.short_url,
                 },
                 severity="low",
@@ -171,7 +171,7 @@ class FraudService:
                 "suspicious_ua",
                 {
                     "user_agent": user_agent,
-                    "ip": request.META.get("REMOTE_ADDR"),
+                    "ip": get_ip_address(request),
                     "url": url_instance.short_url,
                     "pattern": "scripting",
                 },
@@ -214,7 +214,7 @@ class FraudService:
         FraudService.log_incident(
             "throttle",
             {
-                "ip": request.META.get("REMOTE_ADDR"),
+                "ip": get_ip_address(request),
                 "user_id": user.id if user else None,
                 "rate": rate,
                 "endpoint": request.path,

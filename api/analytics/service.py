@@ -46,7 +46,7 @@ class AnalyticsService:
                 "incident_type": "suspicious_ua",
                 "details": {
                     "user_agent": raw_ua,
-                    "ip": request.META.get("REMOTE_ADDR"),
+                    "ip": get_ip_address(request),
                     "url": url_instance.short_url,
                 },
                 "severity": "low",
@@ -60,7 +60,7 @@ class AnalyticsService:
                 "incident_type": "suspicious_ua",
                 "details": {
                     "user_agent": raw_ua,
-                    "ip": request.META.get("REMOTE_ADDR"),
+                    "ip": get_ip_address(request),
                     "url": url_instance.short_url,
                     "pattern": "scripting",
                 },
