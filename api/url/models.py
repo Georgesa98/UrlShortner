@@ -4,7 +4,6 @@ from datetime import datetime
 from django.utils import timezone
 
 
-# Create your models here.
 class Url(models.Model):
     name = models.CharField(max_length=512, unique=True, null=True, blank=True)
     long_url = models.CharField(max_length=2000)
@@ -54,5 +53,12 @@ class UrlStatus(models.Model):
     state = models.CharField(
         max_length=16, choices=State.choices, default=State.ACTIVE, db_index=True
     )
-    reason = models.CharField(max_length=256, null=True, blank=True)
-    last_checked = models.DateTimeField(null=True, blank=True)
+    reason = models.CharField(max_length=256, null=True, blank=True, db_index=True)
+    last_checked = models.DateTimeField(null=True, blank=True, db_index=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["state"]),
+            models.Index(fields=["last_checked"]),
+            models.Index(fields=["state", "last_checked"]),
+        ]

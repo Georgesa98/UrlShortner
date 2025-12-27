@@ -1,15 +1,20 @@
 import json
+import logging
+from typing import Dict, Any
 
 from api.analytics.models import Visit
+from api.admin_panel.fraud.models import FraudIncident
 from config.redis_utils import get_redis_client
 from api.url.services.ShortCodeService import ShortCodeService
 from config.celery import app
 from datetime import datetime
 from django.utils import timezone
 from api.url.models import Url, UrlStatus
-from api.admin_panel.fraud.models import FraudIncident
 from django.conf import settings
 from django.core.management import call_command
+from api.url.link_rot.LinkRotService import LinkRotService
+
+logger = logging.getLogger(__name__)
 
 
 @app.task()
@@ -86,7 +91,6 @@ def process_analytics_buffer() -> None:
             if not fraud_json:
                 break
             fraud_data = json.loads(fraud_json)
-            from api.admin_panel.fraud.models import FraudIncident
 
             fraud_incidents.append(
                 FraudIncident(
@@ -136,6 +140,143 @@ def process_analytics_buffer() -> None:
             "timestamp": timezone.now().isoformat(),
         }
     except Exception as e:
+        return {
+            "status": "error",
+            "message": str(e),
+            "timestamp": timezone.now().isoformat(),
+        }
+
+
+@app.task()
+def populate_link_rot_queue(
+    days_threshold: int = 7, batch_size: int = 1000
+) -> Dict[str, Any]:
+    """
+    Periodic task to fetch URLs needing health check and store them in Redis queue.
+
+    Args:
+        days_threshold: Number of days since last check to consider for re-checking
+        batch_size: Maximum number of URLs to fetch and add to the queue
+
+    Returns:
+        Dictionary with status information
+    """
+    try:
+        redis_conn = get_redis_client()
+        service = LinkRotService(batch_size=batch_size)
+        url_ids = service.get_urls_needing_check(days_threshold)
+
+        if not url_ids:
+            logger.info("No URLs found that need link rot checking")
+            return {
+                "status": "success",
+                "message": "No URLs found that need link rot checking",
+                "urls_added": 0,
+                "timestamp": timezone.now().isoformat(),
+            }
+
+        for url_id in url_ids:
+            redis_conn.rpush("link_rot:urls_to_check", str(url_id))
+
+        logger.info(f"Added {len(url_ids)} URLs to link rot queue in Redis")
+
+        if url_ids:
+            check_and_update_link_rot_batch.delay()
+
+        return {
+            "status": "success",
+            "urls_added": len(url_ids),
+            "url_ids": url_ids,
+            "timestamp": timezone.now().isoformat(),
+        }
+
+    except Exception as e:
+        logger.error(f"Error in populate_link_rot_queue: {str(e)}")
+        return {
+            "status": "error",
+            "message": str(e),
+            "timestamp": timezone.now().isoformat(),
+        }
+
+
+@app.task()
+def check_and_update_link_rot_batch(batch_size: int = 10) -> Dict[str, Any]:
+    """
+    Task to check and update a small batch of URLs from the Redis queue.
+    If there are more URLs in the queue after processing, it schedules itself again.
+
+    Args:
+        batch_size: Number of URLs to process in this batch
+
+    Returns:
+        Dictionary with status information
+    """
+    try:
+        redis_conn = get_redis_client()
+        service = LinkRotService(batch_size=batch_size)
+
+        url_ids_batch = []
+
+        for _ in range(batch_size):
+            url_id = redis_conn.lpop("link_rot:urls_to_check")
+            if url_id is None:
+                break
+            url_ids_batch.append(int(url_id))
+
+        if not url_ids_batch:
+            logger.info("Link rot queue is empty, nothing to process")
+            service.close()
+            return {
+                "status": "success",
+                "total_processed": 0,
+                "message": "No URLs to process in link rot queue",
+                "timestamp": timezone.now().isoformat(),
+            }
+
+        logger.info(f"Processing batch of {len(url_ids_batch)} URLs for link rot check")
+
+        health_results = service.check_batch_health(url_ids_batch)
+
+        status_updates = []
+        for result in health_results:
+            status_updates.append(
+                {
+                    "url_id": result["url_id"],
+                    "status": result["status"],
+                    "reason": result["error"],
+                }
+            )
+
+        update_results = service.bulk_update_statuses(status_updates)
+
+        processed_count = len(health_results)
+
+        logger.info(
+            f"Completed batch: {len(health_results)} URLs processed, "
+            f"{update_results['success']} updated successfully"
+        )
+
+        remaining_count = redis_conn.llen("link_rot:urls_to_check")
+        if remaining_count > 0:
+            logger.info(
+                f"{remaining_count} URLs remaining in link rot queue, scheduling next batch"
+            )
+            check_and_update_link_rot_batch.apply_async(
+                kwargs={"batch_size": batch_size},
+                countdown=2,
+            )
+
+        service.close()
+
+        return {
+            "status": "success",
+            "total_processed": processed_count,
+            "message": f"Processed {processed_count} URLs for link rot checking, {remaining_count} remaining",
+            "timestamp": timezone.now().isoformat(),
+        }
+
+    except Exception as e:
+        logger.error(f"Error in check_and_update_link_rot_batch: {str(e)}")
         return {
             "status": "error",
             "message": str(e),

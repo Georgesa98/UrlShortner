@@ -9,7 +9,7 @@ app = Celery("config")
 app.config_from_object("django.conf:settings", namespace="CELERY")
 app.autodiscover_tasks()
 
-CELERY_BEAT_SCHEDUAL = {
+CELERY_BEAT_SCHEDULE = {
     "deactivate-expired-urls-daily": {
         "task": "api.url.tasks.deactivate_expired_urls_task",
         "schedule": crontab(hour=0, minute=0),
@@ -22,6 +22,10 @@ CELERY_BEAT_SCHEDUAL = {
     "process-analytics-buffer": {
         "task": "api.url.tasks.process_analytics_buffer",
         "schedule": 30.0,
+    },
+    "populate-link-rot-queue-weekly": {
+        "task": "api.url.tasks.populate_link_rot_queue",
+        "schedule": crontab(hour=1, minute=0, day_of_week=0),
     },
 }
 
