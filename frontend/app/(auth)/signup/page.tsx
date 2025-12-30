@@ -1,13 +1,46 @@
+"use client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { ArrowRight } from "lucide-react";
+import { Controller, useForm } from "react-hook-form";
+import * as z from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { signupFormSchema } from "./schema";
 import Image from "next/image";
 import Link from "next/link";
-
+import { Field, FieldError, FieldLabel } from "@/components/ui/field";
+import { signupAction } from "./server";
+import { toast } from "sonner";
+import { redirect } from "next/navigation";
 export default function Signup() {
+    const signupForm = useForm<z.infer<typeof signupFormSchema>>({
+        resolver: zodResolver(signupFormSchema),
+        defaultValues: {
+            email: "",
+            username: "",
+            password: "",
+            rePassword: "",
+            terms: false,
+        },
+    });
+    async function onSubmit(data: z.infer<typeof signupFormSchema>) {
+        const { data: response, status } = await signupAction(
+            data.email,
+            data.username,
+            data.password
+        );
+        if (status == 201) {
+            toast.success("account has been created");
+            setTimeout(() => {
+                redirect("/");
+            }, 2000);
+        } else {
+            toast.error("an error has occurred");
+            console.error(response);
+        }
+    }
     return (
         <Card className="overflow-hidden p-0">
             <CardContent className="p-0">
@@ -22,28 +55,142 @@ export default function Signup() {
                         </p>
                     </div>
                     <div className="flex flex-col gap-2 w-full">
-                        <Label>Email</Label>
-                        <Input placeholder="name@example.com" />
+                        <Controller
+                            control={signupForm.control}
+                            name="email"
+                            render={({ field, fieldState }) => (
+                                <Field>
+                                    <FieldLabel htmlFor={field.name}>
+                                        Email
+                                    </FieldLabel>
+                                    <Input
+                                        {...field}
+                                        type="email"
+                                        aria-invalid={fieldState.invalid}
+                                        id={field.name}
+                                        placeholder="name@example.com"
+                                    />
+                                    {fieldState.invalid && (
+                                        <FieldError
+                                            errors={[fieldState.error]}
+                                        />
+                                    )}
+                                </Field>
+                            )}
+                        />
                     </div>
                     <div className="flex flex-col gap-2 w-full">
-                        <Label>Username</Label>
-                        <Input placeholder="John doe" />
+                        <Controller
+                            control={signupForm.control}
+                            name="username"
+                            render={({ field, fieldState }) => (
+                                <Field>
+                                    <FieldLabel htmlFor={field.name}>
+                                        Username
+                                    </FieldLabel>
+                                    <Input
+                                        {...field}
+                                        id={field.name}
+                                        aria-invalid={fieldState.invalid}
+                                        placeholder="John doe"
+                                    />
+                                    {fieldState.invalid && (
+                                        <FieldError
+                                            errors={[fieldState.error]}
+                                        />
+                                    )}
+                                </Field>
+                            )}
+                        />
                     </div>
                     <div className="flex flex-col gap-2 w-full">
-                        <Label>Password</Label>
-                        <Input placeholder="password" type="password" />
+                        <Controller
+                            control={signupForm.control}
+                            name="password"
+                            render={({ field, fieldState }) => (
+                                <Field>
+                                    <FieldLabel htmlFor={field.name}>
+                                        Password
+                                    </FieldLabel>
+                                    <Input
+                                        {...field}
+                                        aria-invalid={fieldState.invalid}
+                                        id={field.name}
+                                        placeholder="password"
+                                        type="password"
+                                    />
+                                    {fieldState.invalid && (
+                                        <FieldError
+                                            errors={[fieldState.error]}
+                                        />
+                                    )}
+                                </Field>
+                            )}
+                        />
                     </div>
                     <div className="flex flex-col gap-2 w-full">
-                        <Label>Confirm Password</Label>
-                        <Input placeholder="password" type="password" />
+                        <Controller
+                            control={signupForm.control}
+                            name="rePassword"
+                            render={({ field, fieldState }) => (
+                                <Field>
+                                    <FieldLabel htmlFor={field.name}>
+                                        Confirm Password
+                                    </FieldLabel>
+                                    <Input
+                                        {...field}
+                                        id={field.name}
+                                        aria-invalid={fieldState.invalid}
+                                        placeholder="confirm password"
+                                        type="password"
+                                    />
+                                    {fieldState.invalid && (
+                                        <FieldError
+                                            errors={[fieldState.error]}
+                                        />
+                                    )}
+                                </Field>
+                            )}
+                        />
                     </div>
-                    <div className="flex gap-2">
-                        <Input type="checkbox" className="w-4 h-4" />
-                        <span className="text-muted-foreground text-xs :accent-background">
-                            I agree to the terms of service and privacy policy
-                        </span>
+                    <div>
+                        <Controller
+                            name="terms"
+                            control={signupForm.control}
+                            render={({ field, fieldState }) => (
+                                <Field className="flex flex-row items-center gap-2 w-full">
+                                    <Input
+                                        checked={field.value}
+                                        onChange={(e) =>
+                                            field.onChange(e.target.checked)
+                                        }
+                                        onBlur={field.onBlur}
+                                        ref={field.ref}
+                                        type="checkbox"
+                                        className="w-4 h-4"
+                                        id={field.name}
+                                        aria-invalid={fieldState.invalid}
+                                    />
+                                    <FieldLabel
+                                        htmlFor={field.name}
+                                        className="text-muted-foreground min-w-[90%] text-xs"
+                                    >
+                                        I agree to the terms of service and
+                                        privacy policy
+                                    </FieldLabel>
+                                    {fieldState.invalid && (
+                                        <FieldError
+                                            errors={[fieldState.error]}
+                                        />
+                                    )}
+                                </Field>
+                            )}
+                        />
                     </div>
-                    <Button className="w-full">
+                    <Button
+                        className="w-full"
+                        onClick={signupForm.handleSubmit(onSubmit)}
+                    >
                         Create Account <ArrowRight />
                     </Button>
                     <div className="relative w-full">

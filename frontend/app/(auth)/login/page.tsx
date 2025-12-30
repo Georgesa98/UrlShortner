@@ -1,13 +1,43 @@
+"use client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { ArrowRight } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-
+import { Controller, useForm } from "react-hook-form";
+import * as z from "zod";
+import { loginFormSchema } from "./schema";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Field, FieldError, FieldLabel } from "@/components/ui/field";
+import { loginAction } from "./server";
+import { toast } from "sonner";
+import { redirect } from "next/navigation";
 export default function Login() {
+    const loginForm = useForm<z.infer<typeof loginFormSchema>>({
+        resolver: zodResolver(loginFormSchema),
+        defaultValues: {
+            username: "",
+            password: "",
+        },
+    });
+    async function onSubmit(data: z.infer<typeof loginFormSchema>) {
+        const { message, status } = await loginAction({
+            username: data.username,
+            password: data.password,
+        });
+        console.log(message);
+
+        if (status === 200) {
+            toast.success("login successful");
+            setTimeout(() => {
+                redirect("/");
+            }, 2000);
+        } else {
+            toast.error("please check your credentials");
+        }
+    }
     return (
         <Card className="overflow-hidden p-0">
             <CardContent className="p-0">
@@ -19,17 +49,61 @@ export default function Login() {
                         </p>
                     </div>
                     <div className="flex flex-col gap-2 w-full">
-                        <Label>Email or Username</Label>
-                        <Input placeholder="name@example.com" />
+                        <Controller
+                            control={loginForm.control}
+                            name="username"
+                            render={({ field, fieldState }) => (
+                                <Field>
+                                    <FieldLabel htmlFor={field.name}>
+                                        Email or Username
+                                    </FieldLabel>
+                                    <Input
+                                        {...field}
+                                        id={field.name}
+                                        aria-invalid={fieldState.invalid}
+                                        placeholder="name@example.com"
+                                    />
+                                    {fieldState.invalid && (
+                                        <FieldError
+                                            errors={[fieldState.error]}
+                                        />
+                                    )}
+                                </Field>
+                            )}
+                        />
                     </div>
                     <div className="flex flex-col gap-2 w-full">
-                        <Label>Password</Label>
-                        <Input placeholder="password" type="password" />
-                        <p className="text-brand-blue text-xs">
-                            Forgot Password?
-                        </p>
+                        <Controller
+                            control={loginForm.control}
+                            name="password"
+                            render={({ field, fieldState }) => (
+                                <Field>
+                                    <FieldLabel htmlFor={field.name}>
+                                        Password
+                                    </FieldLabel>
+                                    <Input
+                                        {...field}
+                                        id={field.name}
+                                        aria-invalid={fieldState.invalid}
+                                        placeholder="password"
+                                        type="password"
+                                    />
+                                    <p className="text-brand-blue text-xs">
+                                        Forgot Password?
+                                    </p>
+                                    {fieldState.invalid && (
+                                        <FieldError
+                                            errors={[fieldState.error]}
+                                        />
+                                    )}
+                                </Field>
+                            )}
+                        />
                     </div>
-                    <Button className="w-full">
+                    <Button
+                        className="w-full"
+                        onClick={loginForm.handleSubmit(onSubmit)}
+                    >
                         Sign In <ArrowRight />
                     </Button>
                     <div className="relative w-full">
