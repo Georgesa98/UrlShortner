@@ -1,0 +1,10 @@
+.bg-gradient-blue-purple {
+    background: var(--color-gradient-blue-purple);
+  }
+  
+  .text-gradient-blue-purple {
+    background: var(--color-gradient-blue-purple);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
