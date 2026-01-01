@@ -11,7 +11,7 @@ export default function UserLayout({
     return (
         <SidebarProvider>
             <AppSidebar />
-            <div>{children}</div>
+            <div className="p-6 w-full">{children}</div>
         </SidebarProvider>
     );
 }
