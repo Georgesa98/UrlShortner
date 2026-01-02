@@ -1,0 +1,966 @@
+[
+    {
+        "model": "custom_auth.customuser",
+        "pk": 1,
+        "fields": {
+            "username": "admin_user",
+            "email": "admin@example.com",
+            "first_name": "Admin",
+            "last_name": "User",
+            "role": "ADMIN",
+            "password": "pbkdf2_sha256$260000$...$...",
+            "is_active": true,
+            "date_joined": "2024-01-15T10:00:00Z",
+            "is_staff": true
+        }
+    },
+    {
+        "model": "custom_auth.customuser",
+        "pk": 2,
+        "fields": {
+            "username": "staff_user",
+            "email": "staff@example.com",
+            "first_name": "Staff",
+            "last_name": "Member",
+            "role": "STAFF",
+            "password": "pbkdf2_sha256$260000$...$...",
+            "is_active": true,
+            "date_joined": "2024-02-20T14:30:00Z",
+            "is_staff": true
+        }
+    },
+    {
+        "model": "custom_auth.customuser",
+        "pk": 3,
+        "fields": {
+            "username": "regular_user",
+            "email": "user@example.com",
+            "first_name": "Regular",
+            "last_name": "User",
+            "role": "USER",
+            "password": "pbkdf2_sha256$260000$...$...",
+            "is_active": true,
+            "date_joined": "2024-03-10T09:15:00Z"
+        }
+    },
+    {
+        "model": "custom_auth.customuser",
+        "pk": 4,
+        "fields": {
+            "username": "test_user",
+            "email": "test@example.com",
+            "first_name": "Test",
+            "last_name": "User",
+            "role": "USER",
+            "password": "pbkdf2_sha256$260000$...$...",
+            "is_active": true,
+            "date_joined": "2024-04-05T16:45:00Z"
+        }
+    },
+    {
+        "model": "url.url",
+        "pk": 1,
+        "fields": {
+            "name": "Google Search",
+            "long_url": "https://www.google.com",
+            "short_url": "abc123de",
+            "created_at": "2024-01-15T11:00:00Z",
+            "updated_at": "2024-01-15T11:00:00Z",
+            "visits": 150,
+            "unique_visits": 120,
+            "last_accessed": "2024-05-10T14:20:00Z",
+            "expiry_date": null,
+            "is_custom_alias": false,
+            "user": 1
+        }
+    },
+    {
+        "model": "url.url",
+        "pk": 2,
+        "fields": {
+            "name": "GitHub Repository",
+            "long_url": "https://github.com/example/repo",
+            "short_url": "def456gh",
+            "created_at": "2024-02-20T15:30:00Z",
+            "updated_at": "2024-02-20T15:30:00Z",
+            "visits": 89,
+            "unique_visits": 75,
+            "last_accessed": "2024-05-11T09:10:00Z",
+            "expiry_date": "2025-02-20T15:30:00Z",
+            "is_custom_alias": false,
+            "user": 2
+        }
+    },
+    {
+        "model": "url.url",
+        "pk": 3,
+        "fields": {
+            "name": "Company Website",
+            "long_url": "https://www.company.com",
+            "short_url": "custom123",
+            "created_at": "2024-03-10T10:15:00Z",
+            "updated_at": "2024-03-10T10:15:00Z",
+            "visits": 245,
+            "unique_visits": 200,
+            "last_accessed": "2024-05-12T12:30:00Z",
+            "expiry_date": null,
+            "is_custom_alias": true,
+            "user": 3
+        }
+    },
+    {
+        "model": "url.url",
+        "pk": 4,
+        "fields": {
+            "name": "Documentation Site",
+            "long_url": "https://docs.example.com/guide",
+            "short_url": "xyz789pq",
+            "created_at": "2024-04-05T17:45:00Z",
+            "updated_at": "2024-04-05T17:45:00Z",
+            "visits": 56,
+            "unique_visits": 48,
+            "last_accessed": "2024-05-13T08:15:00Z",
+            "expiry_date": "2024-12-31T23:59:59Z",
+            "is_custom_alias": false,
+            "user": 4
+        }
+    },
+    {
+        "model": "url.url",
+        "pk": 5,
+        "fields": {
+            "name": "Blog Post",
+            "long_url": "https://blog.example.com/post",
+            "short_url": "blog456",
+            "created_at": "2024-04-15T13:20:00Z",
+            "updated_at": "2024-04-15T13:20:00Z",
+            "visits": 32,
+            "unique_visits": 28,
+            "last_accessed": "2024-05-14T11:45:00Z",
+            "expiry_date": null,
+            "is_custom_alias": true,
+            "user": 1
+        }
+    },
+    {
+        "model": "url.url",
+        "pk": 6,
+        "fields": {
+            "name": "E-commerce Store",
+            "long_url": "https://store.example.com/products",
+            "short_url": "shop123",
+            "created_at": "2024-01-20T09:30:00Z",
+            "updated_at": "2024-01-20T09:30:00Z",
+            "visits": 420,
+            "unique_visits": 350,
+            "last_accessed": "2024-05-14T13:20:00Z",
+            "expiry_date": null,
+            "is_custom_alias": true,
+            "user": 2
+        }
+    },
+    {
+        "model": "url.url",
+        "pk": 7,
+        "fields": {
+            "name": "Social Media Profile",
+            "long_url": "https://social.example.com/profile",
+            "short_url": "social789",
+            "created_at": "2024-02-10T16:45:00Z",
+            "updated_at": "2024-02-10T16:45:00Z",
+            "visits": 180,
+            "unique_visits": 165,
+            "last_accessed": "2024-05-14T10:15:00Z",
+            "expiry_date": "2025-02-10T16:45:00Z",
+            "is_custom_alias": true,
+            "user": 3
+        }
+    },
+    {
+        "model": "url.url",
+        "pk": 8,
+        "fields": {
+            "name": "API Documentation",
+            "long_url": "https://api.example.com/docs",
+            "short_url": "api456",
+            "created_at": "2024-03-05T11:20:00Z",
+            "updated_at": "2024-03-05T11:20:00Z",
+            "visits": 210,
+            "unique_visits": 190,
+            "last_accessed": "2024-05-14T09:30:00Z",
+            "expiry_date": null,
+            "is_custom_alias": true,
+            "user": 1
+        }
+    },
+    {
+        "model": "url.url",
+        "pk": 9,
+        "fields": {
+            "name": "Support Portal",
+            "long_url": "https://support.example.com/tickets",
+            "short_url": "help789",
+            "created_at": "2024-03-25T14:10:00Z",
+            "updated_at": "2024-03-25T14:10:00Z",
+            "visits": 95,
+            "unique_visits": 80,
+            "last_accessed": "2024-05-14T15:45:00Z",
+            "expiry_date": "2024-12-31T23:59:59Z",
+            "is_custom_alias": true,
+            "user": 4
+        }
+    },
+    {
+        "model": "url.url",
+        "pk": 10,
+        "fields": {
+            "name": "Video Tutorial",
+            "long_url": "https://videos.example.com/tutorial",
+            "short_url": "vid101",
+            "created_at": "2024-04-10T08:00:00Z",
+            "updated_at": "2024-04-10T08:00:00Z",
+            "visits": 75,
+            "unique_visits": 65,
+            "last_accessed": "2024-05-14T12:00:0Z",
+            "expiry_date": null,
+            "is_custom_alias": true,
+            "user": 2
+        }
+    },
+    {
+        "model": "url.urlstatus",
+        "pk": 1,
+        "fields": {
+            "url": 1,
+            "state": "ACTIVE",
+            "reason": null,
+            "last_checked": "2024-05-14T10:00:00Z"
+        }
+    },
+    {
+        "model": "url.urlstatus",
+        "pk": 2,
+        "fields": {
+            "url": 2,
+            "state": "ACTIVE",
+            "reason": null,
+            "last_checked": "2024-05-14T10:0:00Z"
+        }
+    },
+    {
+        "model": "url.urlstatus",
+        "pk": 3,
+        "fields": {
+            "url": 3,
+            "state": "ACTIVE",
+            "reason": null,
+            "last_checked": "2024-05-14T10:00:00Z"
+        }
+    },
+    {
+        "model": "url.urlstatus",
+        "pk": 4,
+        "fields": {
+            "url": 4,
+            "state": "EXPIRED",
+            "reason": "Expiry date reached",
+            "last_checked": "2024-05-14T10:00Z"
+        }
+    },
+    {
+        "model": "url.urlstatus",
+        "pk": 5,
+        "fields": {
+            "url": 5,
+            "state": "FLAGGED",
+            "reason": "Suspicious activity detected",
+            "last_checked": "2024-05-14T10:00:00Z"
+        }
+    },
+    {
+        "model": "url.urlstatus",
+        "pk": 6,
+        "fields": {
+            "url": 6,
+            "state": "ACTIVE",
+            "reason": null,
+            "last_checked": "2024-05-14T10:00:00Z"
+        }
+    },
+    {
+        "model": "url.urlstatus",
+        "pk": 7,
+        "fields": {
+            "url": 7,
+            "state": "ACTIVE",
+            "reason": null,
+            "last_checked": "2024-05-14T10:00:00Z"
+        }
+    },
+    {
+        "model": "url.urlstatus",
+        "pk": 8,
+        "fields": {
+            "url": 8,
+            "state": "ACTIVE",
+            "reason": null,
+            "last_checked": "2024-05-14T10:00:00Z"
+        }
+    },
+    {
+        "model": "url.urlstatus",
+        "pk": 9,
+        "fields": {
+            "url": 9,
+            "state": "EXPIRED",
+            "reason": "Expiry date reached",
+            "last_checked": "2024-05-14T10:00:00Z"
+        }
+    },
+    {
+        "model": "url.urlstatus",
+        "pk": 10,
+        "fields": {
+            "url": 10,
+            "state": "ACTIVE",
+            "reason": null,
+            "last_checked": "2024-05-14T10:0:00Z"
+        }
+    },
+    {
+        "model": "analytics.visit",
+        "pk": 1,
+        "fields": {
+            "url": 1,
+            "timestamp": "2024-05-01T08:30:00Z",
+            "hashed_ip": "a1b2c3d4e5f67890",
+            "referer": "https://search.example.com",
+            "geolocation": "New York, US",
+            "browser": "Chrome",
+            "operating_system": "Windows",
+            "device": "Desktop",
+            "new_visitor": true
+        }
+    },
+    {
+        "model": "analytics.visit",
+        "pk": 2,
+        "fields": {
+            "url": 1,
+            "timestamp": "2024-05-01T12:45:00Z",
+            "hashed_ip": "f0e9d8c7b6a54321",
+            "referer": "https://social.example.com",
+            "geolocation": "London, UK",
+            "browser": "Firefox",
+            "operating_system": "Linux",
+            "device": "Desktop",
+            "new_visitor": false
+        }
+    },
+    {
+        "model": "analytics.visit",
+        "pk": 3,
+        "fields": {
+            "url": 2,
+            "timestamp": "2024-05-02T09:15:00Z",
+            "hashed_ip": "1234abcd5678efgh",
+            "referer": null,
+            "geolocation": "Tokyo, JP",
+            "browser": "Safari",
+            "operating_system": "iOS",
+            "device": "Mobile",
+            "new_visitor": true
+        }
+    },
+    {
+        "model": "analytics.visit",
+        "pk": 4,
+        "fields": {
+            "url": 3,
+            "timestamp": "2024-05-03T14:20:00Z",
+            "hashed_ip": "ijkl9012mnop3456",
+            "referer": "https://marketing.example.com",
+            "geolocation": "Sydney, AU",
+            "browser": "Chrome",
+            "operating_system": "Android",
+            "device": "Mobile",
+            "new_visitor": false
+        }
+    },
+    {
+        "model": "analytics.visit",
+        "pk": 5,
+        "fields": {
+            "url": 1,
+            "timestamp": "2024-05-04T16:30:00Z",
+            "hashed_ip": "qrst7890uvwx1234",
+            "referer": "https://external-link.com",
+            "geolocation": "Berlin, DE",
+            "browser": "Edge",
+            "operating_system": "Windows",
+            "device": "Desktop",
+            "new_visitor": false
+        }
+    },
+    {
+        "model": "analytics.visit",
+        "pk": 6,
+        "fields": {
+            "url": 2,
+            "timestamp": "2024-05-05T10:15:00Z",
+            "hashed_ip": "mnop5678qrst9012",
+            "referer": "https://google.com",
+            "geolocation": "Paris, FR",
+            "browser": "Safari",
+            "operating_system": "macOS",
+            "device": "Desktop",
+            "new_visitor": true
+        }
+    },
+    {
+        "model": "analytics.visit",
+        "pk": 7,
+        "fields": {
+            "url": 3,
+            "timestamp": "2024-05-05T14:20:00Z",
+            "hashed_ip": "wxyz3456abcd7890",
+            "referer": "https://facebook.com",
+            "geolocation": "Sydney, AU",
+            "browser": "Chrome",
+            "operating_system": "Android",
+            "device": "Mobile",
+            "new_visitor": false
+        }
+    },
+    {
+        "model": "analytics.visit",
+        "pk": 8,
+        "fields": {
+            "url": 4,
+            "timestamp": "2024-05-06T09:45:00Z",
+            "hashed_ip": "efgh1234ijkl5678",
+            "referer": "https://twitter.com",
+            "geolocation": "Tokyo, JP",
+            "browser": "Firefox",
+            "operating_system": "Windows",
+            "device": "Desktop",
+            "new_visitor": true
+        }
+    },
+    {
+        "model": "analytics.visit",
+        "pk": 9,
+        "fields": {
+            "url": 5,
+            "timestamp": "2024-05-06T13:10:00Z",
+            "hashed_ip": "uvwx9012yzab3456",
+            "referer": "https://linkedin.com",
+            "geolocation": "London, UK",
+            "browser": "Chrome",
+            "operating_system": "iOS",
+            "device": "Mobile",
+            "new_visitor": false
+        }
+    },
+    {
+        "model": "analytics.visit",
+        "pk": 10,
+        "fields": {
+            "url": 6,
+            "timestamp": "2024-05-07T11:30:00Z",
+            "hashed_ip": "cdef7890ghij1234",
+            "referer": "https://bing.com",
+            "geolocation": "Toronto, CA",
+            "browser": "Edge",
+            "operating_system": "Windows",
+            "device": "Desktop",
+            "new_visitor": true
+        }
+    },
+    {
+        "model": "analytics.visit",
+        "pk": 11,
+        "fields": {
+            "url": 6,
+            "timestamp": "2024-05-07T15:45:00Z",
+            "hashed_ip": "klmn5678opqr9012",
+            "referer": "https://direct",
+            "geolocation": "Mexico City, MX",
+            "browser": "Chrome",
+            "operating_system": "Android",
+            "device": "Mobile",
+            "new_visitor": false
+        }
+    },
+    {
+        "model": "analytics.visit",
+        "pk": 12,
+        "fields": {
+            "url": 7,
+            "timestamp": "2024-05-08T08:20:00Z",
+            "hashed_ip": "stuv3456wxyz7890",
+            "referer": "https://instagram.com",
+            "geolocation": "São Paulo, BR",
+            "browser": "Safari",
+            "operating_system": "iOS",
+            "device": "Mobile",
+            "new_visitor": true
+        }
+    },
+    {
+        "model": "analytics.visit",
+        "pk": 13,
+        "fields": {
+            "url": 8,
+            "timestamp": "2024-05-08T12:35:00Z",
+            "hashed_ip": "abcd1234efgh5678",
+            "referer": "https://stackoverflow.com",
+            "geolocation": "New Delhi, IN",
+            "browser": "Firefox",
+            "operating_system": "Linux",
+            "device": "Desktop",
+            "new_visitor": false
+        }
+    },
+    {
+        "model": "analytics.visit",
+        "pk": 14,
+        "fields": {
+            "url": 9,
+            "timestamp": "2024-05-09T16:50:00Z",
+            "hashed_ip": "ijkl9012mnop3456",
+            "referer": "https://youtube.com",
+            "geolocation": "Seoul, KR",
+            "browser": "Chrome",
+            "operating_system": "Windows",
+            "device": "Desktop",
+            "new_visitor": true
+        }
+    },
+    {
+        "model": "analytics.visit",
+        "pk": 15,
+        "fields": {
+            "url": 10,
+            "timestamp": "2024-05-10T07:15:00Z",
+            "hashed_ip": "qrst7890uvwx1234",
+            "referer": "https://pinterest.com",
+            "geolocation": "Amsterdam, NL",
+            "browser": "Safari",
+            "operating_system": "macOS",
+            "device": "Desktop",
+            "new_visitor": false
+        }
+    },
+    {
+        "model": "admin_panel.auditlog",
+        "pk": 1,
+        "fields": {
+            "action": "CREATE",
+            "timestamp": "2024-05-01T10:00:00Z",
+            "user": 1,
+            "content_type": "url.url",
+            "content_id": "1",
+            "ip_address": "192.168.1.100",
+            "changes": {
+                "long_url": "https://www.google.com",
+                "short_url": "abc123de"
+            },
+            "successful": true
+        }
+    },
+    {
+        "model": "admin_panel.auditlog",
+        "pk": 2,
+        "fields": {
+            "action": "UPDATE",
+            "timestamp": "2024-05-02T11:30:00Z",
+            "user": 2,
+            "content_type": "url.url",
+            "content_id": "2",
+            "ip_address": "192.168.1.101",
+            "changes": {
+                "expiry_date": "2025-02-20T15:30:00Z"
+            },
+            "successful": true
+        }
+    },
+    {
+        "model": "admin_panel.auditlog",
+        "pk": 3,
+        "fields": {
+            "action": "DELETE",
+            "timestamp": "2024-05-03T14:45:00Z",
+            "user": 1,
+            "content_type": "url.url",
+            "content_id": "99",
+            "ip_address": "192.168.1.100",
+            "changes": {},
+            "successful": false
+        }
+    },
+    {
+        "model": "admin_panel.auditlog",
+        "pk": 4,
+        "fields": {
+            "action": "GET",
+            "timestamp": "2024-05-04T09:20:00Z",
+            "user": 3,
+            "content_type": "analytics.visit",
+            "content_id": "1",
+            "ip_address": "192.168.1.102",
+            "changes": {},
+            "successful": true
+        }
+    },
+    {
+        "model": "admin_panel.auditlog",
+        "pk": 5,
+        "fields": {
+            "action": "CREATE",
+            "timestamp": "2024-05-05T16:10:00Z",
+            "user": 2,
+            "content_type": "fraud.fraudincident",
+            "content_id": "1",
+            "ip_address": "192.168.1.101",
+            "changes": {
+                "incident_type": "burst",
+                "severity": "high"
+            },
+            "successful": true
+        }
+    },
+    {
+        "model": "admin_panel.auditlog",
+        "pk": 6,
+        "fields": {
+            "action": "UPDATE",
+            "timestamp": "2024-05-06T09:30:00Z",
+            "user": 1,
+            "content_type": "url.url",
+            "content_id": "6",
+            "ip_address": "192.168.1.100",
+            "changes": {
+                "expiry_date": "2025-01-20T09:30:00Z"
+            },
+            "successful": true
+        }
+    },
+    {
+        "model": "admin_panel.auditlog",
+        "pk": 7,
+        "fields": {
+            "action": "GET",
+            "timestamp": "2024-05-06T14:20:00Z",
+            "user": 3,
+            "content_type": "url.url",
+            "content_id": "7",
+            "ip_address": "192.168.1.102",
+            "changes": {},
+            "successful": true
+        }
+    },
+    {
+        "model": "admin_panel.auditlog",
+        "pk": 8,
+        "fields": {
+            "action": "CREATE",
+            "timestamp": "2024-05-07T11:45:00Z",
+            "user": 2,
+            "content_type": "analytics.visit",
+            "content_id": "10",
+            "ip_address": "192.168.101.100",
+            "changes": {
+                "url_id": 6,
+                "geolocation": "Toronto, CA"
+            },
+            "successful": true
+        }
+    },
+    {
+        "model": "admin_panel.auditlog",
+        "pk": 9,
+        "fields": {
+            "action": "UPDATE",
+            "timestamp": "2024-05-07T16:00:00Z",
+            "user": 1,
+            "content_type": "url.urlstatus",
+            "content_id": "9",
+            "ip_address": "192.168.1.100",
+            "changes": {
+                "state": "EXPIRED"
+            },
+            "successful": true
+        }
+    },
+    {
+        "model": "admin_panel.auditlog",
+        "pk": 10,
+        "fields": {
+            "action": "DELETE",
+            "timestamp": "2024-05-08T13:15:00Z",
+            "user": 2,
+            "content_type": "url.redirectionrule",
+            "content_id": "99",
+            "ip_address": "192.168.1.101",
+            "changes": {},
+            "successful": false
+        }
+    },
+    {
+        "model": "fraud.fraudincident",
+        "pk": 1,
+        "fields": {
+            "incident_type": "burst",
+            "details": {
+                "ip": "192.168.1.200",
+                "url": "/api/shorten",
+                "count": 150,
+                "timeframe": "1 minute"
+            },
+            "severity": "high",
+            "user": 4,
+            "url": 4,
+            "created_at": "2024-05-01T12:00:00Z"
+        }
+    },
+    {
+        "model": "fraud.fraudincident",
+        "pk": 2,
+        "fields": {
+            "incident_type": "throttle",
+            "details": {
+                "ip": "192.168.1.201",
+                "user_id": 3,
+                "endpoint": "/api/shorten",
+                "attempts": 50
+            },
+            "severity": "medium",
+            "user": 3,
+            "url": null,
+            "created_at": "2024-05-02T14:30:00Z"
+        }
+    },
+    {
+        "model": "fraud.fraudincident",
+        "pk": 3,
+        "fields": {
+            "incident_type": "suspicious_ua",
+            "details": {
+                "user_agent": "MaliciousBot/1.0",
+                "ip": "192.168.1.202",
+                "url_accessed": "/api/stats"
+            },
+            "severity": "low",
+            "user": null,
+            "url": 2,
+            "created_at": "2024-05-03T16:45:00Z"
+        }
+    },
+    {
+        "model": "fraud.fraudincident",
+        "pk": 4,
+        "fields": {
+            "incident_type": "burst",
+            "details": {
+                "ip": "192.168.1.203",
+                "url": "/api/shorten",
+                "count": 200,
+                "timeframe": "30 seconds"
+            },
+            "severity": "high",
+            "user": 3,
+            "url": 6,
+            "created_at": "2024-05-06T15:20:00Z"
+        }
+    },
+    {
+        "model": "fraud.fraudincident",
+        "pk": 5,
+        "fields": {
+            "incident_type": "throttle",
+            "details": {
+                "ip": "192.168.1.204",
+                "user_id": 2,
+                "endpoint": "/api/bulk-shorten",
+                "attempts": 75
+            },
+            "severity": "medium",
+            "user": 2,
+            "url": 8,
+            "created_at": "2024-05-07T10:45:00Z"
+        }
+    },
+    {
+        "model": "system.systemconfiguration",
+        "pk": 1,
+        "fields": {
+            "key": "SEED_MAX_URLS_PER_USER",
+            "value": "100",
+            "description": "Maximum number of URLs a user can create",
+            "updated_at": "2024-05-01T10:00:00Z"
+        }
+    },
+    {
+        "model": "system.systemconfiguration",
+        "pk": 2,
+        "fields": {
+            "key": "SEED_URL_EXPIRY_DAYS",
+            "value": "365",
+            "description": "Default number of days before a URL expires",
+            "updated_at": "2024-05-01T10:00:00Z"
+        }
+    },
+    {
+        "model": "system.systemconfiguration",
+        "pk": 3,
+        "fields": {
+            "key": "SEED_BURST_PROTECTION_LIMIT",
+            "value": "10",
+            "description": "Number of requests allowed per minute before burst protection",
+            "updated_at": "2024-05-01T10:0:00Z"
+        }
+    },
+    {
+        "model": "system.systemconfiguration",
+        "pk": 4,
+        "fields": {
+            "key": "SEED_MIN_SHORT_CODE_LENGTH",
+            "value": "6",
+            "description": "Minimum length for generated short codes",
+            "updated_at": "2024-05-01T10:00:00Z"
+        }
+    },
+    {
+        "model": "system.systemconfiguration",
+        "pk": 5,
+        "fields": {
+            "key": "SEED_MAX_VISITS_PER_DAY",
+            "value": "10000",
+            "description": "Maximum visits allowed per day before rate limiting",
+            "updated_at": "2024-05-01T10:00:00Z"
+        }
+    },
+    {
+        "model": "system.systemconfiguration",
+        "pk": 6,
+        "fields": {
+            "key": "SEED_RETENTION_PERIOD_DAYS",
+            "value": "365",
+            "description": "Number of days to retain analytics data",
+            "updated_at": "2024-05-01T10:00:00Z"
+        }
+    },
+    {
+        "model": "redirection.redirectionrule",
+        "pk": 1,
+        "fields": {
+            "name": "SEED_Mobile Redirect",
+            "url": 1,
+            "conditions": {
+                "device_type": "mobile"
+            },
+            "target_url": "https://m.google.com",
+            "priority": 10,
+            "is_active": true,
+            "created_at": "2024-05-01T10:00:00Z",
+            "updated_at": "2024-05-01T10:00:00Z"
+        }
+    },
+    {
+        "model": "redirection.redirectionrule",
+        "pk": 2,
+        "fields": {
+            "name": "SEED_US Region Redirect",
+            "url": 2,
+            "conditions": {
+                "country": "US"
+            },
+            "target_url": "https://us.github.com/example/repo",
+            "priority": 5,
+            "is_active": true,
+            "created_at": "2024-05-02T11:00:00Z",
+            "updated_at": "2024-05-02T11:00:00Z"
+        }
+    },
+    {
+        "model": "redirection.redirectionrule",
+        "pk": 3,
+        "fields": {
+            "name": "SEED_Browser Specific Redirect",
+            "url": 3,
+            "conditions": {
+                "browser": "IE"
+            },
+            "target_url": "https://www.company.com/upgrade-browser",
+            "priority": 15,
+            "is_active": true,
+            "created_at": "2024-05-03T12:00:00Z",
+            "updated_at": "2024-05-03T12:00:00Z"
+        }
+    },
+    {
+        "model": "redirection.redirectionrule",
+        "pk": 4,
+        "fields": {
+            "name": "SEED_Time-based Redirect",
+            "url": 1,
+            "conditions": {
+                "time_range": "weekend"
+            },
+            "target_url": "https://weekend.google.com",
+            "priority": 7,
+            "is_active": false,
+            "created_at": "2024-05-04T13:00:00Z",
+            "updated_at": "2024-05-04T13:00:00Z"
+        }
+    },
+    {
+        "model": "redirection.redirectionrule",
+        "pk": 5,
+        "fields": {
+            "name": "SEED_Language Redirect",
+            "url": 5,
+            "conditions": {
+                "language": "es"
+            },
+            "target_url": "https://es.blog.example.com/post",
+            "priority": 12,
+            "is_active": true,
+            "created_at": "2024-05-05T14:00:00Z",
+            "updated_at": "2024-05-05T14:00:00Z"
+        }
+    },
+    {
+        "model": "redirection.redirectionrule",
+        "pk": 6,
+        "fields": {
+            "name": "SEED_Mobile Device Redirect",
+            "url": 7,
+            "conditions": {
+                "device_type": "mobile"
+            },
+            "target_url": "https://m.social.example.com/profile",
+            "priority": 8,
+            "is_active": true,
+            "created_at": "2024-05-06T15:30:00Z",
+            "updated_at": "2024-05-06T15:30:00Z"
+        }
+    },
+    {
+        "model": "redirection.redirectionrule",
+        "pk": 7,
+        "fields": {
+            "name": "SEED_High-Traffic Redirect",
+            "url": 6,
+            "conditions": {
+                "referer": "high-traffic-site.com"
+            },
+            "target_url": "https://special-offer.store.example.com/products",
+            "priority": 5,
+            "is_active": true,
+            "created_at": "2024-05-07T16:15:00Z",
+            "updated_at": "2024-05-07T16:15:00Z"
+        }
+    }
+]
