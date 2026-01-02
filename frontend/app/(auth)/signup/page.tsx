@@ -26,19 +26,15 @@ export default function Signup() {
         },
     });
     async function onSubmit(data: z.infer<typeof signupFormSchema>) {
-        const { data: response, status } = await signupAction(
-            data.email,
-            data.username,
-            data.password
-        );
-        if (status == 201) {
-            toast.success("account has been created");
+        const result = await signupAction(data);
+        if (result.success && result.status === 201) {
+            toast.success("Account has been created");
             setTimeout(() => {
                 redirect("/");
             }, 2000);
         } else {
-            toast.error("an error has occurred");
-            console.error(response);
+            toast.error(result.message || "An error has occurred");
+            console.error(result);
         }
     }
     return (

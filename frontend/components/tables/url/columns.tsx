@@ -1,6 +1,15 @@
 "use client";
+import { Button } from "@/components/ui/button";
+import {
+    Dialog,
+    DialogContent,
+    DialogTitle,
+    DialogTrigger,
+} from "@/components/ui/dialog";
+import { copyToClipboard } from "@/lib/clipboard";
 import { ColumnDef } from "@tanstack/react-table";
-import { BarChart, Copy, Edit2, QrCode } from "lucide-react";
+import { BarChart, Copy, Download, Edit2, QrCode } from "lucide-react";
+import Image from "next/image";
 export type Url = {
     id: string;
     name: string;
@@ -10,7 +19,28 @@ export type Url = {
     created_at: string;
     clicks: number;
 };
-
+const qrCodeDialog = (
+    <Dialog>
+        <DialogTrigger asChild>
+            <button className="hover:text-white transition-colors">
+                <QrCode size={18} />
+            </button>
+        </DialogTrigger>
+        <DialogContent>
+            <DialogTitle>Qr Code</DialogTitle>
+            <Image
+                width={300}
+                height={300}
+                alt="qrcode"
+                className="place-self-center"
+                src="https://placehold.co/1000/png"
+            />
+            <Button size="lg">
+                Download PNG <Download />
+            </Button>
+        </DialogContent>
+    </Dialog>
+);
 export const columns: ColumnDef<Url>[] = [
     {
         accessorKey: "linkInformation",
@@ -61,18 +91,20 @@ export const columns: ColumnDef<Url>[] = [
     {
         id: "actions",
         header: "ACTIONS",
-        cell: () => {
+        cell: ({ row }) => {
+            const data = row.original;
             return (
                 <div className="flex items-center gap-4 text-muted-foreground">
                     <button className="hover:text-white transition-colors">
-                        <Copy size={18} />
+                        <Copy
+                            size={18}
+                            onClick={() => copyToClipboard(data.short_url)}
+                        />
                     </button>
                     <button className="hover:text-white transition-colors">
                         <Edit2 size={18} />
                     </button>
-                    <button className="hover:text-white transition-colors">
-                        <QrCode size={18} />
-                    </button>
+                    {qrCodeDialog}
                 </div>
             );
         },

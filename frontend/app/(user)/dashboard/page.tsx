@@ -1,9 +1,9 @@
 "use client";
 
 import AnalyticCards from "@/components/user-pages/dashboard/AnalyticCards";
-import { DataTable } from "./data-table";
-import { urlDummyData } from "./dummy-data";
-import { columns } from "./columns";
+import { UrlDataTable } from "../../../components/tables/url/data-table";
+import { urlDummyData } from "@/components/tables/url/dummy-data";
+import { columns } from "@/components/tables/url/columns";
 
 export default function UserDashboard() {
     return (
@@ -15,7 +15,7 @@ export default function UserDashboard() {
                 </p>
             </div>
             <AnalyticCards />
-            <DataTable columns={columns} data={urlDummyData} />
+            <UrlDataTable columns={columns} data={urlDummyData} />
         </div>
     );
 }

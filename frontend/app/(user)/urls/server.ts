@@ -1,17 +1,21 @@
-"use server";
-
 import axiosInstance from "@/app/api/axiosInstance";
 import { AxiosError } from "axios";
-import { SignupRequest } from "@/api-types";
 
-export async function signupAction(data: SignupRequest) {
+export async function fetchUrls({
+    limit,
+    page,
+}: {
+    limit: string;
+    page: string;
+}) {
     try {
-        const response = await axiosInstance.post("/auth/users/", data);
-
+        const response = await axiosInstance.get(
+            `/url?limit=${limit}&page${page}`
+        );
         return {
-            success: true,
-            data: response.data,
+            data: response.data.data,
             status: response.status,
+            success: response.data.success,
         };
     } catch (e: unknown) {
         if (e instanceof AxiosError) {
