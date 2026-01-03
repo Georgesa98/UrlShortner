@@ -80,6 +80,7 @@ class Base(Configuration):
         "csp",
         "django_celery_beat",
         "djoser",
+        "config",
         "api",
         "api.custom_auth",
         "api.url",

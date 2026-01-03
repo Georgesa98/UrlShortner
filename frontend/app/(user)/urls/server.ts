@@ -10,7 +10,7 @@ export async function fetchUrls({
 }) {
     try {
         const response = await axiosInstance.get(
-            `/url?limit=${limit}&page${page}`
+            `/url/?limit=${limit}&page${page}`
         );
         return {
             data: response.data.data,

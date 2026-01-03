@@ -27,8 +27,6 @@ export default function Login() {
             username: data.username,
             password: data.password,
         });
-        console.log(message);
-
         if (status === 200) {
             toast.success("login successful");
             setTimeout(() => {

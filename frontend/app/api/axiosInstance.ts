@@ -10,15 +10,9 @@ const axiosInstance = axios.create({
     },
 });
 axiosInstance.interceptors.request.use(async (config) => {
-    try {
-        const cookiesStore = await cookies();
-        const allCookies = cookiesStore.toString();
-        if (allCookies) {
-            config.headers.Cookie = allCookies;
-        }
-    } catch (err) {
-        console.warn("Axios-Server: No request context found for cookies.");
-    }
+    const { cookies } = await import("next/headers");
+    const cookieStore = await cookies();
+    config.headers.Cookie = cookieStore.toString();
     return config;
 });
 export default axiosInstance;

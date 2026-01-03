@@ -173,7 +173,7 @@ class ListUrlsView(GenericAPIView):
             result = UrlService.fetch_urls_with_filter_and_pagination(
                 limit, page, url_status, user_id
             )
-            serializer = ShortenUrlSerializer(result.object_list, many=True)
+            serializer = ResponseUrlSerializer(result.object_list, many=True)
             data = {
                 "urls": serializer.data,
                 "pagination": {

@@ -16,7 +16,5 @@ export default async function Page({
         page: (params.page as string) || "1",
         limit: (params.limit as string) || "4",
     });
-    console.log(data);
-
     return <MyUrls data={data.data} />;
 }
