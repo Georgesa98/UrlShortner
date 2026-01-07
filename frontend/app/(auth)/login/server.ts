@@ -11,14 +11,41 @@ export async function loginAction(data: LoginRequest) {
         if (djangoCookies) {
             const cookieStore = await cookies();
             djangoCookies.forEach((cookieString) => {
-                const [nameValue] = cookieString.split(";");
+                const parts = cookieString
+                    .split(";")
+                    .map((part) => part.trim());
+                const [nameValue] = parts;
                 const [name, value] = nameValue.split("=");
-                cookieStore.set(name.trim(), value.trim(), {
-                    httpOnly: true,
-                    secure: process.env.NODE_ENV === "production",
-                    sameSite: "lax",
+
+                const attributes: any = {
+                    httpOnly: false,
+                    secure: false,
+                    sameSite: "lax" as const,
                     path: "/",
+                };
+
+                parts.slice(1).forEach((part) => {
+                    const [key, val] = part.split("=").map((s) => s.trim());
+                    const lowerKey = key.toLowerCase();
+
+                    if (lowerKey === "httponly") {
+                        attributes.httpOnly = true;
+                    } else if (lowerKey === "secure") {
+                        attributes.secure = true;
+                    } else if (lowerKey === "samesite") {
+                        attributes.sameSite = val.toLowerCase();
+                    } else if (lowerKey === "path") {
+                        attributes.path = val;
+                    } else if (lowerKey === "max-age") {
+                        attributes.maxAge = parseInt(val, 10);
+                    } else if (lowerKey === "expires") {
+                        attributes.expires = new Date(val);
+                    } else if (lowerKey === "domain") {
+                        attributes.domain = val;
+                    }
                 });
+
+                cookieStore.set(name.trim(), value.trim(), attributes);
             });
         }
 

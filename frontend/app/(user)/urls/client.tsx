@@ -1,16 +1,20 @@
 "use client";
-import { ListUrlsResponse, UrlResponse } from "@/api-types";
+import { ListUrlsResponse } from "@/api-types";
 import { columns } from "@/components/tables/url/columns";
 import { UrlDataTable } from "@/components/tables/url/data-table";
-import { myUrlsDummyData } from "@/components/tables/url/dummy-data";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
-export default function MyUrls({
-    data,
-}: {
-    data: ListUrlsResponse[] | undefined;
-}) {
+export default function MyUrls({ data }: { data: ListUrlsResponse }) {
+    const router = useRouter();
+    const pathname = usePathname();
+    const searchParam = useSearchParams();
+    function handlePageChange(newPage: number) {
+        const params = new URLSearchParams(searchParam.toString());
+        params.set("page", newPage.toString());
+        router.push(`${pathname}?${params.toString()}`, { scroll: false });
+    }
     return (
         <div className="flex flex-col gap-8">
             <div className="flex justify-between">
@@ -25,7 +29,12 @@ export default function MyUrls({
                     Create New
                 </Button>
             </div>
-            <UrlDataTable columns={columns} data={myUrlsDummyData} />
+            <UrlDataTable
+                columns={columns}
+                data={data.urls}
+                pagination={data.pagination}
+                onPageChange={handlePageChange}
+            />
         </div>
     );
 }

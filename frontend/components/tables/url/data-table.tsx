@@ -1,23 +1,47 @@
 "use client";
+import { ListUrlsResponse, Pagination } from "@/api-types";
 import {
     ColumnDef,
     flexRender,
     getCoreRowModel,
     useReactTable,
 } from "@tanstack/react-table";
+import { useMemo } from "react";
 
 interface DataTableProps<TData, TValue> {
     columns: ColumnDef<TData, TValue>[];
     data: TData[];
+    pagination: Pagination;
+    onPageChange?: (page: number) => void;
 }
 export function UrlDataTable<TData, TValue>({
     columns,
     data,
+    pagination,
+    onPageChange,
 }: DataTableProps<TData, TValue>) {
+    const tablePagination = useMemo(
+        () => ({
+            pageIndex: pagination.page - 1,
+            pageSize: pagination.limit,
+        }),
+        [pagination]
+    );
     const table = useReactTable({
         data,
         columns,
+        pageCount: pagination.total_pages,
+        state: {
+            pagination: tablePagination,
+        },
+        onPaginationChange: (updater) => {
+            if (typeof updater === "function") {
+                const newState = updater(tablePagination);
+                onPageChange?.(newState.pageIndex + 1);
+            }
+        },
         getCoreRowModel: getCoreRowModel(),
+        manualPagination: true,
     });
 
     return (
@@ -64,12 +88,22 @@ export function UrlDataTable<TData, TValue>({
 
             {/* Footer / Pagination */}
             <div className="mt-4 flex items-center justify-between px-2 text-sm text-slate-500">
-                <span>Showing 1-3 of 45 links</span>
+                <span>
+                    Showing {data.length} of {pagination.total} links
+                </span>
                 <div className="flex gap-2">
-                    <button className="rounded bg-slate-800 px-3 py-1 disabled:opacity-50">
+                    <button
+                        onClick={() => table.previousPage()}
+                        disabled={!pagination.has_previous}
+                        className="rounded bg-slate-800 px-3 py-1 text-white disabled:text-muted-foreground disabled:opacity-50"
+                    >
                         Previous
                     </button>
-                    <button className="rounded bg-slate-800 px-3 py-1 text-white">
+                    <button
+                        onClick={() => table.nextPage()}
+                        disabled={!pagination.has_next}
+                        className="rounded bg-slate-800 px-3 py-1 text-white disabled:text-muted-foreground  disabled:opacity-50"
+                    >
                         Next
                     </button>
                 </div>

@@ -59,6 +59,7 @@ export interface GenerateQRCodePathParams {
 // Response Types
 export interface UrlResponse {
     id: number;
+    name: string;
     long_url: string;
     short_url: string;
     user: number;
@@ -753,4 +754,12 @@ export interface GetAuditLogsResponse {
         has_next: boolean;
         has_previous: boolean;
     };
+}
+export interface Pagination {
+    total: number;
+    page: number;
+    limit: number;
+    total_pages: number;
+    has_next: boolean;
+    has_previous: boolean;
 }

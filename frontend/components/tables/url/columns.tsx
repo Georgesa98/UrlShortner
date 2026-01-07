@@ -1,4 +1,5 @@
 "use client";
+import { UrlResponse } from "@/api-types";
 import { Button } from "@/components/ui/button";
 import {
     Dialog,
@@ -6,19 +7,13 @@ import {
     DialogTitle,
     DialogTrigger,
 } from "@/components/ui/dialog";
+import useHostname from "@/hooks/useHostname";
 import { copyToClipboard } from "@/lib/clipboard";
+import { formatToClientDate } from "@/lib/formatToClientDate";
 import { ColumnDef } from "@tanstack/react-table";
 import { BarChart, Copy, Download, Edit2, QrCode } from "lucide-react";
 import Image from "next/image";
-export type Url = {
-    id: string;
-    name: string;
-    short_url: string;
-    long_url: string;
-    status: "ACTIVE" | "EXPIRED" | "FLAGGED" | "DISABLED" | "BROKEN";
-    created_at: string;
-    clicks: number;
-};
+
 const qrCodeDialog = (
     <Dialog>
         <DialogTrigger asChild>
@@ -41,7 +36,7 @@ const qrCodeDialog = (
         </DialogContent>
     </Dialog>
 );
-export const columns: ColumnDef<Url>[] = [
+export const columns: ColumnDef<UrlResponse>[] = [
     {
         accessorKey: "linkInformation",
         header: "LINK INFORMATION",
@@ -51,7 +46,7 @@ export const columns: ColumnDef<Url>[] = [
                 <div className="flex flex-col">
                     <div className="flex items-center gap-2">
                         <span className="font-bold">{data.name}</span>
-                        {data.status === "ACTIVE" && (
+                        {data.url_status.state === "ACTIVE" && (
                             <span className="rounded-lg bg-green-500/10 px-1.5 py-0.5 text-[10px] font-bold text-green-500">
                                 ACTIVE
                             </span>
@@ -72,18 +67,18 @@ export const columns: ColumnDef<Url>[] = [
         header: "CREATED AT",
         cell: ({ row }) => (
             <span className="text-muted-foreground">
-                {row.getValue("created_at")}
+                {formatToClientDate(row.getValue("created_at"))}
             </span>
         ),
     },
     {
-        accessorKey: "clicks",
+        accessorKey: "visits",
         header: "CLICKS",
         cell: ({ row }) => (
             <div className="flex items-center gap-2">
                 <BarChart size={14} className="text-muted-foreground" />
                 <span className="text-muted-foreground">
-                    {row.getValue("clicks")}
+                    {row.getValue("visits")}
                 </span>
             </div>
         ),
