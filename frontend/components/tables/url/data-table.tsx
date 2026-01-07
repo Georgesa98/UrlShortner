@@ -93,14 +93,18 @@ export function UrlDataTable<TData, TValue>({
                 </span>
                 <div className="flex gap-2">
                     <button
-                        onClick={() => table.previousPage()}
+                        onClick={() => {
+                            table.previousPage();
+                        }}
                         disabled={!pagination.has_previous}
                         className="rounded bg-slate-800 px-3 py-1 text-white disabled:text-muted-foreground disabled:opacity-50"
                     >
                         Previous
                     </button>
                     <button
-                        onClick={() => table.nextPage()}
+                        onClick={() => {
+                            table.nextPage();
+                        }}
                         disabled={!pagination.has_next}
                         className="rounded bg-slate-800 px-3 py-1 text-white disabled:text-muted-foreground  disabled:opacity-50"
                     >

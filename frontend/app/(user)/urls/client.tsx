@@ -14,6 +14,7 @@ export default function MyUrls({ data }: { data: ListUrlsResponse }) {
         const params = new URLSearchParams(searchParam.toString());
         params.set("page", newPage.toString());
         router.push(`${pathname}?${params.toString()}`, { scroll: false });
+        router.refresh();
     }
     return (
         <div className="flex flex-col gap-8">
