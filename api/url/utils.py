@@ -6,10 +6,10 @@ import qrcode
 
 def generate_qrcode(url: str) -> memoryview:
     qr = qrcode.QRCode(
-        version=2,
+        version=None,
         error_correction=qrcode.constants.ERROR_CORRECT_L,
-        box_size=10,
-        border=0,
+        box_size=20,
+        border=4,
     )
     qr.add_data(url)
     qr.make(fit=True)

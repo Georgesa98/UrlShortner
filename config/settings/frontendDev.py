@@ -1,5 +1,5 @@
 import environ
-from config.settings.base import Base
+from config.settings.dev import Dev
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -16,7 +16,7 @@ except FileNotFoundError:
     print("Warning: .env file not found. Using environment variables directly.")
 
 
-class FrontendDev(Base):
+class FrontendDev(Dev):
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.postgresql",
@@ -27,3 +27,5 @@ class FrontendDev(Base):
             "PORT": env("DATABASE_PORT"),
         }
     }
+    CORS_ALLOW_ALL_ORIGINS = True
+    CORS_ALLOW_CREDENTIALS = True

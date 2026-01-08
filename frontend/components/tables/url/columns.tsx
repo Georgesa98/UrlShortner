@@ -1,41 +1,11 @@
 "use client";
 import { UrlResponse } from "@/api-types";
-import { Button } from "@/components/ui/button";
-import {
-    Dialog,
-    DialogContent,
-    DialogTitle,
-    DialogTrigger,
-} from "@/components/ui/dialog";
-import useHostname from "@/hooks/useHostname";
 import { copyToClipboard } from "@/lib/clipboard";
 import { formatToClientDate } from "@/lib/formatToClientDate";
 import { ColumnDef } from "@tanstack/react-table";
-import { BarChart, Copy, Download, Edit2, QrCode } from "lucide-react";
-import Image from "next/image";
+import { BarChart, Copy, Edit2 } from "lucide-react";
+import QrCodeDialog from "./QrCodeDialog";
 
-const qrCodeDialog = (
-    <Dialog>
-        <DialogTrigger asChild>
-            <button className="hover:text-white transition-colors">
-                <QrCode size={18} />
-            </button>
-        </DialogTrigger>
-        <DialogContent>
-            <DialogTitle>Qr Code</DialogTitle>
-            <Image
-                width={300}
-                height={300}
-                alt="qrcode"
-                className="place-self-center"
-                src="https://placehold.co/1000/png"
-            />
-            <Button size="lg">
-                Download PNG <Download />
-            </Button>
-        </DialogContent>
-    </Dialog>
-);
 export const columns: ColumnDef<UrlResponse>[] = [
     {
         accessorKey: "linkInformation",
@@ -99,7 +69,7 @@ export const columns: ColumnDef<UrlResponse>[] = [
                     <button className="hover:text-white transition-colors">
                         <Edit2 size={18} />
                     </button>
-                    {qrCodeDialog}
+                    <QrCodeDialog shortUrl={data.short_url} />
                 </div>
             );
         },

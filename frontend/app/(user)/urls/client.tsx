@@ -31,6 +31,7 @@ export default function MyUrls({ data }: { data: ListUrlsResponse }) {
                 </Button>
             </div>
             <UrlDataTable
+                control={true}
                 columns={columns}
                 data={data.urls}
                 pagination={data.pagination}

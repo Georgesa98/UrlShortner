@@ -67,6 +67,7 @@ class Base(Configuration):
     # Application definition
 
     INSTALLED_APPS = [
+        "corsheaders",
         "django.contrib.admin",
         "django.contrib.auth",
         "django.contrib.contenttypes",
@@ -95,13 +96,14 @@ class Base(Configuration):
 
     MIDDLEWARE = [
         "django.middleware.security.SecurityMiddleware",
+        "csp.middleware.CSPMiddleware",
+        "corsheaders.middleware.CorsMiddleware",
         "django.contrib.sessions.middleware.SessionMiddleware",
         "django.middleware.common.CommonMiddleware",
         "django.middleware.csrf.CsrfViewMiddleware",
         "django.contrib.auth.middleware.AuthenticationMiddleware",
         "django.contrib.messages.middleware.MessageMiddleware",
         "django.middleware.clickjacking.XFrameOptionsMiddleware",
-        "csp.middleware.CSPMiddleware",
         "api.middleware.JsonValidationMiddleware",
         "api.middleware.RateLimitHeaderMiddleware",
         "api.middleware.AuditMiddleware",

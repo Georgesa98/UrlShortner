@@ -1,5 +1,5 @@
 "use client";
-import { ListUrlsResponse, Pagination } from "@/api-types";
+import { Pagination } from "@/api-types";
 import {
     ColumnDef,
     flexRender,
@@ -13,12 +13,14 @@ interface DataTableProps<TData, TValue> {
     data: TData[];
     pagination: Pagination;
     onPageChange?: (page: number) => void;
+    control: boolean;
 }
 export function UrlDataTable<TData, TValue>({
     columns,
     data,
     pagination,
     onPageChange,
+    control,
 }: DataTableProps<TData, TValue>) {
     const tablePagination = useMemo(
         () => ({
@@ -87,31 +89,33 @@ export function UrlDataTable<TData, TValue>({
             </table>
 
             {/* Footer / Pagination */}
-            <div className="mt-4 flex items-center justify-between px-2 text-sm text-slate-500">
-                <span>
-                    Showing {data.length} of {pagination.total} links
-                </span>
-                <div className="flex gap-2">
-                    <button
-                        onClick={() => {
-                            table.previousPage();
-                        }}
-                        disabled={!pagination.has_previous}
-                        className="rounded bg-slate-800 px-3 py-1 text-white disabled:text-muted-foreground disabled:opacity-50"
-                    >
-                        Previous
-                    </button>
-                    <button
-                        onClick={() => {
-                            table.nextPage();
-                        }}
-                        disabled={!pagination.has_next}
-                        className="rounded bg-slate-800 px-3 py-1 text-white disabled:text-muted-foreground  disabled:opacity-50"
-                    >
-                        Next
-                    </button>
+            {control && (
+                <div className="mt-4 flex items-center justify-between px-2 text-sm text-slate-500">
+                    <span>
+                        Showing {data.length} of {pagination.total} links
+                    </span>
+                    <div className="flex gap-2">
+                        <button
+                            onClick={() => {
+                                table.previousPage();
+                            }}
+                            disabled={!pagination.has_previous}
+                            className="rounded bg-slate-800 px-3 py-1 text-white disabled:text-muted-foreground disabled:opacity-50"
+                        >
+                            Previous
+                        </button>
+                        <button
+                            onClick={() => {
+                                table.nextPage();
+                            }}
+                            disabled={!pagination.has_next}
+                            className="rounded bg-slate-800 px-3 py-1 text-white disabled:text-muted-foreground  disabled:opacity-50"
+                        >
+                            Next
+                        </button>
+                    </div>
                 </div>
-            </div>
+            )}
         </div>
     );
 }

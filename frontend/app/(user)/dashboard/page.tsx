@@ -16,6 +16,7 @@ export default function UserDashboard() {
             </div>
             <AnalyticCards />
             <UrlDataTable
+                control={false}
                 columns={columns}
                 data={urlDummyData}
                 pagination={{

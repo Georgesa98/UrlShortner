@@ -1,7 +1,7 @@
 "use server";
 
 import { toast } from "sonner";
-import { fetchUrls } from "./server";
+import { fetchUrlsAction } from "./server";
 import MyUrls from "./client";
 
 export default async function Page({
@@ -12,7 +12,7 @@ export default async function Page({
     }>;
 }) {
     const params = await searchParams;
-    const data = await fetchUrls({
+    const data = await fetchUrlsAction({
         page: (params.page as string) || "1",
         limit: (params.limit as string) || "4",
     });

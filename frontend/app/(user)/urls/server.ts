@@ -1,7 +1,8 @@
+"use server";
 import axiosInstance from "@/app/api/axiosInstance";
 import { AxiosError } from "axios";
 
-export async function fetchUrls({
+export async function fetchUrlsAction({
     limit,
     page,
 }: {
