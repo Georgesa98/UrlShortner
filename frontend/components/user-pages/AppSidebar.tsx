@@ -17,7 +17,9 @@ import {
 } from "../ui/sidebar";
 import NavLink from "next/link";
 import { Button } from "../ui/button";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import axiosClient from "@/app/api/axiosClient";
+import { toast } from "sonner";
 const sidebarItems = [
     { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
     { title: "My URLS", url: "/urls", icon: Link },
@@ -25,10 +27,20 @@ const sidebarItems = [
     { title: "Settings", url: "/settings", icon: Settings },
 ];
 const footerSidebarItems = [
-    { title: "Help Center", url: "/help", icon: Info },
-    { title: "Log Out", url: "#", icon: LogOut },
+    { action: "help", title: "Help Center", url: "/help", icon: Info },
+    { action: "logout", title: "Log Out", url: "#", icon: LogOut },
 ];
 export default function AppSidebar() {
+    const router = useRouter();
+    async function logout() {
+        const response = await axiosClient.post("/auth/logout/");
+        if (response.status === 200) {
+            toast.success("logged out successfully");
+            router.push("/login");
+        } else {
+            toast.error("error has occurred");
+        }
+    }
     const pathname = usePathname();
     return (
         <Sidebar>
@@ -65,7 +77,16 @@ export default function AppSidebar() {
                             <SidebarMenuItem key={item.title}>
                                 <SidebarMenuButton asChild>
                                     <NavLink href={item.url}>
-                                        <Button variant="ghost">
+                                        <Button
+                                            onClick={() => {
+                                                if (item.action === "logout") {
+                                                    console.log("asd");
+
+                                                    logout();
+                                                }
+                                            }}
+                                            variant="ghost"
+                                        >
                                             <item.icon />
                                             <span>{item.title}</span>
                                         </Button>

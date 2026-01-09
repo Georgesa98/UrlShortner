@@ -1,9 +1,10 @@
 from django.shortcuts import render
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
 from rest_framework_simplejwt.views import TokenObtainPairView
 from django.conf import settings
 from django.utils import timezone
-
-# Create your views here.
 
 
 class CookieTokenObtainPairView(TokenObtainPairView):
@@ -36,3 +37,11 @@ class CookieTokenObtainPairView(TokenObtainPairView):
             )
             response.data["message"] = "Login successful"
             return response
+
+
+class LogoutView(APIView):
+    def post(self, request):
+        response = Response({"message": "Logout successful"}, status=status.HTTP_200_OK)
+        response.delete_cookie("access_token")
+        response.delete_cookie("refresh_token")
+        return response
