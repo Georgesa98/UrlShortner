@@ -6,6 +6,7 @@ import {
     getCoreRowModel,
     useReactTable,
 } from "@tanstack/react-table";
+import { useRouter } from "next/navigation";
 import { useMemo } from "react";
 
 interface DataTableProps<TData, TValue> {
@@ -29,6 +30,7 @@ export function UrlDataTable<TData, TValue>({
         }),
         [pagination]
     );
+    const router = useRouter();
     const table = useReactTable({
         data,
         columns,
@@ -70,6 +72,10 @@ export function UrlDataTable<TData, TValue>({
                     {table.getRowModel().rows.map((row) => (
                         <tr
                             key={row.id}
+                            onClick={() => {
+                                const data = row.original;
+                                router.push(`/urls/${data.id}`);
+                            }}
                             className="group bg-[#1e293b]/30 hover:bg-[#1e293b]/50 transition-colors"
                         >
                             {row.getVisibleCells().map((cell) => (
