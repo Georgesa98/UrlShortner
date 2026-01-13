@@ -11,19 +11,44 @@ import {
     PopoverTrigger,
 } from "@/components/ui/popover";
 
-export function DatePicker() {
+interface DatePickerProps {
+    value?: Date;
+    onChange?: (date: Date | undefined) => void;
+    onBlur?: () => void;
+    id?: string;
+    name?: string;
+    "aria-invalid"?: boolean;
+}
+
+export function DatePicker({
+    value,
+    onChange,
+    onBlur,
+    id,
+    name,
+    "aria-invalid": ariaInvalid,
+    ...props
+}: DatePickerProps) {
     const [open, setOpen] = React.useState(false);
-    const [date, setDate] = React.useState<Date | undefined>(undefined);
+
+    const handleSelect = (date: Date | undefined) => {
+        onChange?.(date);
+        setOpen(false);
+    };
 
     return (
         <Popover open={open} onOpenChange={setOpen}>
             <PopoverTrigger asChild>
                 <Button
                     variant="outline"
-                    id="date"
+                    id={id}
+                    name={name}
+                    aria-invalid={ariaInvalid}
                     className="w-48 justify-between font-normal"
+                    onBlur={onBlur}
+                    {...props}
                 >
-                    {date ? date.toLocaleDateString() : "Select date"}
+                    {value ? value.toLocaleDateString() : "Select date"}
                     <ChevronDownIcon />
                 </Button>
             </PopoverTrigger>
@@ -33,12 +58,9 @@ export function DatePicker() {
             >
                 <Calendar
                     mode="single"
-                    selected={date}
+                    selected={value}
                     captionLayout="dropdown"
-                    onSelect={(date) => {
-                        setDate(date);
-                        setOpen(false);
-                    }}
+                    onSelect={handleSelect}
                 />
             </PopoverContent>
         </Popover>

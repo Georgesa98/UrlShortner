@@ -15,10 +15,12 @@ class ShortenUrlSerializer(ModelSerializer):
     expiry_date = DateTimeField(required=False, allow_null=True)
     short_url = CharField(required=False, allow_null=True, max_length=64, min_length=8)
     long_url = CharField(required=True)
+    name = CharField(required=True)
 
     class Meta:
         model = Url
         fields = [
+            "name",
             "long_url",
             "short_url",
             "user",

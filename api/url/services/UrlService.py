@@ -4,6 +4,7 @@ from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 from django.db.models import Q
+
 User = get_user_model()
 
 
@@ -36,6 +37,7 @@ class UrlService:
         user_instance = User.objects.get(pk=validated_data["user"])
         url = Url.objects.create(
             user=user_instance,
+            name=validated_data["name"],
             long_url=validated_data["long_url"],
             short_url=short_url,
             expiry_date=expiry_date,
@@ -111,7 +113,12 @@ class UrlService:
 
     @staticmethod
     def fetch_urls_with_filter_and_pagination(
-        limit: int, page: int, status: UrlStatus.State, user_id: str, date_created_order: str, query: str
+        limit: int,
+        page: int,
+        status: UrlStatus.State,
+        user_id: str,
+        date_created_order: str,
+        query: str,
     ) -> object:
         """Fetch paginated URLs for a user with optional status filtering.
 
