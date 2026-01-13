@@ -5,13 +5,22 @@ import { AxiosError } from "axios";
 export async function fetchUrlsAction({
     limit,
     page,
+    status,
+    date_order,
+    query,
 }: {
     limit: string;
     page: string;
+    status?: string;
+    date_order?: string;
+    query?: string;
 }) {
+    const queryString = query ? `&query=${query}` : "";
+    const dateOrderString = date_order ? `&date_order=${date_order}` : "";
+    const statusString = status !== "ALL" ? `&url_status=${status}` : "";
     try {
         const response = await axiosInstance.get(
-            `/url/?limit=${limit}&page=${page}`
+            `/url/?limit=${limit}&page=${page}${statusString}${dateOrderString}${queryString}`
         );
         return {
             data: response.data.data,

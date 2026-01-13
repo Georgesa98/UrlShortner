@@ -60,16 +60,24 @@ export const columns: ColumnDef<UrlResponse>[] = [
             const data = row.original;
             return (
                 <div className="flex items-center gap-4 text-muted-foreground">
-                    <button className="hover:text-white transition-colors">
-                        <Copy
-                            size={18}
-                            onClick={() => copyToClipboard(data.short_url)}
-                        />
+                    <button
+                        className="hover:text-white transition-colors"
+                        onClick={(e) => {
+                            copyToClipboard(data.short_url);
+                            e.stopPropagation();
+                        }}
+                    >
+                        <Copy size={18} />
                     </button>
-                    <button className="hover:text-white transition-colors">
+                    <button
+                        className="hover:text-white transition-colors"
+                        onClick={(e) => e.stopPropagation()}
+                    >
                         <Edit2 size={18} />
                     </button>
-                    <QrCodeDialog shortUrl={data.short_url} />
+                    <div onClick={(e) => e.stopPropagation()}>
+                        <QrCodeDialog shortUrl={data.short_url} />
+                    </div>
                 </div>
             );
         },

@@ -3,7 +3,7 @@ from api.url.services.ShortCodeService import ShortCodeService
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.contrib.auth import get_user_model
 from django.utils import timezone
-
+from django.db.models import Q
 User = get_user_model()
 
 
@@ -111,7 +111,7 @@ class UrlService:
 
     @staticmethod
     def fetch_urls_with_filter_and_pagination(
-        limit: int, page: int, status: UrlStatus.State, user_id: str
+        limit: int, page: int, status: UrlStatus.State, user_id: str, date_created_order: str, query: str
     ) -> object:
         """Fetch paginated URLs for a user with optional status filtering.
 
@@ -120,6 +120,8 @@ class UrlService:
             page (int): Page number to retrieve.
             status (UrlStatus.State): Optional status filter.
             user_id (str): ID of the user.
+            date_created_order (str): Ordering field for date created.
+            query (str): Search query for long_url, short_url, or name.
 
         Returns:
             Page: Paginated page object containing Url instances.
@@ -127,9 +129,17 @@ class UrlService:
         queryset = Url.objects.select_related("url_status", "user").filter(
             user__id=user_id
         )
+        if query:
+            queryset = queryset.filter(
+                Q(long_url__icontains=query)
+                | Q(short_url__icontains=query)
+                | Q(name__icontains=query)
+            )
         if status:
             queryset = queryset.filter(url_status__state=status)
-        queryset = queryset.order_by("-created_at")
+        if date_created_order:
+            order = "-created_at" if date_created_order == "DESC" else "created_at"
+            queryset = queryset.order_by(order)
         paginator = Paginator(queryset, limit)
         try:
             paginated_urls = paginator.page(page)

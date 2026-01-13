@@ -168,10 +168,12 @@ class ListUrlsView(GenericAPIView):
         limit = int(request.GET.get("limit", 10))
         page = int(request.GET.get("page", 1))
         url_status = request.GET.get("url_status")
+        date_order = request.GET.get("date_order")
+        query = request.GET.get("query")
         user_id = request.user.id
         try:
             result = UrlService.fetch_urls_with_filter_and_pagination(
-                limit, page, url_status, user_id
+                limit, page, url_status, user_id, date_order, query
             )
             serializer = ResponseUrlSerializer(result.object_list, many=True)
             data = {
