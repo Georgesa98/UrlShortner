@@ -37,10 +37,10 @@ export default function CreateUrlDialog({
     const [activeTab, setActiveTab] = useState<string>("single");
     const hostname = useHostname();
     const router = useRouter();
-    const batchUrlForm = useForm<z.infer<typeof createBatchLinkFormSchema>>({
+    const batchUrlForm = useForm({
         resolver: zodResolver(createBatchLinkFormSchema),
         defaultValues: {
-            urls: [],
+            urls: "" as any,
         },
     });
     const singleUrlForm = useForm<z.infer<typeof createLinkFormSchema>>({
@@ -73,7 +73,23 @@ export default function CreateUrlDialog({
     const onSubmitBatch = async (
         data: z.infer<typeof createBatchLinkFormSchema>
     ) => {
-        console.log(data);
+        const urlsToSubmit = data.urls.map((url) => ({
+            name: url.name || "",
+            long_url: url.long_url,
+            short_url: url.short_url || "",
+            expiry_date: url.expiry_date?.toISOString() || "",
+        }));
+        const { message, status } = await batchShortenUrlAction({
+            data: urlsToSubmit,
+        });
+        if (status === 201) {
+            toast.success("Batch links created successfully");
+            setTimeout(() => {
+                router.refresh();
+            }, 2000);
+        } else {
+            toast.error(message || "Failed to create batch links");
+        }
     };
     return (
         <Dialog>
@@ -225,26 +241,44 @@ export default function CreateUrlDialog({
                         </section>
                         <Separator />
                     </TabsContent>
-                    <TabsContent value="batch">
+                    <TabsContent value="batch" className="flex flex-col gap-4">
+                        <Separator className="w-screen" />
                         <Controller
                             name="urls"
                             control={batchUrlForm.control}
                             render={({ field, fieldState }) => (
                                 <Field>
+                                    <FieldLabel
+                                        htmlFor={field.name}
+                                        className="font-bold text-sm"
+                                    >
+                                        Batch URLs (JSON Format)
+                                    </FieldLabel>
                                     <Textarea
+                                        {...field}
+                                        value={
+                                            typeof field.value === "string"
+                                                ? field.value
+                                                : ""
+                                        }
+                                        onChange={(e) =>
+                                            field.onChange(e.target.value)
+                                        }
+                                        id={field.name}
+                                        aria-invalid={fieldState.invalid}
                                         className="scrollbar-none [ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden resize-none max-w-115 h-60 overflow-y-scroll"
                                         placeholder={`[
-            {
-                "name": "My Link",
-                "long_url": "https://www.example1.com",
-                "short_url": "custom1",
-                "expiry_date": "2024-12-31T23:59:59Z"
-            },
-            {
-                "name": "My Link 2",
-                "long_url": "https://www.example2.com",
-            }
-        ]`}
+    {
+        "name": "My Link",
+        "long_url": "https://www.example1.com",
+        "short_url": "custom1",
+        "expiry_date": "2024-12-31T23:59:59Z"
+    },
+    {
+        "name": "My Link 2",
+        "long_url": "https://www.example2.com"
+    }
+]`}
                                     />
                                     {fieldState.invalid && (
                                         <FieldError
@@ -254,6 +288,7 @@ export default function CreateUrlDialog({
                                 </Field>
                             )}
                         />
+                        <Separator />
                     </TabsContent>
                 </Tabs>
                 <div className="place-self-end flex items-center">

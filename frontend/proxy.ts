@@ -3,10 +3,11 @@ import axiosInstance from "./app/api/axiosInstance";
 
 export default async function proxy(request: NextRequest) {
     const { pathname } = request.nextUrl;
-    if (
-        request.headers.get("purpose") === "prefetch" ||
-        pathname.startsWith("/login")
-    ) {
+    const excludedPaths = ["/", "/login", "/register", "/redirect"];
+    const isExcluded = excludedPaths.some(
+        (path) => pathname === path || pathname.startsWith(`${path}/`)
+    );
+    if (request.headers.get("purpose") === "prefetch" || isExcluded) {
         return NextResponse.next();
     }
     const accessToken = request.cookies.get("access_token")?.value;

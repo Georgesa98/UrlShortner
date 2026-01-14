@@ -19,6 +19,7 @@ db.sqlite3
 
 # Ai Agent Docs
 .prompts
+.cursor
 
 # Logs
 logs/*.log
