@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import axiosInstance from "./app/api/axiosInstance";
-
+import { jwtVerify } from "jose";
+const SECRET_KEY = new TextEncoder().encode(process.env.JWT_SECRET);
 export default async function proxy(request: NextRequest) {
     const { pathname } = request.nextUrl;
     const excludedPaths = ["/", "/login", "/register", "/redirect"];
@@ -43,6 +44,20 @@ export default async function proxy(request: NextRequest) {
         }
     }
 
+    if (pathname.startsWith("/admin")) {
+        if (!accessToken) {
+            return NextResponse.redirect(new URL("/login", request.url));
+        }
+        try {
+            const { payload } = await jwtVerify(accessToken, SECRET_KEY);
+            if (payload.role !== "ADMIN") {
+                return NextResponse.redirect(new URL("/404", request.url));
+            }
+        } catch (error) {
+            console.error("JWT Verification failed:", error);
+            return NextResponse.redirect(new URL("/login", request.url));
+        }
+    }
     return NextResponse.next();
 }
 export const config = {

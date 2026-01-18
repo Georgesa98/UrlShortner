@@ -364,6 +364,7 @@ class Base(Configuration):
         "AUTH_HEADER_TYPES": ("Bearer",),
         "ALGORITHM": "HS256",
         "SIGNING_KEY": SECRET_KEY,
+        "TOKEN_OBTAIN_SERIALIZER": "api.custom_auth.serializer.CustomTokenObtainPairSerializer",
     }
     AUTH_USER_MODEL = "custom_auth.CustomUser"
 

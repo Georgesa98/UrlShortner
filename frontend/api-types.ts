@@ -470,16 +470,42 @@ export type BulkUserDeletionResponse = void;
 
 // Response Types
 export interface HealthCheckResponse {
-    overall_status: "healthy" | "degraded" | "unhealthy"; // or "degraded" or "unhealthy"
+    status: "healthy" | "degraded" | "unhealthy"; // or "degraded" or "unhealthy"
     components: {
-        database: "healthy" | "degraded" | "unhealthy";
-        redis: "healthy" | "degraded" | "unhealthy";
-        disk_space: "healthy" | "degraded" | "unhealthy";
-    };
-    details: {
-        database_response_time: string;
-        redis_response_time: string;
-        disk_usage: string;
+        database: {
+            status: "healthy" | "degraded" | "unhealthy";
+            latency_ms: number;
+            vendor: string;
+            database: string;
+            host: string;
+        };
+        redis: {
+            status: "healthy" | "degraded" | "unhealthy";
+            latency_ms: number;
+            host: string;
+            port: number;
+        };
+        disk: {
+            status: "healthy" | "degraded" | "unhealthy";
+            total_gb: number;
+            used_gb: number;
+            free_gb: number;
+            percent_used: number;
+        };
+        memory: {
+            status: "healthy" | "degraded" | "unhealthy";
+            total_gb: number;
+            used_gb: number;
+            free_gb: number;
+            percent_used: number;
+        };
+        celery: {
+            status: "healthy" | "degraded" | "unhealthy";
+            latency_ms: number;
+            broker_url: string;
+            broker_connected: boolean;
+            timezone: string;
+        };
     };
 }
 
@@ -521,7 +547,9 @@ export interface PlatformStatsResponse {
 export interface GrowthMetricItem {
     date: string;
     new_users?: number;
+    cumulative_users?: number;
     new_urls?: number;
+    cumulative_urls?: number;
     clicks?: number;
 }
 
@@ -536,12 +564,15 @@ export interface GrowthMetricsResponse {
 }
 
 export interface TopPerformerResponse {
-    id: number;
-    short_url: string;
-    long_url: string;
-    visits: number;
-    unique_visits: number;
-    created_at: string;
+    rank: number;
+    identifier_type: string;
+    identifier_value: string;
+    metric: string;
+    metric_value: number;
+    details: {
+        short_url: string;
+        long_url: string;
+    };
 }
 
 export interface TopPerformersResponse {
@@ -554,9 +585,14 @@ export interface PeakTimeResponse {
 }
 
 export interface PeakTimesResponse {
-    peak_times: PeakTimeResponse[];
-    busiest_day: string;
-    busiest_hour: string;
+    day: {
+        peak_day: string;
+        avg_clicks: number;
+    };
+    hour: {
+        peak_hour: string;
+        avg_clicks: number;
+    };
 }
 
 export interface GeoDistItem {

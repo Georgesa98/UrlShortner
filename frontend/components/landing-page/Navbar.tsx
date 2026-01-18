@@ -59,7 +59,13 @@ export default function Navbar() {
                     {auth?.isLoggedIn ? (
                         <NavigationMenuItem>
                             <NavigationMenuLink asChild>
-                                <Link href="/dashboard">
+                                <Link
+                                    href={
+                                        auth.isAdmin
+                                            ? "/admin/dashboard"
+                                            : "/dashboard"
+                                    }
+                                >
                                     <Button className="px-4 border-2">
                                         Dashboard
                                     </Button>

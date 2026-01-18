@@ -12,9 +12,10 @@ export async function getAuthStatus() {
 
         const { payload } = await jwtVerify(token, SECRET);
 
+        console.log(payload);
         return {
             isLoggedIn: true,
-            isAdmin: payload.role === "admin",
+            isAdmin: payload.role === "ADMIN",
             user: payload.sub,
         };
     } catch (error) {
