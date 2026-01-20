@@ -13,6 +13,33 @@ class UrlManagementService:
     """Service for administrative URL management operations."""
 
     @staticmethod
+    def urls_stats() -> dict:
+        """
+        Get statistics for all URLs.
+
+        Returns:
+            dict: Statistics for all URLs.
+        """
+        total_urls = Url.objects.count()
+        active_urls = Url.objects.filter(
+            url_status__state=UrlStatus.State.ACTIVE
+        ).count()
+        inactive_urls = Url.objects.filter(
+            Q(url_status__state=UrlStatus.State.EXPIRED)
+            | Q(url_status__state=UrlStatus.State.DISABLED)
+            | Q(url_status__state=UrlStatus.State.BROKEN)
+        ).count()
+        flagged_urls = Url.objects.filter(
+            url_status__state=UrlStatus.State.FLAGGED
+        ).count()
+        return {
+            "total_urls": total_urls,
+            "active_urls": active_urls,
+            "flagged_urls": flagged_urls,
+            "inactive_urls": inactive_urls,
+        }
+
+    @staticmethod
     def list_urls(
         limit: int = 10, page: int = 1, url_status: str = None, date_order: str = None
     ) -> dict:

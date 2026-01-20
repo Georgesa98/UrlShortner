@@ -25,7 +25,7 @@ import axiosClient from "@/app/api/axiosClient";
 import { toast } from "sonner";
 const sidebarItems = [
     { title: "Dashboard", url: "/admin/dashboard", icon: LayoutDashboard },
-    { title: "Url Management", url: "/admin/urls", icon: Link },
+    { title: "Url Management", url: "/admin/urls-management", icon: Link },
     { title: "User Management", url: "/admin/users", icon: Users },
     {
         title: "Fraud Detection",

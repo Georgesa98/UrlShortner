@@ -131,6 +131,25 @@ class BulkFlagUrlView(APIView):
             )
 
 
+class GetUrlsStatsView(APIView):
+    throttle_classes = [IPRateThrottle, UserRateThrottle]
+    authentication_classes = [CookieJWTAuthentication]
+    permission_classes = [IsAdminOrStaff]
+
+    def get(self, request):
+        try:
+            result = UrlManagementService.urls_stats()
+            return SuccessResponse(
+                data=result,
+                message="URLs stats retrieved successfully",
+                status=status.HTTP_200_OK,
+            )
+        except Exception as e:
+            return ErrorResponse(
+                message=str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
 class GetUrlDetailsView(APIView):
     throttle_classes = [IPRateThrottle, UserRateThrottle]
     authentication_classes = [CookieJWTAuthentication]

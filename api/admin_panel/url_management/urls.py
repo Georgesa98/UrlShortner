@@ -1,6 +1,7 @@
 from .views import (
     BulkUrlDeletionView,
     BulkFlagUrlView,
+    GetUrlsStatsView,
     GetUserUrlsView,
     ListUrlsView,
     UpdateUrlDestinationView,
@@ -10,6 +11,7 @@ from .views import (
 from django.urls import path
 
 urlpatterns = [
+    path("stats/", GetUrlsStatsView.as_view(), name="get-urls-stats"),
     path("bulk-delete/", BulkUrlDeletionView.as_view(), name="bulk-url-deletion"),
     path("bulk-flag/", BulkFlagUrlView.as_view(), name="bulk-flag-url"),
     path("", ListUrlsView.as_view(), name="list-urls"),
