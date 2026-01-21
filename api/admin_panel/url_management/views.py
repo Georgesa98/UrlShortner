@@ -59,10 +59,13 @@ class ListUrlsView(GenericAPIView):
     def get(self, request):
         limit = int(request.GET.get("limit", 10))
         page = int(request.GET.get("page", 1))
+        query = request.GET.get("query")
         url_status = request.GET.get("url_status")
         date_order = request.GET.get("date_order")
         try:
-            result = UrlManagementService.list_urls(limit, page, url_status, date_order)
+            result = UrlManagementService.list_urls(
+                limit, page, url_status, date_order, query
+            )
             serializer = ResponseUrlSerializer(result["urls"], many=True)
             response_data = {
                 "urls": serializer.data,
@@ -177,43 +180,6 @@ class GetUrlDetailsView(APIView):
         except Url.DoesNotExist:
             return ErrorResponse(
                 message="URL not found", status=status.HTTP_404_NOT_FOUND
-            )
-        except Exception as e:
-            return ErrorResponse(
-                message=str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
-
-
-class SearchUrlsView(GenericAPIView):
-    throttle_classes = [IPRateThrottle, UserRateThrottle]
-    authentication_classes = [CookieJWTAuthentication]
-    permission_classes = [IsAdminOrStaff]
-
-    def get(self, request):
-        try:
-            query = request.GET.get("q", "")
-            if not query:
-                return ErrorResponse(
-                    message="Query parameter 'q' is required",
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-
-            limit = int(request.GET.get("limit", 10))
-            page = int(request.GET.get("page", 1))
-
-            result = UrlManagementService.search_urls_with_pagination(
-                query, limit, page
-            )
-            serializer = ResponseUrlSerializer(result["urls"], many=True)
-
-            response_data = {
-                "urls": serializer.data,
-                "pagination": result["pagination"],
-            }
-            return SuccessResponse(
-                data=response_data,
-                message="URLs searched successfully",
-                status=status.HTTP_200_OK,
             )
         except Exception as e:
             return ErrorResponse(

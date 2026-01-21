@@ -4,13 +4,15 @@ import { AxiosError } from "axios";
 export async function listUrlsAction({
     page = 1,
     limit = 10,
+    query = "",
 }: {
     page?: number;
     limit?: number;
+    query?: string;
 }) {
     try {
         const response = await axiosInstance.get("/admin/url/", {
-            params: { page, limit },
+            params: { page, limit, query },
         });
         return {
             success: true,

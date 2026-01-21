@@ -41,7 +41,11 @@ class UrlManagementService:
 
     @staticmethod
     def list_urls(
-        limit: int = 10, page: int = 1, url_status: str = None, date_order: str = None
+        limit: int = 10,
+        page: int = 1,
+        url_status: str = None,
+        date_order: str = None,
+        query: str = None,
     ) -> dict:
         """List URLs with pagination.
 
@@ -59,6 +63,12 @@ class UrlManagementService:
             queryset = queryset.filter(url_status__state=url_status)
         if date_order:
             queryset = queryset.order_by(date_order)
+        if query:
+            queryset = queryset.filter(
+                Q(long_url__icontains=query)
+                | Q(short_url__icontains=query)
+                | Q(name__icontains=query)
+            )
         paginator = Paginator(queryset, limit)
         page_obj = paginator.get_page(page)
         return {
@@ -168,43 +178,6 @@ class UrlManagementService:
             "url": url_instance,
             "url_status": url_instance.url_status,
             "recent_clicks": recent_clicks,
-        }
-
-    @staticmethod
-    def search_urls_with_pagination(query: str, limit: int = 10, page: int = 1) -> dict:
-        """Search URLs by query with pagination.
-
-        Args:
-            query (str): Search query for long_url, short_url, or name.
-            limit (int, optional): Number of results per page. Defaults to 10.
-            page (int, optional): Page number. Defaults to 1.
-
-        Returns:
-            dict: Search results with urls and pagination info.
-        """
-        urls = (
-            Url.objects.select_related("user")
-            .select_related("url_status")
-            .filter(
-                Q(long_url__icontains=query)
-                | Q(short_url__icontains=query)
-                | Q(name__icontains=query)
-            )
-        )
-
-        paginator = Paginator(urls, limit)
-        page_obj = paginator.get_page(page)
-
-        return {
-            "urls": page_obj.object_list,
-            "pagination": {
-                "total": paginator.count,
-                "page": page_obj.number,
-                "limit": paginator.per_page,
-                "total_pages": paginator.num_pages,
-                "has_next": page_obj.has_next(),
-                "has_previous": page_obj.has_previous(),
-            },
         }
 
     @staticmethod

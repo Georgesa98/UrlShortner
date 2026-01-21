@@ -13,10 +13,9 @@ import {
 } from "@/components/ui/select";
 import { Search } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export default function MyUrls({ data }: { data: ListUrlsResponse }) {
-    console.log(data);
     const router = useRouter();
     const pathname = usePathname();
     const searchParam = useSearchParams();
