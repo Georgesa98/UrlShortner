@@ -3,7 +3,6 @@ from .views import (
     ToggleBanUserView,
     BulkUserDeletionView,
     GetUserDetailsView,
-    SearchUsersView,
 )
 from django.urls import path
 
@@ -16,5 +15,4 @@ urlpatterns = [
         GetUserDetailsView.as_view(),
         name="get-user-details",
     ),
-    path("search/", SearchUsersView.as_view(), name="search-users"),
 ]

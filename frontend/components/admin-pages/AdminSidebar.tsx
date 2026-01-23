@@ -26,7 +26,7 @@ import { toast } from "sonner";
 const sidebarItems = [
     { title: "Dashboard", url: "/admin/dashboard", icon: LayoutDashboard },
     { title: "Url Management", url: "/admin/urls-management", icon: Link },
-    { title: "User Management", url: "/admin/users", icon: Users },
+    { title: "User Management", url: "/admin/user-management", icon: Users },
     {
         title: "Fraud Detection",
         url: "/admin/fraud-detection",

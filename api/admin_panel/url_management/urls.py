@@ -6,7 +6,6 @@ from .views import (
     ListUrlsView,
     UpdateUrlDestinationView,
     GetUrlDetailsView,
-    SearchUrlsView,
 )
 from django.urls import path
 
@@ -21,6 +20,5 @@ urlpatterns = [
         name="update-url-destination",
     ),
     path("details/<int:url_id>/", GetUrlDetailsView.as_view(), name="get-url-details"),
-    path("search/", SearchUrlsView.as_view(), name="search-urls"),
     path("user/<int:user_id>/", GetUserUrlsView.as_view(), name="get-user-urls"),
 ]

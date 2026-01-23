@@ -799,3 +799,43 @@ export interface Pagination {
     has_next: boolean;
     has_previous: boolean;
 }
+
+// ==================== User Management Types ====================
+
+export interface UserResponse {
+    id: number;
+    username: string;
+    email: string;
+    first_name: string;
+    last_name: string;
+    role: "USER" | "STAFF" | "ADMIN";
+    is_active: boolean;
+    date_joined: string;
+    last_login: string | null;
+}
+
+export interface GetUsersQueryParams {
+    roles?: string;
+    is_active?: string;
+    order_by?: string;
+    limit?: number;
+    page?: number;
+}
+
+export interface GetUsersListResponse {
+    success: boolean;
+    message: string;
+    data: {
+        users: UserResponse[];
+        pagination: Pagination;
+    };
+}
+
+export interface UserDetailsResponse {
+    success: boolean;
+    message: string;
+    data: {
+        user: UserResponse;
+        urls: UrlResponse[];
+    };
+}

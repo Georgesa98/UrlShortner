@@ -158,35 +158,3 @@ class GetUserDetailsView(APIView):
             return ErrorResponse(
                 message=str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
-
-
-class SearchUsersView(GenericAPIView):
-    throttle_classes = [IPRateThrottle, UserRateThrottle]
-    authentication_classes = [CookieJWTAuthentication]
-    permission_classes = [IsAdminOrStaff]
-
-    def get(self, request):
-        try:
-            query = request.GET.get("q", "")
-            if not query:
-                return ErrorResponse(
-                    message="Query parameter 'q' is required",
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-
-            limit = int(request.GET.get("limit", 10))
-            page = int(request.GET.get("page", 1))
-
-            result = UserManagementService.search_users_with_pagination(
-                query, limit, page
-            )
-
-            return SuccessResponse(
-                data=result,
-                message="Users searched successfully",
-                status=status.HTTP_200_OK,
-            )
-        except Exception as e:
-            return ErrorResponse(
-                message=str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )

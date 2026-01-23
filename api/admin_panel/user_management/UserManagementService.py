@@ -17,6 +17,7 @@ class UserManagementService:
         order_by: str = "-date_joined",
         limit: int = 10,
         page: int = 1,
+        query: str = "",
     ) -> dict:
         """Get paginated users with filtering.
 
@@ -33,7 +34,13 @@ class UserManagementService:
         users = User.objects.filter(role__in=roles, is_active__in=is_active).order_by(
             order_by
         )
-
+        if query:
+            users = users.filter(
+                Q(username__icontains=query)
+                | Q(email__icontains=query)
+                | Q(first_name__icontains=query)
+                | Q(last_name__icontains=query)
+            )
         paginator = Paginator(users, limit)
         page_obj = paginator.get_page(page)
 
@@ -108,54 +115,3 @@ class UserManagementService:
             user__id=user_id
         )
         return {"user": url_instances[0].user, "urls": url_instances}
-
-    @staticmethod
-    def search_users_with_pagination(
-        query: str, limit: int = 10, page: int = 1
-    ) -> object:
-        """Search users by query with pagination.
-
-        Args:
-            query (str): Search query for username, first_name, or last_name.
-            limit (int, optional): Results per page. Defaults to 10.
-            page (int, optional): Page number. Defaults to 1.
-
-        Returns:
-            dict: Search results with users and pagination info.
-        """
-        users = User.objects.filter(
-            Q(username__icontains=query)
-            | Q(first_name__icontains=query)
-            | Q(last_name__icontains=query)
-        )
-
-        paginator = Paginator(users, limit)
-        page_obj = paginator.get_page(page)
-
-        user_data = []
-        for user in page_obj.object_list:
-            user_data.append(
-                {
-                    "id": user.id,
-                    "username": user.username,
-                    "email": user.email,
-                    "first_name": user.first_name,
-                    "last_name": user.last_name,
-                    "role": user.role,
-                    "is_active": user.is_active,
-                    "date_joined": user.date_joined,
-                    "last_login": user.last_login,
-                }
-            )
-
-        return {
-            "users": user_data,
-            "pagination": {
-                "total": paginator.count,
-                "page": page_obj.number,
-                "limit": paginator.per_page,
-                "total_pages": paginator.num_pages,
-                "has_next": page_obj.has_next(),
-                "has_previous": page_obj.has_previous(),
-            },
-        }
