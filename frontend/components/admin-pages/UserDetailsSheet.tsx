@@ -7,9 +7,10 @@ import {
     SheetTitle,
 } from "@/components/ui/sheet";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { toast } from "sonner";
+import { toggleBanUserAction } from "@/app/admin/user-management/server";
+import { useRouter } from "next/navigation";
 
 interface UserDetailsSheetProps {
     user: UserResponse | null;
@@ -22,6 +23,7 @@ export default function UserDetailsSheet({
     isOpen,
     onClose,
 }: UserDetailsSheetProps) {
+    const router = useRouter();
     const [accountAccessEnabled, setAccountAccessEnabled] = useState(
         user?.is_active ?? true
     );
@@ -30,21 +32,15 @@ export default function UserDetailsSheet({
 
     const initials = `${user.first_name?.[0] || ""}${user.last_name?.[0] || ""}`.toUpperCase() || user.username.substring(0, 2).toUpperCase();
 
-    const handleToggleAccountAccess = () => {
-        setAccountAccessEnabled(!accountAccessEnabled);
-        toast.success(
-            accountAccessEnabled
-                ? "User account access restricted"
-                : "User account access restored"
-        );
-    };
-
-    const handleEditProfile = () => {
-        toast.info("Edit profile functionality coming soon");
-    };
-
-    const handleLoginAsUser = () => {
-        toast.info("Login as user functionality coming soon");
+    const handleToggleAccountAccess = async () => {
+        const response = await toggleBanUserAction({ user_id: user.id });
+        if (response.success) {
+            toast.success(response.message);
+            setAccountAccessEnabled(!accountAccessEnabled);
+            router.refresh();
+        } else {
+            toast.error(response.message);
+        }
     };
 
     const getRoleBadgeVariant = (role: string) => {
@@ -213,23 +209,6 @@ export default function UserDetailsSheet({
                         <button className="w-full mt-4 text-brand-blue text-sm font-medium hover:underline">
                             View all user links
                         </button>
-                    </div>
-
-                    <div className="pt-6 border-t border-border-subtle space-y-3">
-                        <Button
-                            variant="outline"
-                            className="w-full"
-                            onClick={handleEditProfile}
-                        >
-                            Edit Profile
-                        </Button>
-                        <Button
-                            variant="default"
-                            className="w-full"
-                            onClick={handleLoginAsUser}
-                        >
-                            Login as User
-                        </Button>
                     </div>
                 </div>
             </SheetContent>

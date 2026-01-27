@@ -1,9 +1,10 @@
-from api.url.models import Url
 from django.contrib.auth import get_user_model
 from django.db.models import Q
-from typing import List
 from django.core.paginator import Paginator
 
+from typing import List
+
+from api.url.models import Url
 User = get_user_model()
 
 
@@ -37,7 +38,6 @@ class UserManagementService:
         if query:
             users = users.filter(
                 Q(username__icontains=query)
-                | Q(email__icontains=query)
                 | Q(first_name__icontains=query)
                 | Q(last_name__icontains=query)
             )

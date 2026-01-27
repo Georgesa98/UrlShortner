@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { UserResponse, Pagination } from "@/api-types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,6 +16,8 @@ import UserDetailsSheet from "@/components/admin-pages/UserDetailsSheet";
 import { Trash2, Plus, Search, ArrowUpDown } from "lucide-react";
 import { toast } from "sonner";
 import { RowSelectionState } from "@tanstack/react-table";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { bulkDeleteUsersAction } from "./server";
 
 export default function UserManagementClient({
     users,
@@ -24,26 +26,53 @@ export default function UserManagementClient({
     users: UserResponse[];
     pagination: Pagination;
 }) {
+    const router = useRouter();
+    const pathname = usePathname(); 
+    const searchParam = useSearchParams();
     const [selectedUser, setSelectedUser] = useState<UserResponse | null>(null);
     const [isSheetOpen, setIsSheetOpen] = useState(false);
     const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
-    const [searchQuery, setSearchQuery] = useState("");
-    const [roleFilter, setRoleFilter] = useState("all");
-    const [statusFilter, setStatusFilter] = useState("all");
-
+    const [searchValue, setSearchValue] = useState("");
+    const isInitialMount = useRef(true);
+    const previousSearchValue = useRef(searchValue);
     const handleRowClick = (user: UserResponse) => {
         setSelectedUser(user);
         setIsSheetOpen(true);
     };
 
-    const handleBulkDelete = () => {
-        const selectedCount = Object.keys(rowSelection).length;
-        if (selectedCount === 0) {
-            toast.error("No users selected");
-            return;
+    const handleBulkDelete = async () => {
+        try{
+            const selectedUserIds = Object.keys(rowSelection).map(id => parseInt(id));
+            const selectedCount = selectedUserIds.length;
+
+            if (selectedCount === 0) {
+                toast.error("No users selected");
+                return;
+            }
+            const response = await bulkDeleteUsersAction({ user_ids: selectedUserIds });
+            if (response.success) {
+                toast.success(`Bulk delete ${selectedCount} users successfully`);
+                router.refresh();
+            } else {
+                toast.error(response.message);
+            }
+        } catch(error){
+            toast.error("Failed to bulk delete users");
+        }   
+    }
+    const handleStatusChange = (newStatus: string) => {
+        const params = new URLSearchParams(searchParam.toString())
+        params.set("is_active", newStatus.toString());
+        router.push(`${pathname}?${params.toString()}`, { scroll: false });
+        router.refresh();
+    
+    }
+    const handleRoleChange = (newRole: string) => {
+        const params = new URLSearchParams(searchParam.toString())
+        params.set("roles", newRole.toString());
+        router.push(`${pathname}?${params.toString()}`, { scroll: false });
+        router.refresh();
         }
-        toast.info(`Bulk delete ${selectedCount} users - coming soon`);
-    };
 
     const handleAddUser = () => {
         toast.info("Add new user - coming soon");
@@ -52,6 +81,32 @@ export default function UserManagementClient({
     const handlePageChange = (page: number) => {
         toast.info(`Navigate to page ${page} - coming soon`);
     };
+    useEffect(() => {
+        if (isInitialMount.current) {
+            isInitialMount.current = false;
+            previousSearchValue.current = searchValue;
+            return;
+        }
+        if (previousSearchValue.current === searchValue) {
+            return;
+        }
+        previousSearchValue.current = searchValue;
+        const timeoutId = setTimeout(() => {
+            const currentParams = new URLSearchParams(window.location.search);
+            if (searchValue) {
+                currentParams.set("query", searchValue);
+            } else {
+                currentParams.delete("query");
+            }
+            currentParams.set("page", "1");
+            router.push(`${pathname}?${currentParams.toString()}`, {
+                scroll: false,
+            });
+            router.refresh();
+        }, 500);
+        return () => clearTimeout(timeoutId);
+    }, [searchValue, pathname, router]);
+
 
     return (
         <div className="p-6 space-y-6">
@@ -86,30 +141,30 @@ export default function UserManagementClient({
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-text-muted" />
                     <Input
                         placeholder="Search by email, username"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
+                        value={searchValue}
+                        onChange={(e) => setSearchValue(e.target.value)}
                         className="pl-10"
                     />
                 </div>
-                <Select value={roleFilter} onValueChange={setRoleFilter}>
+                <Select onValueChange={handleRoleChange}>
                     <SelectTrigger className="w-[150px]">
                         <SelectValue placeholder="All Roles" />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="all">All Roles</SelectItem>
-                        <SelectItem value="user">USER</SelectItem>
-                        <SelectItem value="staff">STAFF</SelectItem>
-                        <SelectItem value="admin">ADMIN</SelectItem>
+                        <SelectItem value="USER,STAFF,ADMIN">All Roles</SelectItem>
+                        <SelectItem value="USER">USER</SelectItem>
+                        <SelectItem value="STAFF">STAFF</SelectItem>
+                        <SelectItem value="ADMIN">ADMIN</SelectItem>
                     </SelectContent>
                 </Select>
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <Select onValueChange={handleStatusChange}>
                     <SelectTrigger className="w-[150px]">
                         <SelectValue placeholder="All Statuses" />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="all">All Statuses</SelectItem>
-                        <SelectItem value="active">Active</SelectItem>
-                        <SelectItem value="banned">Banned</SelectItem>
+                        <SelectItem value="true,false">All Statuses</SelectItem>
+                        <SelectItem value="true">Active</SelectItem>
+                        <SelectItem value="false">Banned</SelectItem>
                     </SelectContent>
                 </Select>
                 <Button variant="outline" className="gap-2">

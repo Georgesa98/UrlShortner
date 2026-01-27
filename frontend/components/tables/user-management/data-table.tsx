@@ -1,5 +1,5 @@
 "use client";
-import { Pagination } from "@/api-types";
+import { Pagination, UserResponse } from "@/api-types";
 import {
     ColumnDef,
     flexRender,
@@ -62,6 +62,10 @@ export function UserManagementDataTable<TData, TValue>({
         getCoreRowModel: getCoreRowModel(),
         manualPagination: true,
         enableRowSelection: true,
+        getRowId: (row) => {
+            const userRow = row as UserResponse;
+            return String(userRow.id)
+        },
     });
 
     return (

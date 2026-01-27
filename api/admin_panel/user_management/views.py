@@ -39,13 +39,14 @@ class GetUsersView(GenericAPIView):
 
             limit = int(request.GET.get("limit", 10))
             page = int(request.GET.get("page", 1))
-
+            query = request.GET.get("query", "")
             result = UserManagementService.get_users_with_pagination(
                 roles=roles or [User.Role.USER, User.Role.STAFF, User.Role.ADMIN],
                 is_active=is_active or [True, False],
                 order_by=order_by,
                 limit=limit,
                 page=page,
+                query=query,
             )
 
             return SuccessResponse(
