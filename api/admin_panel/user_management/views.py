@@ -127,10 +127,7 @@ class GetUserDetailsView(APIView):
 
     def get(self, request, user_id):
         try:
-            result = UserManagementService.get_user_details(user_id)
-            user = result["user"]
-            urls = result["urls"]
-
+            user = UserManagementService.get_user_details(user_id)
             user_data = {
                 "id": user.id,
                 "username": user.username,
@@ -143,11 +140,8 @@ class GetUserDetailsView(APIView):
                 "last_login": user.last_login,
             }
 
-            urls_serializer = ResponseUrlSerializer(urls, many=True)
-
-            response_data = {"user": user_data, "urls": urls_serializer.data}
             return SuccessResponse(
-                data=response_data,
+                data=user_data,
                 message="User details retrieved successfully",
                 status=status.HTTP_200_OK,
             )

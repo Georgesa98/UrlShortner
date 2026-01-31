@@ -4,11 +4,11 @@ import { UserResponse, Pagination } from "@/api-types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
 import { UserManagementDataTable } from "@/components/tables/user-management/data-table";
 import { userManagementColumns } from "@/components/tables/user-management/columns";
@@ -20,174 +20,173 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { bulkDeleteUsersAction } from "./server";
 
 export default function UserManagementClient({
-    users,
-    pagination,
+  users,
+  pagination,
 }: {
-    users: UserResponse[];
-    pagination: Pagination;
+  users: UserResponse[];
+  pagination: Pagination;
 }) {
-    const router = useRouter();
-    const pathname = usePathname(); 
-    const searchParam = useSearchParams();
-    const [selectedUser, setSelectedUser] = useState<UserResponse | null>(null);
-    const [isSheetOpen, setIsSheetOpen] = useState(false);
-    const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
-    const [searchValue, setSearchValue] = useState("");
-    const isInitialMount = useRef(true);
-    const previousSearchValue = useRef(searchValue);
-    const handleRowClick = (user: UserResponse) => {
-        setSelectedUser(user);
-        setIsSheetOpen(true);
-    };
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParam = useSearchParams();
+  const [selectedUser, setSelectedUser] = useState<UserResponse | null>(null);
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
+  const [searchValue, setSearchValue] = useState("");
+  const isInitialMount = useRef(true);
+  const previousSearchValue = useRef(searchValue);
+  const handleRowClick = (user: UserResponse) => {
+    setSelectedUser(user);
+    setIsSheetOpen(true);
+  };
 
-    const handleBulkDelete = async () => {
-        try{
-            const selectedUserIds = Object.keys(rowSelection).map(id => parseInt(id));
-            const selectedCount = selectedUserIds.length;
+  const handleBulkDelete = async () => {
+    try {
+      const selectedUserIds = Object.keys(rowSelection).map((id) =>
+        parseInt(id),
+      );
+      const selectedCount = selectedUserIds.length;
 
-            if (selectedCount === 0) {
-                toast.error("No users selected");
-                return;
-            }
-            const response = await bulkDeleteUsersAction({ user_ids: selectedUserIds });
-            if (response.success) {
-                toast.success(`Bulk delete ${selectedCount} users successfully`);
-                router.refresh();
-            } else {
-                toast.error(response.message);
-            }
-        } catch(error){
-            toast.error("Failed to bulk delete users");
-        }   
-    }
-    const handleStatusChange = (newStatus: string) => {
-        const params = new URLSearchParams(searchParam.toString())
-        params.set("is_active", newStatus.toString());
-        router.push(`${pathname}?${params.toString()}`, { scroll: false });
+      if (selectedCount === 0) {
+        toast.error("No users selected");
+        return;
+      }
+      const response = await bulkDeleteUsersAction({
+        user_ids: selectedUserIds,
+      });
+      if (response.success) {
+        toast.success(`Bulk delete ${selectedCount} users successfully`);
         router.refresh();
-    
+      } else {
+        toast.error(response.message);
+      }
+    } catch (error) {
+      toast.error("Failed to bulk delete users");
     }
-    const handleRoleChange = (newRole: string) => {
-        const params = new URLSearchParams(searchParam.toString())
-        params.set("roles", newRole.toString());
-        router.push(`${pathname}?${params.toString()}`, { scroll: false });
-        router.refresh();
-        }
+  };
+  const handleStatusChange = (newStatus: string) => {
+    const params = new URLSearchParams(searchParam.toString());
+    params.set("is_active", newStatus.toString());
+    router.push(`${pathname}?${params.toString()}`, { scroll: false });
+    router.refresh();
+  };
+  const handleRoleChange = (newRole: string) => {
+    const params = new URLSearchParams(searchParam.toString());
+    params.set("roles", newRole.toString());
+    router.push(`${pathname}?${params.toString()}`, { scroll: false });
+    router.refresh();
+  };
 
-    const handleAddUser = () => {
-        toast.info("Add new user - coming soon");
-    };
+  const handleAddUser = () => {
+    toast.info("Add new user - coming soon");
+  };
 
-    const handlePageChange = (page: number) => {
-        toast.info(`Navigate to page ${page} - coming soon`);
-    };
-    useEffect(() => {
-        if (isInitialMount.current) {
-            isInitialMount.current = false;
-            previousSearchValue.current = searchValue;
-            return;
-        }
-        if (previousSearchValue.current === searchValue) {
-            return;
-        }
-        previousSearchValue.current = searchValue;
-        const timeoutId = setTimeout(() => {
-            const currentParams = new URLSearchParams(window.location.search);
-            if (searchValue) {
-                currentParams.set("query", searchValue);
-            } else {
-                currentParams.delete("query");
-            }
-            currentParams.set("page", "1");
-            router.push(`${pathname}?${currentParams.toString()}`, {
-                scroll: false,
-            });
-            router.refresh();
-        }, 500);
-        return () => clearTimeout(timeoutId);
-    }, [searchValue, pathname, router]);
+  const handlePageChange = (page: number) => {
+    toast.info(`Navigate to page ${page} - coming soon`);
+  };
+  useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      previousSearchValue.current = searchValue;
+      return;
+    }
+    if (previousSearchValue.current === searchValue) {
+      return;
+    }
+    previousSearchValue.current = searchValue;
+    const timeoutId = setTimeout(() => {
+      const currentParams = new URLSearchParams(window.location.search);
+      if (searchValue) {
+        currentParams.set("query", searchValue);
+      } else {
+        currentParams.delete("query");
+      }
+      currentParams.set("page", "1");
+      router.push(`${pathname}?${currentParams.toString()}`, {
+        scroll: false,
+      });
+      router.refresh();
+    }, 500);
+    return () => clearTimeout(timeoutId);
+  }, [searchValue, pathname, router]);
 
-
-    return (
-        <div className="p-6 space-y-6">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-3xl font-bold text-text-main">
-                        User Management
-                    </h1>
-                    <p className="text-text-muted mt-1">
-                        Manage {pagination.total.toLocaleString()} registered
-                        system users.
-                    </p>
-                </div>
-                <div className="flex gap-3">
-                    <Button
-                        variant="destructive"
-                        onClick={handleBulkDelete}
-                        className="gap-2"
-                    >
-                        <Trash2 className="h-4 w-4" />
-                        Bulk Delete
-                    </Button>
-                    <Button onClick={handleAddUser} className="gap-2">
-                        <Plus className="h-4 w-4" />
-                        Add New User
-                    </Button>
-                </div>
-            </div>
-
-            <div className="bg-surface rounded-xl p-4 flex items-center gap-4 flex-wrap">
-                <div className="flex-1 min-w-[200px] relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-text-muted" />
-                    <Input
-                        placeholder="Search by email, username"
-                        value={searchValue}
-                        onChange={(e) => setSearchValue(e.target.value)}
-                        className="pl-10"
-                    />
-                </div>
-                <Select onValueChange={handleRoleChange}>
-                    <SelectTrigger className="w-[150px]">
-                        <SelectValue placeholder="All Roles" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="USER,STAFF,ADMIN">All Roles</SelectItem>
-                        <SelectItem value="USER">USER</SelectItem>
-                        <SelectItem value="STAFF">STAFF</SelectItem>
-                        <SelectItem value="ADMIN">ADMIN</SelectItem>
-                    </SelectContent>
-                </Select>
-                <Select onValueChange={handleStatusChange}>
-                    <SelectTrigger className="w-[150px]">
-                        <SelectValue placeholder="All Statuses" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="true,false">All Statuses</SelectItem>
-                        <SelectItem value="true">Active</SelectItem>
-                        <SelectItem value="false">Banned</SelectItem>
-                    </SelectContent>
-                </Select>
-                <Button variant="outline" className="gap-2">
-                    <ArrowUpDown className="h-4 w-4" />
-                    Sort
-                </Button>
-            </div>
-
-            <UserManagementDataTable
-                columns={userManagementColumns}
-                data={users}
-                pagination={pagination}
-                onRowClick={handleRowClick}
-                rowSelection={rowSelection}
-                onRowSelectionChange={setRowSelection}
-                onPageChange={handlePageChange}
-            />
-
-            <UserDetailsSheet
-                user={selectedUser}
-                isOpen={isSheetOpen}
-                onClose={() => setIsSheetOpen(false)}
-            />
+  return (
+    <div className="p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-text-main">User Management</h1>
+          <p className="text-text-muted mt-1">
+            Manage {pagination.total.toLocaleString()} registered system users.
+          </p>
         </div>
-    );
+        <div className="flex gap-3">
+          <Button
+            variant="destructive"
+            onClick={handleBulkDelete}
+            className="gap-2"
+          >
+            <Trash2 className="h-4 w-4" />
+            Bulk Delete
+          </Button>
+          <Button onClick={handleAddUser} className="gap-2">
+            <Plus className="h-4 w-4" />
+            Add New User
+          </Button>
+        </div>
+      </div>
+
+      <div className="bg-surface rounded-xl p-4 flex items-center gap-4 flex-wrap">
+        <div className="flex-1 min-w-[200px] relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-text-muted" />
+          <Input
+            placeholder="Search by email, username"
+            value={searchValue}
+            onChange={(e) => setSearchValue(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+        <Select onValueChange={handleRoleChange}>
+          <SelectTrigger className="w-[150px]">
+            <SelectValue placeholder="All Roles" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="USER,STAFF,ADMIN">All Roles</SelectItem>
+            <SelectItem value="USER">USER</SelectItem>
+            <SelectItem value="STAFF">STAFF</SelectItem>
+            <SelectItem value="ADMIN">ADMIN</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select onValueChange={handleStatusChange}>
+          <SelectTrigger className="w-[150px]">
+            <SelectValue placeholder="All Statuses" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="true,false">All Statuses</SelectItem>
+            <SelectItem value="true">Active</SelectItem>
+            <SelectItem value="false">Banned</SelectItem>
+          </SelectContent>
+        </Select>
+        <Button variant="outline" className="gap-2">
+          <ArrowUpDown className="h-4 w-4" />
+          Sort
+        </Button>
+      </div>
+
+      <UserManagementDataTable
+        columns={userManagementColumns}
+        data={users}
+        pagination={pagination}
+        onRowClick={handleRowClick}
+        rowSelection={rowSelection}
+        onRowSelectionChange={setRowSelection}
+        onPageChange={handlePageChange}
+      />
+
+      <UserDetailsSheet
+        user={selectedUser}
+        isOpen={isSheetOpen}
+        onClose={() => setIsSheetOpen(false)}
+      />
+    </div>
+  );
 }

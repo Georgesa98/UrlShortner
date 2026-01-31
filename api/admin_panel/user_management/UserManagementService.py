@@ -5,6 +5,7 @@ from django.core.paginator import Paginator
 from typing import List
 
 from api.url.models import Url
+
 User = get_user_model()
 
 
@@ -111,7 +112,5 @@ class UserManagementService:
         Returns:
             dict: User details with associated URLs.
         """
-        url_instances = Url.objects.select_related("user", "url_status").filter(
-            user__id=user_id
-        )
-        return {"user": url_instances[0].user, "urls": url_instances}
+        user_instance = User.objects.get(id=user_id)
+        return user_instance
