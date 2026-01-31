@@ -20,6 +20,5 @@ export default async function Page({
     page: parseInt(page),
     limit: 10,
   });
-  console.log(urls);
   return <UserUrlClient urls={urls} user={user} />;
 }

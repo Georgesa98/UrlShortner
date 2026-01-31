@@ -126,9 +126,10 @@ class AuditService:
         return {
             "data": result_data,
             "pagination": {
-                "current_page": paginated_result.number,
+                "page": paginated_result.number,
+                "limit": page_size,
                 "total_pages": paginator.num_pages,
-                "total_items": paginator.count,
+                "total": paginator.count,
                 "has_next": paginated_result.has_next(),
                 "has_previous": paginated_result.has_previous(),
             },
