@@ -166,10 +166,6 @@ export default function UserManagementClient({
             <SelectItem value="false">Banned</SelectItem>
           </SelectContent>
         </Select>
-        <Button variant="outline" className="gap-2">
-          <ArrowUpDown className="h-4 w-4" />
-          Sort
-        </Button>
       </div>
 
       <UserManagementDataTable
