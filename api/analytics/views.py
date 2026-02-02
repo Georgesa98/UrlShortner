@@ -59,3 +59,23 @@ class GetUrlSummary(APIView):
             return ErrorResponse(
                 message="URL does not exist", status=status.HTTP_404_NOT_FOUND
             )
+
+class GetUserStats(APIView):
+    throttle_classes = [IPRateThrottle, UserRateThrottle]
+    authentication_classes = [CookieJWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        range_days = int(request.GET.get("days", 7))
+        user_id = request.user.id
+        try:
+            result = AnalyticsService.get_user_stats(user_id=user_id, range_days=range_days)
+            return SuccessResponse(
+                data=result,
+                message="User stats retrieved successfully",
+                status=status.HTTP_200_OK,
+            )
+        except Exception as e:
+            return ErrorResponse(
+                message=str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )

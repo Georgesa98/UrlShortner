@@ -1,6 +1,7 @@
 import json
 import logging
 from api.analytics.models import Visit
+from api.url.models import Url, UrlStatus
 from config.redis_utils import get_redis_client
 from api.analytics.utils import (
     convert_ip_to_location,
@@ -113,7 +114,6 @@ class AnalyticsService:
         Returns:
             QuerySet: Top visited URLs ordered by visit count.
         """
-        from api.url.models import Url
 
         return (
             Url.objects.select_related("url_status", "user")
@@ -200,4 +200,43 @@ class AnalyticsService:
                 "countries": list(top_countries),
             },
             "recent_visitors": recent_visitors,
+        }
+
+    @staticmethod
+    def get_user_stats(user_id, range_days: int = 7) -> dict:
+        """Get the stats for a user.
+
+        Args:
+            range_days (int): The number of days to get the stats for.
+
+        Returns:
+            dict: The stats for a URL.
+        """
+        start_date = timezone.now() - timedelta(days=range_days)
+        total_clicks = (
+            Visit.objects.select_related("url", "user")
+            .filter(url__user_id=user_id, timestamp__gte=start_date)
+            .count()
+        )
+        active_links = (
+            Url.objects.select_related("url_status", "user")
+            .filter(
+                user_id=user_id,
+                created_at__gte=start_date,
+                url_status__state=UrlStatus.State.ACTIVE,
+            )
+            .count()
+        )
+        top_referrer = (
+            Visit.objects.select_related("url", "user")
+            .filter(url__user_id=user_id, timestamp__gte=start_date)
+            .values("referer")
+            .annotate(count=Count("id"))
+            .order_by("-count")
+            .first()
+        )
+        return {
+            "total_clicks": total_clicks,
+            "active_links": active_links,
+            "top_referrer": top_referrer,
         }

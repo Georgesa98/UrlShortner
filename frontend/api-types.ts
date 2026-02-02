@@ -295,6 +295,12 @@ export interface GetUrlSummaryResponse {
   recent_visitors: any[]; // Array of recent visitor details
 }
 
+export interface GetUserStatsResponse {
+  total_clicks: number;
+  active_links: number;
+  top_referrer: string;
+}
+
 // ==================== Admin Panel API Types ====================
 
 // Request Types
