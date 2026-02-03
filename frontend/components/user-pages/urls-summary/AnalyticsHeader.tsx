@@ -15,9 +15,11 @@ import { GetUrlSummaryResponse } from "@/api-types";
 
 interface AnalyticsHeaderProps {
   data: GetUrlSummaryResponse;
+  currentDays: number;
+  onDaysChange: (days: number) => void;
 }
 
-export default function AnalyticsHeader({ data }: AnalyticsHeaderProps) {
+export default function AnalyticsHeader({ data, currentDays, onDaysChange }: AnalyticsHeaderProps) {
   const urlTitle = data.basic_info.long_url;
   const urlStatus: "ACTIVE" | "INACTIVE" = "ACTIVE"; // Assuming active status for now
   const urlLink = data.basic_info.short_url;
@@ -61,16 +63,19 @@ export default function AnalyticsHeader({ data }: AnalyticsHeaderProps) {
               <span className="text-muted-foreground">views</span>
             </div>
 
-            <Select defaultValue="last7days">
+            <Select 
+              value={currentDays.toString()}
+              onValueChange={(value) => onDaysChange(parseInt(value, 10))}
+            >
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Select date range" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="today">Today</SelectItem>
-                <SelectItem value="last7days">Last 7 days</SelectItem>
-                <SelectItem value="last30days">Last 30 days</SelectItem>
-                <SelectItem value="last90days">Last 90 days</SelectItem>
-                <SelectItem value="year">This year</SelectItem>
+                <SelectItem value="1">Today</SelectItem>
+                <SelectItem value="7">Last 7 days</SelectItem>
+                <SelectItem value="30">Last 30 days</SelectItem>
+                <SelectItem value="90">Last 90 days</SelectItem>
+                <SelectItem value="365">This year</SelectItem>
               </SelectContent>
             </Select>
           </div>
