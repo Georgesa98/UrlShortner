@@ -43,22 +43,54 @@ export function MultiInput({
 }: MultiInputProps) {
     const [open, setOpen] = React.useState(false);
     const [search, setSearch] = React.useState("");
+    const [debouncedSearch, setDebouncedSearch] = React.useState("");
 
-    const handleSelect = (value: string) => {
+    // PERFORMANCE: Debounce search to reduce filter executions
+    React.useEffect(() => {
+        const timeout = setTimeout(() => {
+            setDebouncedSearch(search);
+        }, 150);
+        return () => clearTimeout(timeout);
+    }, [search]);
+
+    // PERFORMANCE: Memoize handlers to prevent recreation
+    const handleSelect = React.useCallback((value: string) => {
         if (selected.includes(value)) {
             onChange(selected.filter((item) => item !== value));
         } else {
             onChange([...selected, value]);
         }
         setSearch("");
-    };
+    }, [selected, onChange]);
 
-    const handleRemove = (value: string) => {
+    const handleRemove = React.useCallback((value: string) => {
         onChange(selected.filter((item) => item !== value));
-    };
+    }, [selected, onChange]);
 
-    const selectedOptions = options.filter((option) =>
-        selected.includes(option.value)
+    // PERFORMANCE: Memoize selected options lookup
+    const selectedOptions = React.useMemo(
+        () => options.filter((option) => selected.includes(option.value)),
+        [options, selected]
+    );
+
+    // PERFORMANCE: Memoize filtered options with debounced search
+    const filteredOptions = React.useMemo(
+        () => {
+            if (!debouncedSearch) return options;
+            const searchLower = debouncedSearch.toLowerCase();
+            return options.filter(
+                (option) =>
+                    option.label.toLowerCase().includes(searchLower) ||
+                    option.value.toLowerCase().includes(searchLower)
+            );
+        },
+        [options, debouncedSearch]
+    );
+
+    // PERFORMANCE: Limit displayed results to first 50
+    const displayedOptions = React.useMemo(
+        () => filteredOptions.slice(0, 50),
+        [filteredOptions]
     );
 
     return (
@@ -110,41 +142,36 @@ export function MultiInput({
                     <CommandList>
                         <CommandEmpty>{emptyText}</CommandEmpty>
                         <CommandGroup>
-                            {options
-                                .filter(
-                                    (option) =>
-                                        option.label
-                                            .toLowerCase()
-                                            .includes(search.toLowerCase()) ||
-                                        option.value
-                                            .toLowerCase()
-                                            .includes(search.toLowerCase())
-                                )
-                                .map((option) => (
-                                    <CommandItem
-                                        key={option.value}
-                                        value={option.value}
-                                        onSelect={() => handleSelect(option.value)}
-                                        className="cursor-pointer"
-                                    >
-                                        <div
-                                            className={cn(
-                                                "mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary",
-                                                selected.includes(option.value)
-                                                    ? "bg-primary text-primary-foreground"
-                                                    : "opacity-50"
-                                            )}
-                                        >
-                                            {selected.includes(option.value) && (
-                                                <span className="text-xs">✓</span>
-                                            )}
-                                        </div>
-                                        {option.icon && (
-                                            <span className="mr-2">{option.icon}</span>
+                            {displayedOptions.map((option) => (
+                                <CommandItem
+                                    key={option.value}
+                                    value={option.value}
+                                    onSelect={() => handleSelect(option.value)}
+                                    className="cursor-pointer"
+                                >
+                                    <div
+                                        className={cn(
+                                            "mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary",
+                                            selected.includes(option.value)
+                                                ? "bg-primary text-primary-foreground"
+                                                : "opacity-50"
                                         )}
-                                        {option.label}
-                                    </CommandItem>
-                                ))}
+                                    >
+                                        {selected.includes(option.value) && (
+                                            <span className="text-xs">✓</span>
+                                        )}
+                                    </div>
+                                    {option.icon && (
+                                        <span className="mr-2">{option.icon}</span>
+                                    )}
+                                    {option.label}
+                                </CommandItem>
+                            ))}
+                            {filteredOptions.length > 50 && (
+                                <div className="px-2 py-1 text-xs text-muted-foreground text-center border-t">
+                                    Showing 50 of {filteredOptions.length} results. Refine your search.
+                                </div>
+                            )}
                         </CommandGroup>
                     </CommandList>
                 </Command>
