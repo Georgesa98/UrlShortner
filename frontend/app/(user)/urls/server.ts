@@ -49,21 +49,52 @@ export async function createShortUrlAction({
     long_url,
     short_url,
     expiry_date,
+    redirection_rules,
 }: {
     name: string;
     long_url: string;
     short_url: string;
     expiry_date: string;
+    redirection_rules?: any[];
 }) {
     try {
+        // First, create the URL
         const response = await axiosInstance.post("/url/shorten/", {
             name,
             long_url,
             short_url,
             expiry_date,
         });
+
+        const urlData = response.data.data;
+
+        // If redirection rules are provided, create them
+        if (redirection_rules && redirection_rules.length > 0) {
+            try {
+                const rulesPayload = {
+                    rules: redirection_rules.map((rule) => ({
+                        name: rule.name,
+                        url_id: urlData.id,
+                        conditions: rule.conditions || {},
+                        target_url: rule.target_url,
+                        priority: rule.priority,
+                        is_active: rule.is_active,
+                    })),
+                };
+
+                await axiosInstance.post(
+                    "/url/redirection/rules/batch/",
+                    rulesPayload
+                );
+            } catch (rulesError) {
+                // Log the error but don't fail the URL creation
+                console.error("Failed to create redirection rules:", rulesError);
+                // Optionally show a warning toast
+            }
+        }
+
         return {
-            data: response.data.data,
+            data: urlData,
             status: response.status,
             success: response.data.success,
         };
