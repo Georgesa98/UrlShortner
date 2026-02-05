@@ -3,8 +3,9 @@ import { UrlResponse } from "@/api-types";
 import { ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Copy, Edit2, Trash2, ExternalLink } from "lucide-react";
+import { Copy, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
+import { AdminActionsCell } from "./AdminActionsCell";
 
 const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -126,33 +127,6 @@ export const adminUrlColumns: ColumnDef<UrlResponse>[] = [
     {
         id: "actions",
         header: "Actions",
-        cell: ({ row }) => {
-            return (
-                <div className="flex items-center justify-end gap-2 px-6">
-                    <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            toast.info("Edit dialog would open here");
-                        }}
-                        className="text-text-muted hover:text-brand-blue"
-                    >
-                        <Edit2 className="h-4 w-4" />
-                    </Button>
-                    <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            toast.info("Delete confirmation would open here");
-                        }}
-                        className="text-text-muted hover:text-destructive"
-                    >
-                        <Trash2 className="h-4 w-4" />
-                    </Button>
-                </div>
-            );
-        },
+        cell: ({ row }) => <AdminActionsCell data={row.original} />,
     },
 ];

@@ -3,15 +3,14 @@
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search, Plus, Filter } from "lucide-react";
+import UrlDialog from "@/components/tables/url/UrlDialog";
 
 export default function UrlManagementHeader({
     searchQuery,
     setSearchQuery,
-    onAddUrl,
 }: {
     searchQuery: string;
     setSearchQuery: (query: string) => void;
-    onAddUrl: () => void;
 }) {
     return (
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
@@ -34,10 +33,15 @@ export default function UrlManagementHeader({
                 <Button variant="outline" size="icon" className="text-text-muted">
                     <Filter className="h-4 w-4" />
                 </Button>
-                <Button onClick={onAddUrl} className="gap-2">
-                    <Plus className="h-4 w-4" />
-                    <span>New URL</span>
-                </Button>
+                <UrlDialog
+                    mode="create"
+                    trigger={
+                        <Button className="gap-2">
+                            <Plus className="h-4 w-4" />
+                            <span>New URL</span>
+                        </Button>
+                    }
+                />
             </div>
         </div>
     );

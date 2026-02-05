@@ -15,6 +15,8 @@ interface GeneralSettingsTabProps {
     singleUrlForm: UseFormReturn<z.infer<typeof createLinkFormSchema>>;
     batchUrlForm: UseFormReturn<z.infer<typeof createBatchLinkFormSchema>>;
     hostname: string;
+    isUpdateMode?: boolean;
+    hideBatchToggle?: boolean;
 }
 
 export function GeneralSettingsTab({
@@ -23,18 +25,26 @@ export function GeneralSettingsTab({
     singleUrlForm,
     batchUrlForm,
     hostname,
+    isUpdateMode = false,
+    hideBatchToggle = false,
 }: GeneralSettingsTabProps) {
     return (
         <>
             <Separator className="w-full" />
 
-            <BatchModeToggle
-                checked={batchMode}
-                onCheckedChange={setBatchMode}
-            />
+            {!hideBatchToggle && (
+                <BatchModeToggle
+                    checked={batchMode}
+                    onCheckedChange={setBatchMode}
+                />
+            )}
 
             {!batchMode ? (
-                <SingleUrlForm control={singleUrlForm.control} hostname={hostname} />
+                <SingleUrlForm 
+                    control={singleUrlForm.control} 
+                    hostname={hostname}
+                    isUpdateMode={isUpdateMode}
+                />
             ) : (
                 <BatchUrlForm control={batchUrlForm.control} />
             )}

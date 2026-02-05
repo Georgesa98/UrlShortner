@@ -1,10 +1,9 @@
 "use client";
 import { UrlResponse } from "@/api-types";
-import { copyToClipboard } from "@/lib/clipboard";
 import { formatDate } from "@/lib/formatToClientDate";
 import { ColumnDef } from "@tanstack/react-table";
-import { BarChart, Copy, Edit2 } from "lucide-react";
-import QrCodeDialog from "./QrCodeDialog";
+import { BarChart } from "lucide-react";
+import { ActionsCell } from "./ActionsCell";
 
 export const columns: ColumnDef<UrlResponse>[] = [
   {
@@ -52,30 +51,6 @@ export const columns: ColumnDef<UrlResponse>[] = [
   {
     id: "actions",
     header: "ACTIONS",
-    cell: ({ row }) => {
-      const data = row.original;
-      return (
-        <div className="flex items-center gap-4 text-muted-foreground">
-          <button
-            className="hover:text-white transition-colors"
-            onClick={(e) => {
-              copyToClipboard(data.short_url);
-              e.stopPropagation();
-            }}
-          >
-            <Copy size={18} />
-          </button>
-          <button
-            className="hover:text-white transition-colors"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <Edit2 size={18} />
-          </button>
-          <div onClick={(e) => e.stopPropagation()}>
-            <QrCodeDialog shortUrl={data.short_url} />
-          </div>
-        </div>
-      );
-    },
+    cell: ({ row }) => <ActionsCell data={row.original} />,
   },
 ];

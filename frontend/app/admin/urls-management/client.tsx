@@ -7,7 +7,6 @@ import UrlManagementHeader from "@/components/admin/urls-management/UrlManagemen
 import UrlDetailsSheet from "@/components/admin/urls-management/UrlDetailsSheet";
 import { AdminUrlDataTable } from "@/components/tables/admin-url/data-table";
 import { adminUrlColumns } from "@/components/tables/admin-url/columns";
-import { toast } from "sonner";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 
 export default function UrlsManagementPage({
@@ -23,9 +22,6 @@ export default function UrlsManagementPage({
     const router = useRouter();
     const pathname = usePathname();
     const searchParam = useSearchParams();
-    const handleAddUrl = () => {
-        toast.info("Create URL dialog would open here");
-    };
     const [searchQuery, setSearchQuery] = useState(
         searchParam.get("query") || ""
     );
@@ -74,7 +70,6 @@ export default function UrlsManagementPage({
             <UrlManagementHeader
                 searchQuery={searchQuery}
                 setSearchQuery={setSearchQuery}
-                onAddUrl={handleAddUrl}
             />
 
             <UrlStatCards

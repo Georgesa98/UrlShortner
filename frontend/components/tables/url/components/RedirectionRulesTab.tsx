@@ -13,6 +13,7 @@ interface RedirectionRulesTabProps {
     onSaveRule: (rule: RedirectionRule) => void;
     onDiscardRule: () => void;
     onShowNewRuleForm: () => void;
+    isLoading?: boolean;
 }
 
 export function RedirectionRulesTab({
@@ -22,6 +23,7 @@ export function RedirectionRulesTab({
     onSaveRule,
     onDiscardRule,
     onShowNewRuleForm,
+    isLoading = false,
 }: RedirectionRulesTabProps) {
     return (
         <>
@@ -52,16 +54,22 @@ export function RedirectionRulesTab({
 
             {/* Rules List */}
             <div className="flex flex-col gap-3">
-                {rules.map((rule, index) => (
-                    <RedirectionRuleCard
-                        key={rule.id}
-                        rule={rule}
-                        ruleNumber={index + 1}
-                        isExpanded={editingRuleId === rule.id}
-                        onSave={onSaveRule}
-                        onDiscard={onDiscardRule}
-                    />
-                ))}
+                {isLoading ? (
+                    <div className="text-center py-4 text-muted-foreground">
+                        Loading redirection rules...
+                    </div>
+                ) : (
+                    rules.map((rule, index) => (
+                        <RedirectionRuleCard
+                            key={rule.id}
+                            rule={rule}
+                            ruleNumber={index + 1}
+                            isExpanded={editingRuleId === rule.id}
+                            onSave={onSaveRule}
+                            onDiscard={onDiscardRule}
+                        />
+                    ))
+                )}
 
                 {/* New Rule Form */}
                 {showNewRuleForm && (

@@ -145,3 +145,111 @@ export async function batchShortenUrlAction({
         };
     }
 }
+
+export async function updateShortUrlAction({
+    short_url,
+    name,
+    long_url,
+    expiry_date,
+    redirection_rules,
+}: {
+    short_url: string;
+    name: string;
+    long_url: string;
+    expiry_date: string;
+    redirection_rules?: any[];
+}) {
+    try {
+        // Update the URL
+        const response = await axiosInstance.patch(`/url/${short_url}/`, {
+            name,
+            long_url,
+            expiry_date,
+        });
+
+        const urlData = response.data.data;
+
+        // Handle redirection rules updates
+        if (redirection_rules !== undefined) {
+            try {
+                // First, delete existing rules for this URL
+                await axiosInstance.delete(
+                    `/url/redirection/rules/?url_id=${urlData.id}`
+                );
+
+                // Then, create new rules if any are provided
+                if (redirection_rules.length > 0) {
+                    const rulesPayload = {
+                        rules: redirection_rules.map((rule) => ({
+                            name: rule.name,
+                            url_id: urlData.id,
+                            conditions: rule.conditions || {},
+                            target_url: rule.target_url,
+                            priority: rule.priority,
+                            is_active: rule.is_active,
+                        })),
+                    };
+
+                    await axiosInstance.post(
+                        "/url/redirection/rules/batch/",
+                        rulesPayload
+                    );
+                }
+            } catch (rulesError) {
+                // Log the error but don't fail the URL update
+                console.error("Failed to update redirection rules:", rulesError);
+            }
+        }
+
+        return {
+            data: urlData,
+            status: response.status,
+            success: response.data.success,
+        };
+    } catch (e: unknown) {
+        if (e instanceof AxiosError) {
+            return {
+                success: false,
+                status: e.response?.status || 500,
+                message:
+                    e.response?.data?.message ||
+                    "An error occurred during url update.",
+            };
+        }
+        return {
+            success: false,
+            status: 500,
+            message: "An error occurred during url update.",
+        };
+    }
+}
+
+export async function fetchRedirectionRulesAction(urlId: number) {
+    try {
+        const response = await axiosInstance.get(
+            `/url/redirection/rules/?url_id=${urlId}`
+        );
+        return {
+            data: response.data.data || [],
+            status: response.status,
+            success: response.data.success,
+        };
+    } catch (e: unknown) {
+        if (e instanceof AxiosError) {
+            return {
+                success: false,
+                status: e.response?.status || 500,
+                message:
+                    e.response?.data?.message ||
+                    "An error occurred during fetching redirection rules.",
+                data: [],
+            };
+        }
+        return {
+            success: false,
+            status: 500,
+            message: "An error occurred during fetching redirection rules.",
+            data: [],
+        };
+    }
+}

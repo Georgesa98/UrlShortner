@@ -10,9 +10,10 @@ import z from "zod";
 interface SingleUrlFormProps {
   control: Control<z.infer<typeof createLinkFormSchema>>;
   hostname: string;
+  isUpdateMode?: boolean;
 }
 
-export function SingleUrlForm({ control, hostname }: SingleUrlFormProps) {
+export function SingleUrlForm({ control, hostname, isUpdateMode = false }: SingleUrlFormProps) {
   return (
     <>
       {/* Link Name */}
@@ -82,7 +83,7 @@ export function SingleUrlForm({ control, hostname }: SingleUrlFormProps) {
           render={({ field, fieldState }) => (
             <Field className="flex-1">
               <FieldLabel htmlFor={field.name} className="font-bold text-sm">
-                Custom Alias (Optional)
+                Custom Alias {isUpdateMode ? "" : "(Optional)"}
               </FieldLabel>
               <div className="relative">
                 <span className="text-xs absolute -translate-y-1/2 top-1/2 left-3 text-muted-foreground">
@@ -98,9 +99,15 @@ export function SingleUrlForm({ control, hostname }: SingleUrlFormProps) {
                   aria-invalid={fieldState.invalid}
                   className="pl-20 text-sm h-12 bg-surface"
                   placeholder="my-cool-link"
+                  disabled={isUpdateMode}
                 />
               </div>
               {fieldState.invalid && <FieldError errors={[fieldState.error]} />}
+              {isUpdateMode && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Short URL cannot be changed after creation
+                </p>
+              )}
             </Field>
           )}
         />

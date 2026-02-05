@@ -36,6 +36,16 @@ export const createLinkFormSchema = z.object({
   redirection_rules: z.array(redirectionRuleSchema).optional(),
 });
 
+export const updateLinkFormSchema = z.object({
+  name: z.string().min(1).max(256),
+  long_url: z.url().refine((url) => url.toString().startsWith("http"), {
+    message: "please enter a valid url",
+  }),
+  short_url: z.string().min(1).max(64), // Required but read-only in update mode
+  expiry_date: z.date().optional(),
+  redirection_rules: z.array(redirectionRuleSchema).optional(),
+});
+
 export const createBatchLinkFormSchema = z.object({
   urls: z.preprocess(
     (val) => {

@@ -1,7 +1,7 @@
 "use client";
 import { ListUrlsResponse } from "@/api-types";
 import { columns } from "@/components/tables/url/columns";
-import CreateUrlDialog from "@/components/tables/url/CreateUrlDialog";
+import UrlDialog from "@/components/tables/url/UrlDialog";
 import { UrlDataTable } from "@/components/tables/url/data-table";
 import { Input } from "@/components/ui/input";
 import {
@@ -76,7 +76,7 @@ export default function MyUrls({ data }: { data: ListUrlsResponse }) {
                         Manage, track, and edit your shortened links
                     </p>
                 </div>
-                <CreateUrlDialog buttonClassName="place-self-end" />
+                <UrlDialog mode="create" buttonClassName="place-self-end" />
             </div>
             <div className="flex gap-4">
                 <div className="relative flex-1">
