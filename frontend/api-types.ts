@@ -781,6 +781,7 @@ export interface AuditLogs {
   action: string;
   timestamp: string;
   user_id: number;
+  username: string;
   user_email: string;
   content_type: string;
   content_id: string;

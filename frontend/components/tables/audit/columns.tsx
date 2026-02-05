@@ -1,15 +1,16 @@
 "use client";
 
 import { AuditLogs, GetAuditLogsResponse } from "@/api-types";
+import { formatDateTime } from "@/lib/formatToClientDate";
 import { ColumnDef } from "@tanstack/react-table";
 
 export const auditTrailsColumns: ColumnDef<AuditLogs>[] = [
   {
-    accessorKey: "user_id",
-    header: "User Id",
+    accessorKey: "username",
+    header: "Username",
     cell: ({ row }) => {
       const data = row.original;
-      return <span className="text-muted-foreground">{data.user_id}</span>;
+      return <span className="text-muted-foreground">{data.username}</span>;
     },
   },
   {
@@ -25,7 +26,12 @@ export const auditTrailsColumns: ColumnDef<AuditLogs>[] = [
     header: "Timestamp",
     cell: ({ row }) => {
       const data = row.original;
-      return <span className="text-muted-foreground">{data.timestamp}</span>;
+
+      return (
+        <span className="text-muted-foreground">
+          {formatDateTime(data.timestamp)}
+        </span>
+      );
     },
   },
   {

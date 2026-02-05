@@ -24,6 +24,7 @@ export default async function Page({
     date_from: params.date_from || "",
     date_to: params.date_to || "",
   });
+  console.log(logs);
 
   return <AuditLogsClient logs={logs.data} />;
 }

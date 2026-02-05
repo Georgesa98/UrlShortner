@@ -114,6 +114,7 @@ class AuditService:
                 "action": log.action,
                 "timestamp": log.timestamp,
                 "user_id": log.user.id if log.user else None,
+                "username": log.user.username if log.user else None,
                 "user_email": log.user.email if log.user else None,
                 "content_type": log.content_type,
                 "content_id": log.content_id,

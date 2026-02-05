@@ -11,6 +11,7 @@ import {
   Dialog,
   DialogContent,
   DialogHeader,
+  DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Tabs, TabsTrigger } from "@/components/ui/tabs";
@@ -149,6 +150,7 @@ export default function CreateUrlDialog({
         </Button>
       </DialogTrigger>
       <DialogContent className="min-w-3xl max-h-[90vh] flex flex-col overflow-hidden">
+        <DialogTitle hidden>Create New Link</DialogTitle>
         <DialogHeader className="gap-1 shrink-0">
           <h1 className="text-2xl font-bold">Create New Link</h1>
           <p className="text-sm text-muted-foreground">

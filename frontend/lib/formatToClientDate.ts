@@ -1,18 +1,38 @@
-export const formatToClientDate = (isoString: string): string => {
-    if (!isoString) return "";
+export const formatDate = (isoString: string): string => {
+  if (!isoString) return "";
 
-    const date = new Date(isoString);
+  const date = new Date(isoString);
 
-    if (isNaN(date.getTime())) {
-        console.error("Invalid date provided to formatToClientDate");
-        return "";
-    }
+  if (isNaN(date.getTime())) {
+    console.error("Invalid date provided to formatDate");
+    return "";
+  }
 
-    return new Intl.DateTimeFormat("en-GB", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-    })
-        .format(date)
-        .replace(/\//g, "-");
+  return new Intl.DateTimeFormat("en-GB", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  })
+    .format(date)
+    .replace(/\//g, "-");
+};
+
+export const formatDateTime = (isoString: string): string => {
+  if (!isoString) return "";
+
+  const date = new Date(isoString);
+
+  if (isNaN(date.getTime())) {
+    console.error("Invalid date provided to formatToHumanReadable");
+    return "";
+  }
+
+  return new Intl.DateTimeFormat("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  }).format(date);
 };
