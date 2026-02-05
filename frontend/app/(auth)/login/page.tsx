@@ -86,9 +86,12 @@ export default function Login() {
                                         placeholder="password"
                                         type="password"
                                     />
-                                    <p className="text-brand-blue text-xs">
+                                    <Link
+                                        href="/forgot-password"
+                                        className="text-brand-blue text-xs hover:underline"
+                                    >
                                         Forgot Password?
-                                    </p>
+                                    </Link>
                                     {fieldState.invalid && (
                                         <FieldError
                                             errors={[fieldState.error]}
