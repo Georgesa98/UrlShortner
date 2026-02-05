@@ -6,6 +6,7 @@ import {
   Link,
   LogOut,
   Settings,
+  Sliders,
   ShieldAlert,
   Users,
 } from "lucide-react";
@@ -33,6 +34,7 @@ const sidebarItems = [
     icon: ShieldAlert,
   },
   { title: "Audit Logs", url: "/admin/audit", icon: FileText },
+  { title: "System Config", url: "/admin/system-config", icon: Sliders },
   { title: "Settings", url: "/admin/settings", icon: Settings },
 ];
 const footerSidebarItems = [
