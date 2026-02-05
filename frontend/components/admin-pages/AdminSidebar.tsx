@@ -33,6 +33,7 @@ const sidebarItems = [
     icon: ShieldAlert,
   },
   { title: "Audit Logs", url: "/admin/audit", icon: FileText },
+  { title: "Settings", url: "/admin/settings", icon: Settings },
 ];
 const footerSidebarItems = [
   { action: "logout", title: "Log Out", url: "#", icon: LogOut },
