@@ -330,6 +330,8 @@ class Base(Configuration):
     DJOSER = {
         "TOKEN_MODEL": None,
         "SEND_ACTIVATION_EMAIL": False,
+        "PASSWORD_RESET_CONFIRM_RETYPE": True,
+        "PASSWORD_RESET_CONFIRM_URL": "reset-password?uid={uid}&token={token}",
         "SERIALIZERS": {
             "user_create": "api.custom_auth.serializer.CustomUserCreateSerializer",
             "user": "api.custom_auth.serializer.CustomUserSerializer",
