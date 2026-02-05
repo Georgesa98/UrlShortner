@@ -833,6 +833,28 @@ export interface UserResponse {
   last_login: string | null;
 }
 
+// ==================== User Profile Settings Types ====================
+
+export interface UserProfileResponse {
+  id: number;
+  username: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+}
+
+export interface UpdateUserProfileRequest {
+  username?: string;
+  first_name?: string;
+  last_name?: string;
+  email?: string;
+}
+
+export interface SetPasswordRequest {
+  current_password: string;
+  new_password: string;
+}
+
 export interface GetUsersQueryParams {
   roles?: string;
   is_active?: string;

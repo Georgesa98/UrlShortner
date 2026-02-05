@@ -327,15 +327,15 @@ class Base(Configuration):
         }
     }
 
-    if not DEBUG:
-        DJOSER = {
-            "TOKEN_MODEL": None,
-            "SEND_ACTIVATION_EMAIL": False,
-            "SERIALIZER": {
-                "user_create": "api.custom_auth.serializer.CustomUserCreateSerializer",
-                "user": "api.custom_auth.serializer.CustomUserSerializer",
-            },
-        }
+    DJOSER = {
+        "TOKEN_MODEL": None,
+        "SEND_ACTIVATION_EMAIL": False,
+        "SERIALIZERS": {
+            "user_create": "api.custom_auth.serializer.CustomUserCreateSerializer",
+            "user": "api.custom_auth.serializer.CustomUserSerializer",
+            "current_user": "api.custom_auth.serializer.CustomUserSerializer",
+        },
+    }
 
     REST_FRAMEWORK = {
         "DEFAULT_THROTTLE_CLASSES": [
