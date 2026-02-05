@@ -3,6 +3,17 @@
 import AuditLogsClient from "./client";
 import fetchAuditLogsAction from "./server";
 
+// Helper function to convert timestamp to YYYY-MM-DD format
+function formatDateForBackend(timestamp: string): string {
+  if (!timestamp) return "";
+  try {
+    const date = new Date(parseInt(timestamp));
+    return date.toISOString().split("T")[0]; // Returns YYYY-MM-DD
+  } catch {
+    return "";
+  }
+}
+
 export default async function Page({
   searchParams,
 }: {
@@ -21,10 +32,9 @@ export default async function Page({
     limit: parseInt(params.limit) || 10,
     user_id: params.user_id || "",
     action: params.action || "",
-    date_from: params.date_from || "",
-    date_to: params.date_to || "",
+    date_from: formatDateForBackend(params.date_from),
+    date_to: formatDateForBackend(params.date_to),
   });
-  console.log(logs);
 
   return <AuditLogsClient logs={logs.data} />;
 }

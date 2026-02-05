@@ -44,7 +44,7 @@ export function DatePicker({
                     id={id}
                     name={name}
                     aria-invalid={ariaInvalid}
-                    className="w-48 justify-between font-normal"
+                    className="w-full justify-between font-normal"
                     onBlur={onBlur}
                     {...props}
                 >
