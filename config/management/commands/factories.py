@@ -95,6 +95,17 @@ class UrlFactory(DjangoModelFactory):
         end_date="+1y",
         tzinfo=timezone.get_current_timezone(),
     )
+    created_at = factory.Faker(
+        "date_time_between",
+        start_date="-30d",
+        end_date="-7d",
+        tzinfo=timezone.get_current_timezone(),
+    )
+    updated_at = factory.LazyAttribute(
+        lambda o: fake.date_time_between(
+            start_date=o.created_at, end_date="-7d", tzinfo=timezone.get_current_timezone()
+        )
+    )
     status = factory.RelatedFactory(UrlStatusFactory, factory_related_name="url")
     is_custom_alias = factory.Faker("boolean", chance_of_getting_true=20)
     user = factory.SubFactory(CustomUserFactory)
@@ -108,6 +119,17 @@ class RedirectionRuleFactory(DjangoModelFactory):
     target_url = factory.Faker("url")
     priority = factory.Faker("random_int", min=1, max=100)
     is_active = factory.Faker("boolean", chance_of_getting_true=80)
+    created_at = factory.Faker(
+        "date_time_between",
+        start_date="-30d",
+        end_date="-7d",
+        tzinfo=timezone.get_current_timezone(),
+    )
+    updated_at = factory.LazyAttribute(
+        lambda o: fake.date_time_between(
+            start_date=o.created_at, end_date="-7d", tzinfo=timezone.get_current_timezone()
+        )
+    )
 
     @factory.lazy_attribute
     def conditions(self):
@@ -148,6 +170,12 @@ class VisitFactory(DjangoModelFactory):
     )
     device = factory.Faker("random_element", elements=["Mobile", "Desktop", "Tablet"])
     new_visitor = factory.Faker("boolean", chance_of_getting_true=70)
+    timestamp = factory.Faker(
+        "date_time_between",
+        start_date="-30d",
+        end_date="-7d",
+        tzinfo=timezone.get_current_timezone(),
+    )
 
 
 class FraudIncidentFactory(DjangoModelFactory):
@@ -159,6 +187,12 @@ class FraudIncidentFactory(DjangoModelFactory):
     )
     severity = factory.Faker(
         "random_element", elements=[c[0] for c in FraudIncident.SEVERITY_LEVELS]
+    )
+    created_at = factory.Faker(
+        "date_time_between",
+        start_date="-30d",
+        end_date="-7d",
+        tzinfo=timezone.get_current_timezone(),
     )
 
     @factory.lazy_attribute
@@ -191,6 +225,12 @@ class AuditLogFactory(DjangoModelFactory):
     )
     ip_address = factory.Faker("ipv4")
     successful = factory.Faker("boolean", chance_of_getting_true=95)
+    timestamp = factory.Faker(
+        "date_time_between",
+        start_date="-30d",
+        end_date="-7d",
+        tzinfo=timezone.get_current_timezone(),
+    )
 
     @factory.lazy_attribute
     def changes(self):

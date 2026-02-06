@@ -11,6 +11,12 @@ from .factories import (
     VisitFactory,
     RedirectionRuleFactory,
 )
+from .utils import disable_auto_now
+from api.url.models import Url
+from api.analytics.models import Visit
+from api.admin_panel.audit.models import AuditLog
+from api.admin_panel.fraud.models import FraudIncident
+from api.url.redirection.models import RedirectionRule
 
 User = get_user_model()
 
@@ -31,34 +37,38 @@ class Command(BaseCommand):
         DEFAULT_PASSWORD = "Password123!"
         user_credentials = []
 
-        admin = CustomUserFactory(
-            role="ADMIN", username="admin_tester", password=DEFAULT_PASSWORD
-        )
-        user_credentials.append({"user": admin.username, "role": "ADMIN"})
+        # Models with auto_now/auto_now_add fields that need to be disabled for seeding
+        models_to_disable = [Url, Visit, AuditLog, FraudIncident, RedirectionRule]
 
-        num_users = options["users"]
-        for i in range(num_users):
-            user = CustomUserFactory(password=DEFAULT_PASSWORD)
-            user_credentials.append({"user": user.username, "role": user.role})
+        with disable_auto_now(models_to_disable):
+            admin = CustomUserFactory(
+                role="ADMIN", username="admin_tester", password=DEFAULT_PASSWORD
+            )
+            user_credentials.append({"user": admin.username, "role": "ADMIN"})
 
-            num_urls = options["urls_per_user"]
-            urls = UrlFactory.create_batch(num_urls, user=user)
+            num_users = options["users"]
+            for i in range(num_users):
+                user = CustomUserFactory(password=DEFAULT_PASSWORD)
+                user_credentials.append({"user": user.username, "role": user.role})
 
-            for url in urls:
-                VisitFactory.create_batch(random.randint(50, 150), url=url)
+                num_urls = options["urls_per_user"]
+                urls = UrlFactory.create_batch(num_urls, user=user)
 
-                if random.random() > 0.6:
-                    RedirectionRuleFactory.create_batch(random.randint(1, 4), url=url)
+                for url in urls:
+                    VisitFactory.create_batch(random.randint(50, 150), url=url)
 
-                if random.random() > 0.8:
-                    FraudIncidentFactory.create(url=url, user=user, severity="high")
+                    if random.random() > 0.6:
+                        RedirectionRuleFactory.create_batch(random.randint(1, 4), url=url)
 
-                AuditLogFactory.create(
-                    action="CREATE",
-                    user=user,
-                    content_type="Url",
-                    content_id=str(url.id),
-                )
+                    if random.random() > 0.8:
+                        FraudIncidentFactory.create(url=url, user=user, severity="high")
+
+                    AuditLogFactory.create(
+                        action="CREATE",
+                        user=user,
+                        content_type="Url",
+                        content_id=str(url.id),
+                    )
 
         self.stdout.write("\n" + "=" * 40)
         self.stdout.write(self.style.SUCCESS("✅ SEEDING COMPLETE"))
