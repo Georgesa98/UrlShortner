@@ -551,7 +551,7 @@ export interface PlatformStatsResponse {
 }
 
 export interface GrowthMetricItem {
-  date: string;
+  week_starting: string;
   new_users?: number;
   cumulative_users?: number;
   new_urls?: number;

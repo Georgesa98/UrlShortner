@@ -61,20 +61,22 @@ class InsightService:
 
         for week in range(data_points):
             week_starting = start_date + timedelta(weeks=week)
+            week_end = week_starting + timedelta(weeks=1)
+
             new_users = User.objects.filter(
-                Q(date_joined__gte=start_date) & Q(date_joined__lte=week_starting)
+                date_joined__gte=week_starting, date_joined__lt=week_end
             ).count()
             cumulative_users += new_users
 
             new_urls = Url.objects.filter(
-                Q(created_at__gte=start_date) & Q(created_at__lte=week_starting)
+                created_at__gte=week_starting, created_at__lt=week_end
             ).count()
             cumulative_urls += new_urls
 
-            new_clicks = Visit.objects.filter(
-                Q(timestamp__gte=start_date) & Q(timestamp__lte=week_starting)
+            week_clicks = Visit.objects.filter(
+                timestamp__gte=week_starting, timestamp__lt=week_end
             ).count()
-            total_clicks += new_clicks
+            total_clicks += week_clicks
 
             user_growth_data.append(
                 {
@@ -87,24 +89,25 @@ class InsightService:
                 {
                     "week_starting": week_starting.strftime("%Y-%m-%d"),
                     "new_urls": new_urls,
-                    "cumulative_users": cumulative_urls,
+                    "cumulative_urls": cumulative_urls,
                 }
             )
             click_volume_data.append(
                 {
                     "week_starting": week_starting.strftime("%Y-%m-%d"),
-                    "total_clicks": total_clicks,
+                    "clicks": total_clicks,
                 }
             )
-            return {
-                "growth_interval": "weekly",
-                "data_points": data_points,
-                "metrics": {
-                    "users_growth": user_growth_data,
-                    "urls_growth": url_growth_data,
-                    "clicks_volume": click_volume_data,
-                },
-            }
+
+        return {
+            "growth_interval": "weekly",
+            "data_points": data_points,
+            "metrics": {
+                "users_growth": user_growth_data,
+                "urls_growth": url_growth_data,
+                "clicks_volume": click_volume_data,
+            },
+        }
 
     @staticmethod
     def get_top_performers(metric: str, limit: int) -> list:
