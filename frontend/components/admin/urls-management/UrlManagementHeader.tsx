@@ -2,47 +2,62 @@
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Plus, Filter } from "lucide-react";
+import { Search, Plus, Filter, Trash2 } from "lucide-react";
 import UrlDialog from "@/components/tables/url/UrlDialog";
+import { RowSelectionState } from "@tanstack/react-table";
 
 export default function UrlManagementHeader({
-    searchQuery,
-    setSearchQuery,
+  searchQuery,
+  setSearchQuery,
+  handleBulkDelete,
+  rowSelection,
 }: {
-    searchQuery: string;
-    setSearchQuery: (query: string) => void;
+  searchQuery: string;
+  setSearchQuery: (query: string) => void;
+  handleBulkDelete: () => void;
+  rowSelection: RowSelectionState;
 }) {
-    return (
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-            <div>
-                <h1 className="text-2xl font-bold text-text-main">URL Management</h1>
-                <p className="text-sm text-text-muted">
-                    Manage and monitor all shortened URLs on the platform
-                </p>
-            </div>
-            <div className="flex items-center gap-3 w-full sm:w-auto">
-                <div className="relative flex-1 sm:flex-initial sm:w-64">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted" />
-                    <Input
-                        placeholder="Search URLs or names..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="pl-9 bg-surface border-none text-text-main"
-                    />
-                </div>
-                <Button variant="outline" size="icon" className="text-text-muted">
-                    <Filter className="h-4 w-4" />
-                </Button>
-                <UrlDialog
-                    mode="create"
-                    trigger={
-                        <Button className="gap-2">
-                            <Plus className="h-4 w-4" />
-                            <span>New URL</span>
-                        </Button>
-                    }
-                />
-            </div>
+  return (
+    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+      <div>
+        <h1 className="text-2xl font-bold text-text-main">URL Management</h1>
+        <p className="text-sm text-text-muted">
+          Manage and monitor all shortened URLs on the platform
+        </p>
+      </div>
+      <div className="flex items-center gap-3 w-full sm:w-auto">
+        <div className="relative flex-1 sm:flex-initial sm:w-64">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted" />
+          <Input
+            placeholder="Search URLs or names..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9 bg-surface border-none text-text-main"
+          />
         </div>
-    );
+        <Button variant="outline" size="icon" className="text-text-muted">
+          <Filter className="h-4 w-4" />
+        </Button>
+        <UrlDialog
+          mode="create"
+          trigger={
+            <Button className="gap-2">
+              <Plus className="h-4 w-4" />
+              <span>New URL</span>
+            </Button>
+          }
+        />
+        {Object.keys(rowSelection).length > 0 && (
+          <Button
+            variant="destructive"
+            onClick={handleBulkDelete}
+            className="gap-2 ml-4"
+          >
+            <Trash2 className="h-4 w-4" />
+            Bulk Delete ({Object.keys(rowSelection).length})
+          </Button>
+        )}
+      </div>
+    </div>
+  );
 }
