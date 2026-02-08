@@ -38,11 +38,19 @@ export const columns: ColumnDef<UrlResponse>[] = [
         <div className="flex flex-col">
           <div className="flex items-center gap-2">
             <span className="font-bold">{data.name}</span>
-            {data.url_status.state === "ACTIVE" && (
-              <span className="rounded-lg bg-green-500/10 px-1.5 py-0.5 text-[10px] font-bold text-green-500">
-                ACTIVE
-              </span>
-            )}
+            <span
+              className={`rounded-lg px-1.5 py-0.5 text-[10px] font-bold ${
+                data.url_status.state === "ACTIVE"
+                  ? "bg-green-500/10 text-green-500"
+                  : data.url_status.state === "EXPIRED"
+                  ? "bg-yellow-500/10 text-yellow-500"
+                  : data.url_status.state === "FLAGGED"
+                  ? "bg-orange-500/10 text-orange-500"
+                  : "bg-red-500/10 text-red-500"
+              }`}
+            >
+              {data.url_status.state}
+            </span>
           </div>
           <span className="text-sm text-blue-400">{data.short_url}</span>
           <span className="max-w-75 truncate text-xs text-muted-foreground">

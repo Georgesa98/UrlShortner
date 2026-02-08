@@ -17,5 +17,6 @@ export default async function UrlAnalyticsPage({
     url_id: urlParams.id,
     days: days,
   });
+
   return <SpecificUrl data={data} />;
 }

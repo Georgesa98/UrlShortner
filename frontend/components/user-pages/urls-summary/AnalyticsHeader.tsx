@@ -9,7 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ChevronLeft, ExternalLink, Eye, Globe, Link2 } from "lucide-react";
+import { ChevronLeft, ExternalLink, Eye, Globe } from "lucide-react";
 import Link from "next/link";
 import { GetUrlSummaryResponse } from "@/api-types";
 
@@ -21,7 +21,7 @@ interface AnalyticsHeaderProps {
 
 export default function AnalyticsHeader({ data, currentDays, onDaysChange }: AnalyticsHeaderProps) {
   const urlTitle = data.basic_info.long_url;
-  const urlStatus: "ACTIVE" | "INACTIVE" = "ACTIVE"; // Assuming active status for now
+  const urlStatus = data.basic_info.url_status.state;
   const urlLink = data.basic_info.short_url;
   return (
     <Card className="mb-6">
@@ -40,6 +40,10 @@ export default function AnalyticsHeader({ data, currentDays, onDaysChange }: Ana
                   className={`rounded-lg px-1.5 py-0.5 text-[10px] font-bold ${
                     urlStatus === "ACTIVE"
                       ? "bg-green-500/10 text-green-500"
+                      : urlStatus === "EXPIRED"
+                      ? "bg-yellow-500/10 text-yellow-500"
+                      : urlStatus === "FLAGGED"
+                      ? "bg-orange-500/10 text-orange-500"
                       : "bg-red-500/10 text-red-500"
                   }`}
                 >

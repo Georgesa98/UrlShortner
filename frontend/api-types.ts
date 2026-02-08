@@ -281,6 +281,10 @@ export interface GetUrlSummaryResponse {
     visits: number;
     unique_visits: number;
     expiry_date?: string;
+    url_status: {
+      state: string;
+      reason: string | null;
+    };
   };
   analytics: {
     daily_visits: DailyVisitResponse[];

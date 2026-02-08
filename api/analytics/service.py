@@ -185,6 +185,10 @@ class AnalyticsService:
                 "visits": url_instance.visits,
                 "unique_visits": url_instance.unique_visits,
                 "expiry_date": url_instance.expiry_date,
+                "url_status": {
+                    "state": url_instance.url_status.state,
+                    "reason": url_instance.url_status.reason,
+                },
             },
             "analytics": {
                 "daily_visits": list(daily_visits),
