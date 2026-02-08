@@ -53,18 +53,20 @@ export async function createShortUrlAction({
 }: {
   name: string;
   long_url: string;
-  short_url: string;
-  expiry_date: string;
+  short_url?: string;
+  expiry_date?: string;
   redirection_rules?: any[];
 }) {
   try {
     // First, create the URL
-    const response = await axiosInstance.post("/url/shorten/", {
+    const payload: any = {
       name,
       long_url,
-      short_url,
-      expiry_date,
-    });
+    };
+    if (short_url) payload.short_url = short_url;
+    if (expiry_date) payload.expiry_date = expiry_date;
+    
+    const response = await axiosInstance.post("/url/shorten/", payload);
 
     const urlData = response.data.data;
 
@@ -153,16 +155,18 @@ export async function updateShortUrlAction({
   short_url: string;
   name: string;
   long_url: string;
-  expiry_date: string;
+  expiry_date?: string;
   redirection_rules?: any[];
 }) {
   try {
     // Update the URL
-    const response = await axiosInstance.patch(`/url/${short_url}/`, {
+    const payload: any = {
       name,
       long_url,
-      expiry_date,
-    });
+    };
+    if (expiry_date) payload.expiry_date = expiry_date;
+    
+    const response = await axiosInstance.patch(`/url/${short_url}/`, payload);
 
     const urlData = response.data.data;
 

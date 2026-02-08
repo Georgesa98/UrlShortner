@@ -87,7 +87,7 @@ export default function UrlDialog({
       name: "",
       long_url: "",
       short_url: "",
-      expiry_date: new Date(),
+      expiry_date: undefined,
       redirection_rules: [],
     },
   });
@@ -119,7 +119,7 @@ export default function UrlDialog({
         name: "",
         long_url: "",
         short_url: "",
-        expiry_date: new Date(),
+        expiry_date: undefined,
         redirection_rules: [],
       });
       setRules([]);
@@ -159,8 +159,8 @@ export default function UrlDialog({
     const { message, status } = await createShortUrlAction({
       name: data.name || "",
       long_url: data.long_url,
-      short_url: data.short_url || "",
-      expiry_date: data.expiry_date?.toISOString() || "",
+      short_url: data.short_url || undefined,
+      expiry_date: data.expiry_date?.toISOString(),
       redirection_rules: rules,
     });
     if (status === 201) {
@@ -182,7 +182,7 @@ export default function UrlDialog({
       short_url: urlData.short_url,
       name: data.name || "",
       long_url: data.long_url,
-      expiry_date: data.expiry_date?.toISOString() || "",
+      expiry_date: data.expiry_date?.toISOString(),
       redirection_rules: rules,
     });
     if (status === 200) {
@@ -203,8 +203,8 @@ export default function UrlDialog({
     const urlsToSubmit = data.urls.map((url) => ({
       name: url.name || "",
       long_url: url.long_url,
-      short_url: url.short_url || "",
-      expiry_date: url.expiry_date?.toISOString() || "",
+      short_url: url.short_url || undefined,
+      expiry_date: url.expiry_date?.toISOString(),
     }));
     const { message, status } = await batchShortenUrlAction({
       data: urlsToSubmit,

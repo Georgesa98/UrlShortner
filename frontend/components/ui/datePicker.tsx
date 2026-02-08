@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { ChevronDownIcon } from "lucide-react";
+import { ChevronDownIcon, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -36,6 +36,11 @@ export function DatePicker({
         setOpen(false);
     };
 
+    const handleClear = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        onChange?.(undefined);
+    };
+
     return (
         <Popover open={open} onOpenChange={setOpen}>
             <PopoverTrigger asChild>
@@ -48,8 +53,18 @@ export function DatePicker({
                     onBlur={onBlur}
                     {...props}
                 >
-                    {value ? value.toLocaleDateString() : "Select date"}
-                    <ChevronDownIcon />
+                    <span className={value ? "" : "text-muted-foreground"}>
+                        {value ? value.toLocaleDateString() : "Select date (optional)"}
+                    </span>
+                    <div className="flex items-center gap-1">
+                        {value && (
+                            <X
+                                className="h-4 w-4 opacity-50 hover:opacity-100 transition-opacity"
+                                onClick={handleClear}
+                            />
+                        )}
+                        <ChevronDownIcon className="h-4 w-4" />
+                    </div>
                 </Button>
             </PopoverTrigger>
             <PopoverContent

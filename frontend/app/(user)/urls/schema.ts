@@ -31,7 +31,7 @@ export const createLinkFormSchema = z.object({
   long_url: z.url().refine((url) => url.toString().startsWith("http"), {
     message: "please enter a valid url",
   }),
-  short_url: z.string().min(8).max(64).optional(),
+  short_url: z.string().min(8).max(64).optional().or(z.literal("")),
   expiry_date: z.date().optional(),
   redirection_rules: z.array(redirectionRuleSchema).optional(),
 });
@@ -78,7 +78,7 @@ export const createBatchLinkFormSchema = z.object({
           long_url: z.url().refine((url) => url.toString().startsWith("http"), {
             message: "please enter a valid url",
           }),
-          short_url: z.string().min(8).max(64).optional(),
+          short_url: z.string().min(8).max(64).optional().or(z.literal("")),
           expiry_date: z.date().optional(),
           password_protection: z.boolean().optional(),
           enable_tracking: z.boolean().optional(),

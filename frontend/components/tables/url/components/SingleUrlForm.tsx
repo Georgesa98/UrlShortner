@@ -117,7 +117,7 @@ export function SingleUrlForm({ control, hostname, isUpdateMode = false }: Singl
           render={({ field, fieldState }) => (
             <Field className="flex-1">
               <FieldLabel htmlFor={field.name} className="font-bold text-sm">
-                Expiration Date
+                Expiration Date (Optional)
               </FieldLabel>
               <DatePicker
                 {...field}
