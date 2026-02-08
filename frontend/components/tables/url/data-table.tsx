@@ -104,7 +104,9 @@ export function UrlDataTable<TData, TValue>({
       {control && (
         <div className="mt-4 flex items-center justify-between px-2 text-sm text-slate-500">
           <span>
-            Showing {data.length} of {pagination.total} links
+            Showing {(pagination.page - 1) * pagination.limit + 1} to{" "}
+            {Math.min(pagination.page * pagination.limit, pagination.total)} of{" "}
+            {pagination.total} links
           </span>
           <div className="flex gap-2">
             <button
