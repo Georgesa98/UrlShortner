@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from "react";
 import { UrlResponse, Pagination } from "@/api-types";
 import UrlStatCards from "@/components/admin/urls-management/UrlStatCards";
 import UrlManagementHeader from "@/components/admin/urls-management/UrlManagementHeader";
-import UrlDetailsSheet from "@/components/admin/urls-management/UrlDetailsSheet";
 import { AdminUrlDataTable } from "@/components/tables/admin-url/data-table";
 import { adminUrlColumns } from "@/components/tables/admin-url/columns";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
@@ -24,7 +23,6 @@ export default function UrlsManagementPage({
   stats: Record<string, number>;
   pagination: Pagination;
 }) {
-  const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -36,12 +34,6 @@ export default function UrlsManagementPage({
   );
   const isInitialMount = useRef(true);
   const previousSearchValue = useRef(searchQuery);
-  const [selectedUrl, setSelectedUrl] = useState<UrlResponse | null>(null);
-
-  const handleRowClick = (url: UrlResponse) => {
-    setSelectedUrl(url);
-    setIsSheetOpen(true);
-  };
 
   const handleBulkDelete = () => {
     const selectedUrlIds = Object.keys(rowSelection).map((id) => parseInt(id));
@@ -131,17 +123,10 @@ export default function UrlsManagementPage({
         columns={adminUrlColumns}
         data={urls}
         pagination={pagination}
-        onRowClick={handleRowClick}
         control={true}
         onPageChange={handlePageChange}
         rowSelection={rowSelection}
         onRowSelectionChange={setRowSelection}
-      />
-
-      <UrlDetailsSheet
-        url={selectedUrl}
-        isOpen={isSheetOpen}
-        onClose={() => setIsSheetOpen(false)}
       />
 
       <DeleteUrlDialog

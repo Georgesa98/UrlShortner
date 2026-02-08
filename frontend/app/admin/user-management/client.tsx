@@ -12,7 +12,6 @@ import {
 } from "@/components/ui/select";
 import { UserManagementDataTable } from "@/components/tables/user-management/data-table";
 import { userManagementColumns } from "@/components/tables/user-management/columns";
-import UserDetailsSheet from "@/components/admin-pages/UserDetailsSheet";
 import { Trash2, Plus, Search, ArrowUpDown } from "lucide-react";
 import { toast } from "sonner";
 import { RowSelectionState } from "@tanstack/react-table";
@@ -29,16 +28,10 @@ export default function UserManagementClient({
   const router = useRouter();
   const pathname = usePathname();
   const searchParam = useSearchParams();
-  const [selectedUser, setSelectedUser] = useState<UserResponse | null>(null);
-  const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
   const [searchValue, setSearchValue] = useState("");
   const isInitialMount = useRef(true);
   const previousSearchValue = useRef(searchValue);
-  const handleRowClick = (user: UserResponse) => {
-    setSelectedUser(user);
-    setIsSheetOpen(true);
-  };
 
   const handleBulkDelete = async () => {
     try {
@@ -172,16 +165,9 @@ export default function UserManagementClient({
         columns={userManagementColumns}
         data={users}
         pagination={pagination}
-        onRowClick={handleRowClick}
         rowSelection={rowSelection}
         onRowSelectionChange={setRowSelection}
         onPageChange={handlePageChange}
-      />
-
-      <UserDetailsSheet
-        user={selectedUser}
-        isOpen={isSheetOpen}
-        onClose={() => setIsSheetOpen(false)}
       />
     </div>
   );

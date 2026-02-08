@@ -1,7 +1,6 @@
 "use client";
 
 import { ListUrlsResponse, UrlResponse, UserResponse } from "@/api-types";
-import UrlDetailsSheet from "@/components/admin/urls-management/UrlDetailsSheet";
 import { adminUrlColumns } from "@/components/tables/admin-url/columns";
 import { AdminUrlDataTable } from "@/components/tables/admin-url/data-table";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -18,17 +17,11 @@ export default function UserUrlClient({
   const pathname = usePathname();
   const searchParam = useSearchParams();
 
-  const [selectedUrl, setSelectedUrl] = useState<UrlResponse | null>(null);
-  const [isSheetOpen, setIsSheetOpen] = useState(false);
   function handlePageChange(newPage: number) {
     const params = new URLSearchParams(searchParam.toString());
     params.set("page", newPage.toString());
     router.push(`${pathname}?${params.toString()}`, { scroll: false });
     router.refresh();
-  }
-  function handleRowClick(url: UrlResponse) {
-    setSelectedUrl(url);
-    setIsSheetOpen(true);
   }
   return (
     <div className="p-6 space-y-6">
@@ -40,12 +33,6 @@ export default function UserUrlClient({
         data={urls.urls}
         pagination={urls.pagination}
         onPageChange={handlePageChange}
-        onRowClick={handleRowClick}
-      />
-      <UrlDetailsSheet
-        url={selectedUrl}
-        isOpen={isSheetOpen}
-        onClose={() => setIsSheetOpen(false)}
       />
     </div>
   );

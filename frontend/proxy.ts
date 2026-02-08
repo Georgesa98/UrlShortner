@@ -9,6 +9,7 @@ export default async function proxy(request: NextRequest) {
     "/help",
     "/about",
     "/login",
+    "/signup",
     "/forgot-password",
     "/register",
     "/redirect",

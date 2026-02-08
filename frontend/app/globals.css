@@ -48,11 +48,11 @@
 
     /* Custom Brand Colors */
 
-    --color-brand-blue: #007bff;
+    --color-brand-blue: #2563eb;
     --color-brand-purple: #a855f7;
     --color-gradient-blue-purple: linear-gradient(
         135deg,
-        #007bff 0%,
+        #2563eb 0%,
         #a855f7 100%
     );
     --color-surface: #1e293b;
@@ -66,7 +66,7 @@
 
     /* Primary Brand Colors */
 
-    --color-brand-blue: #007bff; /* Main buttons & 'connection' text */
+    --color-brand-blue: #2563eb; /* Main buttons & 'connection' text */
     --color-brand-purple: #a855f7; /* 'connection' gradient text */
 
     /* Backgrounds & Surfaces */
@@ -99,7 +99,7 @@ body {
     --card-foreground: #ffffff;
     --popover: #1e293b;
     --popover-foreground: #ffffff;
-    --primary: #007bff;
+    --primary: #2563eb;
     --primary-foreground: #ffffff;
     --secondary: #1e293b;
     --secondary-foreground: #ffffff;
@@ -166,7 +166,7 @@ body {
 
 @layer utilities {
     .shadow-glow-blue {
-        box-shadow: 0px 4px 10px 0px rgba(0, 123, 255, 0.4);
+        box-shadow: 0px 4px 10px 0px rgba(37, 99, 235, 0.4);
     }
 
     .shadow-glow-purple {
