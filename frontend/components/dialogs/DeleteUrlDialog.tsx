@@ -47,7 +47,10 @@ export function DeleteUrlDialog({
           <Button
             type="button"
             variant="outline"
-            onClick={() => onOpenChange(false)}
+            onClick={(e) => {
+              e.stopPropagation();
+              onOpenChange(false);
+            }}
             disabled={isLoading}
           >
             Cancel
@@ -55,7 +58,10 @@ export function DeleteUrlDialog({
           <Button
             type="button"
             variant="destructive"
-            onClick={onConfirm}
+            onClick={(e) => {
+              e.stopPropagation();
+              onConfirm();
+            }}
             disabled={isLoading}
           >
             {isLoading ? "Deleting..." : "Delete"}

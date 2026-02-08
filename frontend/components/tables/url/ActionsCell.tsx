@@ -78,13 +78,15 @@ export function ActionsCell({ data }: ActionsCellProps) {
         <QrCodeDialog shortUrl={data.short_url} />
       </div>
 
-      <DeleteUrlDialog
-        open={isDeleteDialogOpen}
-        onOpenChange={setIsDeleteDialogOpen}
-        onConfirm={handleDeleteSingleUrl}
-        urlCount={1}
-        isLoading={isDeleting}
-      />
+      <div onClick={(e) => e.stopPropagation()}>
+        <DeleteUrlDialog
+          open={isDeleteDialogOpen}
+          onOpenChange={setIsDeleteDialogOpen}
+          onConfirm={handleDeleteSingleUrl}
+          urlCount={1}
+          isLoading={isDeleting}
+        />
+      </div>
     </div>
   );
 }
