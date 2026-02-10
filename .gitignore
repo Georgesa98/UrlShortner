@@ -29,5 +29,4 @@ logs/*.log
 
 .opencode
 .ignore
-docs
 AGENTS.md
