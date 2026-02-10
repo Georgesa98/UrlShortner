@@ -28,8 +28,8 @@ class ShortenUrlSerializer(ModelSerializer):
         ]
 
     def validate_short_url(self, value):
-        if value is None:
-            return True
+        if value is None or value == "":
+            return None
         if Url.objects.filter(short_url=value).exists():
             raise ValidationError(detail="custom alias already in use")
         VALID_ALIAS_REGEX = re.compile(r"^[a-zA-Z0-9_-]+$")

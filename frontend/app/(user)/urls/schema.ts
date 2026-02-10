@@ -31,7 +31,14 @@ export const createLinkFormSchema = z.object({
   long_url: z.url().refine((url) => url.toString().startsWith("http"), {
     message: "please enter a valid url",
   }),
-  short_url: z.string().min(8).max(64).optional().or(z.literal("")),
+  short_url: z
+    .string()
+    .max(64)
+    .optional()
+    .transform((val) => (!val || val.trim() === "" ? undefined : val))
+    .refine((val) => !val || val.length >= 8, {
+      message: "Custom alias must be at least 8 characters",
+    }),
   expiry_date: z.date().optional(),
   redirection_rules: z.array(redirectionRuleSchema).optional(),
 });
@@ -78,7 +85,14 @@ export const createBatchLinkFormSchema = z.object({
           long_url: z.url().refine((url) => url.toString().startsWith("http"), {
             message: "please enter a valid url",
           }),
-          short_url: z.string().min(8).max(64).optional().or(z.literal("")),
+          short_url: z
+            .string()
+            .max(64)
+            .optional()
+            .transform((val) => (!val || val.trim() === "" ? undefined : val))
+            .refine((val) => !val || val.length >= 8, {
+              message: "Custom alias must be at least 8 characters",
+            }),
           expiry_date: z.date().optional(),
           password_protection: z.boolean().optional(),
           enable_tracking: z.boolean().optional(),

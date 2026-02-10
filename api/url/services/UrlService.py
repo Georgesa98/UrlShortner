@@ -63,19 +63,20 @@ class UrlService:
         urls = []
         user_instance = User.objects.get(pk=user_id)
         for url in validated_data:
+            short_url_value = url.get("short_url")
             short_url = (
-                url["short_url"]
-                if url["short_url"] is not None
+                short_url_value
+                if short_url_value and str(short_url_value).strip()
                 else ShortCodeService().get_code()
             )
 
-            is_custom_alias = (
-                True if "short_url" in url and url["short_url"] is not None else False
-            )
+            is_custom_alias = bool(short_url_value and str(short_url_value).strip())
+            
             expiry_date = url.get("expiry_date", None)
             try:
                 url_instance = Url.objects.create(
                     user=user_instance,
+                    name=url.get("name", ""),
                     long_url=url["long_url"],
                     short_url=short_url,
                     expiry_date=expiry_date,
@@ -85,9 +86,10 @@ class UrlService:
                 UrlStatus.objects.create(url=url_instance).save()
                 urls.append(url_instance)
             except Exception as e:
-                urls.append(str(e))
+                # Log error but continue processing other URLs
+                pass
         url_instances = list(
-            Url.objects.filter(id__in=[item.id for item in urls]).select_related(
+            Url.objects.filter(id__in=[item.id for item in urls if isinstance(item, Url)]).select_related(
                 "url_status", "user"
             )
         )
