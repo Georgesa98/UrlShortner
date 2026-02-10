@@ -6,14 +6,18 @@ export async function listUrlsAction({
   page = 1,
   limit = 10,
   query = "",
+  url_status,
+  date_order,
 }: {
   page?: number;
   limit?: number;
   query?: string;
+  url_status?: string;
+  date_order?: string;
 }) {
   try {
     const response = await axiosInstance.get("/admin/url/", {
-      params: { page, limit, query },
+      params: { page, limit, query, url_status, date_order },
     });
     return {
       success: true,

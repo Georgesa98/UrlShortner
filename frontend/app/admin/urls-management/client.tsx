@@ -8,8 +8,15 @@ import { AdminUrlDataTable } from "@/components/tables/admin-url/data-table";
 import { adminUrlColumns } from "@/components/tables/admin-url/columns";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { RowSelectionState } from "@tanstack/react-table";
-import { Button } from "@/components/ui/button";
-import { Trash2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Search } from "lucide-react";
 import { toast } from "sonner";
 import { DeleteUrlDialog } from "@/components/dialogs/DeleteUrlDialog";
 import { bulkDeleteUrlsAction } from "./server";
@@ -42,6 +49,30 @@ export default function UrlsManagementPage({
       return;
     }
     setIsDeleteDialogOpen(true);
+  };
+
+  const handleStatusChange = (newStatus: string) => {
+    const params = new URLSearchParams(searchParam.toString());
+    if (newStatus === "ALL") {
+      params.delete("url_status");
+    } else {
+      params.set("url_status", newStatus);
+    }
+    params.set("page", "1");
+    router.push(`${pathname}?${params.toString()}`, { scroll: false });
+    router.refresh();
+  };
+
+  const handleDateOrderChange = (newOrder: string) => {
+    const params = new URLSearchParams(searchParam.toString());
+    if (newOrder === "DEFAULT") {
+      params.delete("date_order");
+    } else {
+      params.set("date_order", newOrder);
+    }
+    params.set("page", "1");
+    router.push(`${pathname}?${params.toString()}`, { scroll: false });
+    router.refresh();
   };
 
   const confirmBulkDelete = async () => {
@@ -101,16 +132,10 @@ export default function UrlsManagementPage({
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex-1">
-          <UrlManagementHeader
-            searchQuery={searchQuery}
-            setSearchQuery={setSearchQuery}
-            handleBulkDelete={handleBulkDelete}
-            rowSelection={rowSelection}
-          />
-        </div>
-      </div>
+      <UrlManagementHeader
+        handleBulkDelete={handleBulkDelete}
+        rowSelection={rowSelection}
+      />
 
       <UrlStatCards
         totalUrls={stats?.total_urls || 0}
@@ -118,6 +143,47 @@ export default function UrlsManagementPage({
         flaggedUrls={stats?.flagged_urls || 0}
         inactiveUrls={stats?.inactive_urls || 0}
       />
+
+      <div className="bg-surface rounded-xl p-4 flex items-center gap-4 flex-wrap">
+        <div className="flex-1 min-w-[200px] relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-text-muted" />
+          <Input
+            placeholder="Search URLs or names..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+        <Select
+          value={searchParam.get("url_status") || "ALL"}
+          onValueChange={handleStatusChange}
+        >
+          <SelectTrigger className="w-[150px]">
+            <SelectValue placeholder="All Statuses" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="ALL">All Statuses</SelectItem>
+            <SelectItem value="ACTIVE">Active</SelectItem>
+            <SelectItem value="EXPIRED">Expired</SelectItem>
+            <SelectItem value="FLAGGED">Flagged</SelectItem>
+            <SelectItem value="DISABLED">Disabled</SelectItem>
+            <SelectItem value="BROKEN">Broken</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select
+          value={searchParam.get("date_order") || "DEFAULT"}
+          onValueChange={handleDateOrderChange}
+        >
+          <SelectTrigger className="w-[150px]">
+            <SelectValue placeholder="Date Order" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="DEFAULT">Default Order</SelectItem>
+            <SelectItem value="-created_at">Newest First</SelectItem>
+            <SelectItem value="created_at">Oldest First</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
 
       <AdminUrlDataTable
         columns={adminUrlColumns}

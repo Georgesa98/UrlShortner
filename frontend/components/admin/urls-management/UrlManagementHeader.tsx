@@ -1,19 +1,14 @@
 "use client";
 
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Plus, Filter, Trash2 } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import UrlDialog from "@/components/tables/url/UrlDialog";
 import { RowSelectionState } from "@tanstack/react-table";
 
 export default function UrlManagementHeader({
-  searchQuery,
-  setSearchQuery,
   handleBulkDelete,
   rowSelection,
 }: {
-  searchQuery: string;
-  setSearchQuery: (query: string) => void;
   handleBulkDelete: () => void;
   rowSelection: RowSelectionState;
 }) {
@@ -26,18 +21,6 @@ export default function UrlManagementHeader({
         </p>
       </div>
       <div className="flex items-center gap-3 w-full sm:w-auto">
-        <div className="relative flex-1 sm:flex-initial sm:w-64">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-text-muted" />
-          <Input
-            placeholder="Search URLs or names..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9 bg-surface border-none text-text-main"
-          />
-        </div>
-        <Button variant="outline" size="icon" className="text-text-muted">
-          <Filter className="h-4 w-4" />
-        </Button>
         <UrlDialog
           mode="create"
           trigger={
